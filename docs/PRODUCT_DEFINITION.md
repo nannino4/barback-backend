@@ -48,10 +48,12 @@ Simplified, accurate, and real-time inventory tracking system that replaces outd
 
 #### 2. Inventory Management
 - Product database with categories
+- Category creation and management
 - Stock level tracking
 - Manual stock adjustments
 - Low stock alerts
 - Basic inventory reports
+- Product categorization and organization
 
 #### 3. Analytics
 - Usage trends

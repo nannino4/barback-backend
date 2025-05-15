@@ -12,6 +12,7 @@
 
 2. **Core Data Models**
    - User model (with roles)
+   - Category model
    - Product model
    - Inventory model
    - Analytics model
@@ -21,6 +22,7 @@
 
 3. **API Development**
    - Authentication endpoints
+   - Category management endpoints
    - Inventory management endpoints
    - Analytics endpoints
    - Alerts endpoints
@@ -32,6 +34,8 @@
    - Subscription tier configuration
    - Multi-inventory management
    - Organization configuration system
+   - Category management system
+   - Product categorization functionality
 
 5. **Testing & Deployment**
    - Unit and integration tests
