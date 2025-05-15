@@ -41,64 +41,68 @@ Simplified, accurate, and real-time inventory tracking system that replaces outd
 
 ### MVP Stage
 
-#### 1. Authentication System
+#### 1. Authentication
 - User registration and login
 - Role-based access (Owner, Manager, Bartender)
 - Password recovery
 
-#### 2. Basic Inventory Management
+#### 2. Inventory Management
 - Product database with categories
 - Stock level tracking
 - Manual stock adjustments
 - Low stock alerts
 - Basic inventory reports
 
-#### 3. Basic Analytics
+#### 3. Analytics
 - Usage trends
 - Cost analysis
 - Waste tracking
 - Sales vs. inventory correlation
 
+#### 4. Alerts
+- Low stock notifications
+- Time based notifications
+- Unused stock notifications
+- Custom alert configurations
+
+#### 5. Organization Management
+- Multi-inventory organization structure
+- Organization-level configuration and settings
+- Centralized management with inventory-specific views
+- Subscription model for different tiers of service
+
 ### Middle Stage
 
-#### 1. Enhanced Inventory Management
-- Barcode/QR code scanning for inventory checks
-- Automated stock calculations based on usage
+#### 1. Inventory & Sales System
 - Inventory forecasting based on historical data
 - Multiple storage locations tracking
-- Batch tracking and expiration dates
+- Connect with existing POS systems
+- Automated inventory adjustments based on sales
 
-#### 2. Basic Order Management
-- Create purchase orders
-- Track order status
-- Record deliveries
-
-#### 3. Advanced Order Management
-- Automated order generation based on par levels
+#### 2. Order & Supplier Management
 - Order templates
+- Track orders
 - Order history and analytics
-- Integration with popular supplier systems
-
-#### 4. Supplier Management
 - Supplier database
-- Contact information storage
 - Associate products with suppliers
+- Automated order generation based on par levels
+- Integration with popular supplier systems to order directly through the platform
 
-#### 5. Recipe Management
+#### 3. Recipe & Cost Management
 - Cocktail recipe database
 - Ingredient requirements tracking
 - Automatic inventory deduction when drinks are made
 - Cost calculation per recipe
+- Profit margin analysis per product/cocktail
 
-#### 6. POS Integration
-- Connect with existing POS systems
-- Sales tracking directly linked to inventory
-- Automated inventory adjustments based on sales
-
-#### 7. Multi-location Support
-- Support for bars with multiple locations
-- Centralized management with location-specific views
-- Inventory transfer between locations
+#### 4. Staff & Task Management
+- Staff scheduling
+- Staff pay tracking
+- Shift management
+- To-do lists for opening and closing procedures
+- Task assignment and tracking
+- Checklist templates and customization
+- Task completion verification
 
 ### Later Stage
 
@@ -108,25 +112,29 @@ Simplified, accurate, and real-time inventory tracking system that replaces outd
 - AI-powered inventory optimization
 - Anomaly detection for inventory discrepancies
 - Customer preference correlation with inventory
+- Business intelligence tools
 
-#### 2. Complete Bar Management
-- Staff scheduling
-- Customer management
+#### 2. Advanced Scanning
+- Barcode/QR code scanning for inventory checks
+- Mobile scanning integration
+- Automated product recognition
+- Label generation and printing
+
+#### 3. Customer & Event Management
+- Customer database
 - Event management
+- Reservation system
+- Customer preferences tracking
 
-#### 3. Financial Management
-- Cost tracking
-- Profit margin analysis per product/cocktail
+#### 4. Financial System
 - Budget planning tools
 - Financial reporting
+- Tax management
+- Integrated accounting
+- Payment processing
 
-#### 4. Marketplace
-- Direct ordering from suppliers through the platform
+#### 5. Marketplace & Supplier Platform
 - Discover new products
 - Negotiated rates for platform users
-
-#### 5. Expanded Integrations
-- Accounting software integration
-- Payment processing
+- Advanced supplier integrations
 - Marketing tools integration
-- Business intelligence tools
