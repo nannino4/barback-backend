@@ -230,21 +230,36 @@
         "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
         "name": { "type": "string", "description": "Alert name" },
         "description": { "type": "string", "description": "Alert description" },
+        "trigger": { 
+          "type": "string", 
+          "description": "Type of alert trigger",
+          "enum": ["low_stock", "schedule"]
+        },
         "type": { 
           "type": "string", 
           "description": "Type of alert trigger",
-          "enum": ["low_stock", "schedule", "expiration", "price_change"]
+          "enum": ["low_stock", "schedule"]
         },
         "conditions": {
           "type": "object",
           "description": "Conditions that trigger the alert",
           "properties": {
-            "inventoryIds": { "type": "array", "items": { "type": "ObjectId" } },
-            "categoryIds": { "type": "array", "items": { "type": "ObjectId" } },
-            "productIds": { "type": "array", "items": { "type": "ObjectId" } },
-            "threshold": { "type": "number" },
-            "schedule": { "type": "string" },
-            "daysBeforeExpiration": { "type": "number" }
+            "lowStock": {
+              "type": "object",
+              "description": "Low stock condition",
+              "properties": {
+                "productId": { "type": "ObjectId", "description": "Reference to the product" },
+                "threshold": { "type": "number", "description": "Threshold for low stock alert" }
+              }
+            },
+            "schedule": {
+              "type": "object",
+              "description": "Scheduled condition",
+              "properties": {
+                "frequency": { "type": "string", "description": "Frequency of the alert" },
+                "time": { "type": "string", "description": "Time of day for the alert" }
+              }
+            }
           }
         },
         "notifications": {
@@ -252,6 +267,7 @@
           "description": "Notification settings",
           "properties": {
             "email": { "type": "boolean", "default": true },
+            "push": { "type": "boolean", "default": true },
             "inApp": { "type": "boolean", "default": true },
             "recipients": { "type": "array", "items": { "type": "ObjectId" } }
           }
