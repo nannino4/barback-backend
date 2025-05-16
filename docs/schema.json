@@ -13,15 +13,13 @@
         "lastName": { "type": "string", "description": "User's last name" },
         "phoneNumber": { "type": "string", "description": "User's phone number" },
         "role": { "type": "string", "description": "System-level user role", "enum": ["admin", "user"], "default": "user" },
-        "subscriptionId": { "type": ["ObjectId", "null"], "description": "Reference to the user's subscription" },
         "isActive": { "type": "boolean", "description": "Whether the user account is active", "default": true },
         "lastLogin": { "type": "Date", "description": "Timestamp of the last login" },
         "createdAt": { "type": "Date", "description": "Timestamp of when the user was created" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the user was last updated" }
       },
       "indexes": [
-        { "fields": { "email": 1 }, "options": { "unique": true } },
-        { "fields": { "subscriptionId": 1 } }
+        { "fields": { "email": 1 }, "options": { "unique": true } }
       ]
     },
     "Organization": {
@@ -84,7 +82,7 @@
         "userId": { "type": "ObjectId", "description": "Reference to the user" },
         "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
         "role": { "type": "string", "description": "User role within this organization", "enum": ["owner", "manager", "staff"] },
-        "joinedAt": { "type": "Date", "description": "Timestamp of when the user joined the organization" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the user joined the organization" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the user-organization relationship was last updated" }
       },
       "indexes": [
@@ -111,11 +109,14 @@
           }
         },
         "startDate": { "type": "Date", "description": "Start date of the subscription" },
-        "endDate": { "type": "Date", "description": "End date of the subscription" },
         "lastRenewDate": { "type": "Date", "description": "Date when the subscription was last renewed" },
         "nextRenewDate": { "type": "Date", "description": "Date when the subscription will renew next" },
         "autoRenew": { "type": "boolean", "description": "Whether the subscription auto-renews", "default": true },
-        "isActive": { "type": "boolean", "description": "Whether the subscription is active", "default": true },
+        "status": { 
+          "type": "string", 
+          "description": "Current status of the subscription",
+          "enum": ["pending", "active", "expired", "suspended"]
+        },
         "paymentMethod": { "type": "object", "description": "Payment method information", 
           "properties": {
             "type": { "type": "string", "enum": ["credit_card", "bank_transfer", "paypal", "other"] },

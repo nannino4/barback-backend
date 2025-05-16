@@ -61,6 +61,28 @@ Before adding a new abstraction layer or dependency, ask:
 - Implementing complex design patterns
 - Making significant architectural changes
 
+## Code Formatting Style
+
+The following formatting rules are enforced by ESLint and should be adhered to:
+
+- **Brace Style**: Use Allman style braces (braces on their own line). Single-line blocks are allowed.
+  ```javascript
+  // Correct
+  if (condition)
+  {
+      // code
+  }
+  else
+  {
+      // code
+  }
+
+  if (condition) { /* code */ } // Also correct for single line
+  ```
+- **Indentation**: Use 4 spaces for indentation.
+- **Tabs**: Do not use tabs; use spaces instead.
+- **Comma Dangle**: Use trailing commas for multiline object literals, array literals, function parameters, etc.
+
 ## Testing Guidelines
 
 - Write tests for all business logic
