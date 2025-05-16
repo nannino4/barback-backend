@@ -1,0 +1,271 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Barback Application Database Schema - MVP Stage",
+  "description": "JSON Schema definition for the core data models in the Barback inventory management application",
+  "models": {
+    "User": {
+      "collection": "users",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the user" },
+        "email": { "type": "string", "description": "User's email address", "unique": true },
+        "hashedPassword": { "type": "string", "description": "Hashed user password" },
+        "firstName": { "type": "string", "description": "User's first name" },
+        "lastName": { "type": "string", "description": "User's last name" },
+        "phoneNumber": { "type": "string", "description": "User's phone number" },
+        "role": { "type": "string", "description": "System-level user role", "enum": ["admin", "user"], "default": "user" },
+        "subscriptionId": { "type": ["ObjectId", "null"], "description": "Reference to the user's subscription" },
+        "isActive": { "type": "boolean", "description": "Whether the user account is active", "default": true },
+        "lastLogin": { "type": "Date", "description": "Timestamp of the last login" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the user was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the user was last updated" }
+      },
+      "indexes": [
+        { "fields": { "email": 1 }, "options": { "unique": true } },
+        { "fields": { "subscriptionId": 1 } }
+      ]
+    },
+    "Organization": {
+      "collection": "organizations",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the organization" },
+        "name": { "type": "string", "description": "Organization name" },
+        "ownerId": { "type": "ObjectId", "description": "Reference to the user who owns this organization" },
+        "address": {
+          "type": "object",
+          "description": "Organization address",
+          "properties": {
+            "street": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "postalCode": { "type": "string" },
+            "country": { "type": "string" }
+          }
+        },
+        "fiscalData": {
+          "type": "object",
+          "description": "Organization fiscal information",
+          "properties": {
+            "companyName": { "type": "string", "description": "Legal company name" },
+            "taxId": { "type": "string", "description": "Tax identification number" },
+            "vatNumber": { "type": "string", "description": "VAT registration number" },
+            "fiscalCode": { "type": "string", "description": "Additional fiscal identification code" },
+            "legalEntityType": { "type": "string", "description": "Type of legal entity (e.g., LLC, Ltd, etc.)" },
+            "fiscalAddress": {
+              "type": "object",
+              "description": "Legal/fiscal address (if different from main address)",
+              "properties": {
+                "street": { "type": "string" },
+                "city": { "type": "string" },
+                "state": { "type": "string" },
+                "postalCode": { "type": "string" },
+                "country": { "type": "string" }
+              }
+            }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "description": "Organization-wide settings",
+          "properties": {
+            "defaultCurrency": { "type": "string", "default": "EUR" }
+          }
+        },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the organization was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the organization was last updated" }
+      },
+      "indexes": [
+        { "fields": { "ownerId": 1 } }
+      ]
+    },
+    "UserOrganization": {
+      "collection": "user_organizations",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the user-organization relationship" },
+        "userId": { "type": "ObjectId", "description": "Reference to the user" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "role": { "type": "string", "description": "User role within this organization", "enum": ["owner", "manager", "staff"] },
+        "joinedAt": { "type": "Date", "description": "Timestamp of when the user joined the organization" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the user-organization relationship was last updated" }
+      },
+      "indexes": [
+        { "fields": { "userId": 1, "organizationId": 1 }, "options": { "unique": true } },
+        { "fields": { "userId": 1 } },
+        { "fields": { "organizationId": 1 } },
+        { "fields": { "role": 1 } }
+      ]
+    },
+    "Subscription": {
+      "collection": "subscriptions",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the subscription" },
+        "userId": { "type": "ObjectId", "description": "Reference to the user who owns this subscription" },
+        "tier": { "type": "string", "description": "Subscription tier", "enum": ["trial", "basic", "premium"] },
+        "price": { "type": "number", "description": "Price per billing period" },
+        "currency": { "type": "string", "description": "Currency code (e.g., EUR, USD)", "default": "EUR" },
+        "billingPeriod": { "type": "string", "description": "Billing frequency", "enum": ["monthly", "quarterly", "annual"], "default": "monthly" },
+        "limits": {
+          "type": "object",
+          "description": "Limits based on subscription tier",
+          "properties": {
+            "maxOrganizations": { "type": "number", "description": "Maximum number of organizations allowed under this subscription" }
+          }
+        },
+        "startDate": { "type": "Date", "description": "Start date of the subscription" },
+        "endDate": { "type": "Date", "description": "End date of the subscription" },
+        "lastRenewDate": { "type": "Date", "description": "Date when the subscription was last renewed" },
+        "nextRenewDate": { "type": "Date", "description": "Date when the subscription will renew next" },
+        "autoRenew": { "type": "boolean", "description": "Whether the subscription auto-renews", "default": true },
+        "isActive": { "type": "boolean", "description": "Whether the subscription is active", "default": true },
+        "paymentMethod": { "type": "object", "description": "Payment method information", 
+          "properties": {
+            "type": { "type": "string", "enum": ["credit_card", "bank_transfer", "paypal", "other"] },
+            "lastFour": { "type": "string", "description": "Last four digits of credit card (if applicable)" },
+            "expiryDate": { "type": "string", "description": "Expiry date of payment method (if applicable)" }
+          }
+        },
+        "payments": { 
+          "type": "array", 
+          "description": "History of payments for this subscription",
+          "items": {
+            "type": "object",
+            "properties": {
+              "paymentId": { "type": "string", "description": "Unique identifier for the payment" },
+              "amount": { "type": "number", "description": "Payment amount" },
+              "date": { "type": "Date", "description": "Date of payment" },
+              "status": { "type": "string", "enum": ["succeeded", "failed", "refunded", "pending"] }
+            }
+          }
+        },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the subscription was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the subscription was last updated" }
+      },
+      "indexes": [
+        { "fields": { "userId": 1 } },
+        { "fields": { "tier": 1 } }
+      ]
+    },
+    "Inventory": {
+      "collection": "inventories",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the inventory" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "name": { "type": "string", "description": "Inventory name" },
+        "description": { "type": "string", "description": "Inventory description" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the inventory was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the inventory was last updated" }
+      },
+      "indexes": [
+        { "fields": { "organizationId": 1 } }
+      ]
+    },
+    "Category": {
+      "collection": "categories",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the category" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "name": { "type": "string", "description": "Category name" },
+        "description": { "type": "string", "description": "Category description" },
+        "parentId": { "type": ["ObjectId", "null"], "description": "Reference to parent category, null if top-level" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the category was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the category was last updated" }
+      },
+      "indexes": [
+        { "fields": { "organizationId": 1 } },
+        { "fields": { "parentId": 1 } }
+      ]
+    },
+    "Product": {
+      "collection": "products",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the product" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "inventoryId": { "type": "ObjectId", "description": "Reference to the inventory" },
+        "categoryIds": { "type": "array", "description": "References to the categories this product belongs to", "items": { "type": "ObjectId" } },
+        "name": { "type": "string", "description": "Product name" },
+        "description": { "type": "string", "description": "Product description" },
+        "purchasePrice": { "type": "number", "description": "Default purchase price" },
+        "unit": { "type": "string", "description": "Unit of measure (e.g., 'bottle', 'package')" },
+        "quantity": { "type": "number", "description": "Current quantity in stock" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the product was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the product was last updated" }
+      },
+      "indexes": [
+        { "fields": { "organizationId": 1 } },
+        { "fields": { "inventoryId": 1 } },
+        { "fields": { "categoryIds": 1 } },
+        { "fields": { "name": 1 } }
+      ]
+    },
+    "InventoryLog": {
+      "collection": "inventory_logs",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the log entry" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "inventoryId": { "type": "ObjectId", "description": "Reference to the inventory" },
+        "productId": { "type": "ObjectId", "description": "Reference to the product" },
+        "userId": { "type": "ObjectId", "description": "Reference to the user who made the change" },
+        "type": { 
+          "type": "string", 
+          "description": "Type of transaction",
+          "enum": ["purchase", "consumption", "adjustment", "transfer", "stocktake"]
+        },
+        "quantity": { "type": "number", "description": "Quantity change (positive or negative)" },
+        "previousQuantity": { "type": "number", "description": "Quantity before the transaction" },
+        "newQuantity": { "type": "number", "description": "Quantity after the transaction" },
+        "note": { "type": "string", "description": "Additional notes" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the log entry was created" }
+      },
+      "indexes": [
+        { "fields": { "organizationId": 1 } },
+        { "fields": { "inventoryId": 1 } },
+        { "fields": { "productId": 1 } },
+        { "fields": { "type": 1 } },
+        { "fields": { "createdAt": 1 } }
+      ]
+    },
+    "Alert": {
+      "collection": "alerts",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the alert" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "name": { "type": "string", "description": "Alert name" },
+        "description": { "type": "string", "description": "Alert description" },
+        "type": { 
+          "type": "string", 
+          "description": "Type of alert trigger",
+          "enum": ["low_stock", "schedule", "expiration", "price_change"]
+        },
+        "conditions": {
+          "type": "object",
+          "description": "Conditions that trigger the alert",
+          "properties": {
+            "inventoryIds": { "type": "array", "items": { "type": "ObjectId" } },
+            "categoryIds": { "type": "array", "items": { "type": "ObjectId" } },
+            "productIds": { "type": "array", "items": { "type": "ObjectId" } },
+            "threshold": { "type": "number" },
+            "schedule": { "type": "string" },
+            "daysBeforeExpiration": { "type": "number" }
+          }
+        },
+        "notifications": {
+          "type": "object",
+          "description": "Notification settings",
+          "properties": {
+            "email": { "type": "boolean", "default": true },
+            "inApp": { "type": "boolean", "default": true },
+            "recipients": { "type": "array", "items": { "type": "ObjectId" } }
+          }
+        },
+        "isActive": { "type": "boolean", "description": "Whether the alert is active", "default": true },
+        "lastTriggered": { "type": "Date", "description": "Timestamp of when the alert was last triggered" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the alert was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the alert was last updated" }
+      },
+      "indexes": [
+        { "fields": { "organizationId": 1 } },
+        { "fields": { "type": 1 } },
+        { "fields": { "isActive": 1 } }
+      ]
+    }
+  }
+}

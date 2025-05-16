@@ -15,7 +15,6 @@
    - Category model
    - Product model
    - Inventory model
-   - Analytics model
    - Alerts model
    - Organization model
    - Subscription model
