@@ -1,5 +1,13 @@
-version: '3.8'
 services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - barback-network
+
   backend:
     build:
       context: .
@@ -11,14 +19,6 @@ services:
     environment:
       - MONGODB_URI=${MONGODB_URI}
       - NODE_ENV=${NODE_ENV:-dev}
-    networks:
-      - barback-network
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
     networks:
       - barback-network
 
