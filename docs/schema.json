@@ -179,21 +179,36 @@
       "fields": {
         "_id": { "type": "ObjectId", "description": "Unique identifier for the product" },
         "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
-        "inventoryId": { "type": "ObjectId", "description": "Reference to the inventory" },
         "categoryIds": { "type": "array", "description": "References to the categories this product belongs to", "items": { "type": "ObjectId" } },
         "name": { "type": "string", "description": "Product name" },
         "description": { "type": "string", "description": "Product description" },
-        "purchasePrice": { "type": "number", "description": "Default purchase price" },
-        "unit": { "type": "string", "description": "Unit of measure (e.g., 'bottle', 'package')" },
-        "quantity": { "type": "number", "description": "Current quantity in stock" },
+        "brand": { "type": "string", "description": "Product brand or manufacturer (optional)" },
+        "defaultUnit": { "type": "string", "description": "Default unit of measure (e.g., 'bottle', 'can', 'kg', 'liter')" },
+        "defaultPurchasePrice": { "type": ["number", "null"], "description": "Default purchase price for this product (optional)" },
+        "imageUrl": { "type": "string", "description": "URL to an image of the product" },
         "createdAt": { "type": "Date", "description": "Timestamp of when the product was created" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the product was last updated" }
       },
       "indexes": [
-        { "fields": { "organizationId": 1 } },
-        { "fields": { "inventoryId": 1 } },
-        { "fields": { "categoryIds": 1 } },
-        { "fields": { "name": 1 } }
+        { "fields": { "organizationId": 1, "name": 1 }, "options": { "unique": true } },
+        { "fields": { "categoryIds": 1 } }
+      ]
+    },
+    "InventoryItem": {
+      "collection": "inventory_items",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the inventory item" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "inventoryId": { "type": "ObjectId", "description": "Reference to the specific Inventory (location/stockroom)" },
+        "productId": { "type": "ObjectId", "description": "Reference to the abstract Product" },
+        "quantity": { "type": "number", "description": "Current quantity on hand for this item in this inventory (in Product.defaultUnit)" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the inventory item record was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the inventory item record was last updated" }
+      },
+      "indexes": [
+        { "fields": { "organizationId": 1, "inventoryId": 1, "productId": 1 }, "options": { "unique": true } },
+        { "fields": { "organizationId": 1, "productId": 1 } },
+        { "fields": { "organizationId": 1, "inventoryId": 1 } }
       ]
     },
     "InventoryLog": {
@@ -201,24 +216,23 @@
       "fields": {
         "_id": { "type": "ObjectId", "description": "Unique identifier for the log entry" },
         "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
-        "inventoryId": { "type": "ObjectId", "description": "Reference to the inventory" },
-        "productId": { "type": "ObjectId", "description": "Reference to the product" },
+        "inventoryItemId": { "type": "ObjectId", "description": "Reference to the specific inventory item affected" },
         "userId": { "type": "ObjectId", "description": "Reference to the user who made the change" },
         "type": { 
           "type": "string", 
           "description": "Type of transaction",
           "enum": ["purchase", "consumption", "adjustment", "transfer", "stocktake"]
         },
-        "quantity": { "type": "number", "description": "Quantity change (positive or negative)" },
-        "previousQuantity": { "type": "number", "description": "Quantity before the transaction" },
-        "newQuantity": { "type": "number", "description": "Quantity after the transaction" },
-        "note": { "type": "string", "description": "Additional notes" },
+        "quantity": { "type": "number", "description": "Quantity change (positive or negative, in Product.defaultUnit)" },
+        "previousQuantity": { "type": "number", "description": "Quantity before the transaction (in Product.defaultUnit)" },
+        "newQuantity": { "type": "number", "description": "Quantity after the transaction (in Product.defaultUnit)" },
+        "note": { "type": "string", "description": "Additional notes or reason for the transaction" },
         "createdAt": { "type": "Date", "description": "Timestamp of when the log entry was created" }
       },
       "indexes": [
         { "fields": { "organizationId": 1 } },
-        { "fields": { "inventoryId": 1 } },
-        { "fields": { "productId": 1 } },
+        { "fields": { "inventoryItemId": 1 } },
+        { "fields": { "userId": 1 } },
         { "fields": { "type": 1 } },
         { "fields": { "createdAt": 1 } }
       ]
@@ -235,11 +249,6 @@
           "description": "Type of alert trigger",
           "enum": ["low_stock", "schedule"]
         },
-        "type": { 
-          "type": "string", 
-          "description": "Type of alert trigger",
-          "enum": ["low_stock", "schedule"]
-        },
         "conditions": {
           "type": "object",
           "description": "Conditions that trigger the alert",
@@ -249,6 +258,7 @@
               "description": "Low stock condition",
               "properties": {
                 "productId": { "type": "ObjectId", "description": "Reference to the product" },
+                "inventoryItemId": { "type": "ObjectId", "description": "Reference to the inventory item" },
                 "threshold": { "type": "number", "description": "Threshold for low stock alert" }
               }
             },
@@ -256,6 +266,7 @@
               "type": "object",
               "description": "Scheduled condition",
               "properties": {
+                "startDate": { "type": "Date", "description": "Start date for the alert" },
                 "frequency": { "type": "string", "description": "Frequency of the alert" },
                 "time": { "type": "string", "description": "Time of day for the alert" }
               }
@@ -279,7 +290,7 @@
       },
       "indexes": [
         { "fields": { "organizationId": 1 } },
-        { "fields": { "type": 1 } },
+        { "fields": { "trigger": 1 } },
         { "fields": { "isActive": 1 } }
       ]
     }
