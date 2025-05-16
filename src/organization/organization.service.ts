@@ -29,7 +29,7 @@ export class OrganizationService
         const savedOrg = await newOrganization.save();
 
         // Automatically add the owner to the UserOrganization collection
-        await this.addUserToOrganization(savedOrg._id.toString(), owner._id.toString(), OrganizationRole.OWNER);
+        await this.addUserToOrganization((savedOrg._id as Types.ObjectId).toString(), (owner._id as Types.ObjectId).toString(), OrganizationRole.OWNER);
 
         return savedOrg;
     }
