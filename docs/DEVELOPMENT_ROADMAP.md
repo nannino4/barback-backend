@@ -116,7 +116,7 @@
 ### Backend (NestJS)
 - Modular architecture to enable progressive feature addition
 - Robust authentication and authorization
-- Scalable database design (consider PostgreSQL)
+- Scalable database design (MongoDB)
 - API versioning for backward compatibility
 - Comprehensive test coverage
 - Message queuing for asynchronous processes

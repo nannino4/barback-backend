@@ -74,6 +74,7 @@ Before adding a new abstraction layer or dependency, ask:
 - Use appropriate indexes for frequently queried fields
 - Validate data before saving to database
 - Use transactions for operations that must succeed or fail as a unit
+- When using NestJS with MongoDB, leverage an ODM like Mongoose and the `@nestjs/mongoose` module for integration.
 
 ## NestJS-Specific Guidelines
 
