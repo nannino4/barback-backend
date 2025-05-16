@@ -1,4 +1,4 @@
-FROM node:18-alpine AS builder
+FROM node:latest AS builder
 
 WORKDIR /usr/src/app
 
@@ -13,6 +13,8 @@ COPY . .
 
 # Build the application
 RUN npm run build
+
+CMD [ "tail", "-f", "/dev/null" ]
 
 # --- Production Stage ---
 FROM node:18-alpine AS production
