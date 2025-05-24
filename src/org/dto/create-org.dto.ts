@@ -52,14 +52,14 @@ class FiscalDataDto
     fiscalAddress?: AddressDto;
 }
 
-class OrganizationSettingsDto
+class OrgSettingsDto
 {
     @IsOptional()
     @IsString()
     defaultCurrency?: string;
 }
 
-export class CreateOrganizationDto
+export class CreateOrgDto
 {
     @IsString()
     name!: string;
@@ -79,6 +79,6 @@ export class CreateOrganizationDto
 
     @IsOptional()
     @ValidateNested()
-    @Type(() => OrganizationSettingsDto)
-    settings?: OrganizationSettingsDto;
+    @Type(() => OrgSettingsDto)
+    settings?: OrgSettingsDto;
 }

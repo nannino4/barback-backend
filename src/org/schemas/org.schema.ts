@@ -45,17 +45,17 @@ export class FiscalData
 export const FiscalDataSchema = SchemaFactory.createForClass(FiscalData);
 
 @Schema()
-export class OrganizationSettings
+export class OrgSettings
 {
     @Prop({ type: String, default: 'EUR' })
     defaultCurrency!: string; // Added ! for definite assignment assertion
 
-    // Add other organization-specific settings here
+    // Add other org-specific settings here
 }
-export const OrganizationSettingsSchema = SchemaFactory.createForClass(OrganizationSettings);
+export const OrgSettingsSchema = SchemaFactory.createForClass(OrgSettings);
 
 @Schema({ timestamps: true, collection: 'organizations' })
-export class Organization extends Document
+export class Org extends Document
 {
     @Prop({ type: String, required: true })
     name!: string; // Added ! for definite assignment assertion
@@ -69,10 +69,10 @@ export class Organization extends Document
     @Prop({ type: FiscalDataSchema, required: false })
     fiscalData?: FiscalData;
 
-    @Prop({ type: OrganizationSettingsSchema, required: false })
-    settings?: OrganizationSettings;
+    @Prop({ type: OrgSettingsSchema, required: false })
+    settings?: OrgSettings;
 
     // createdAt and updatedAt are handled by timestamps: true
 }
 
-export const OrganizationSchema = SchemaFactory.createForClass(Organization);
+export const OrgSchema = SchemaFactory.createForClass(Org);
