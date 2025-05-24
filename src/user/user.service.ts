@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from './schemas/user.schema';
@@ -12,10 +12,31 @@ export class UserService
 
     async create(createUserDto: CreateUserDto): Promise<User>
     {
-        // In a real app, hash the password before saving
-        // For now, we'll store it as is, or make it optional if not provided during initial dev
-        const newUser = new this.userModel(createUserDto);
-        return newUser.save();
+        try 
+        {
+            // In a real app, hash the password before saving
+            // For now, we'll store it as is, or make it optional if not provided during initial dev
+            const newUser = new this.userModel(createUserDto);
+            return await newUser.save();
+        } 
+        catch (error: any) 
+        {
+            // Handle MongoDB duplicate key error (E11000)
+            if (error.code === 11000) 
+            {
+                throw new ConflictException('Email already exists');
+            }
+            
+            // Handle MongoDB validation errors
+            if (error.name === 'ValidationError') 
+            {
+                const messages = Object.values(error.errors).map((err: any) => err.message);
+                throw new BadRequestException(`Validation failed: ${messages.join(', ')}`);
+            }
+            
+            // Re-throw other errors
+            throw error;
+        }
     }
 
     async findAll(limit: number, offset: number): Promise<User[]>

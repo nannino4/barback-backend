@@ -18,20 +18,35 @@ export class OrgService
 
     async create(createOrgDto: CreateOrgDto): Promise<Org>
     {
-        // Validate ownerId exists
-        const owner = await this.userModel.findById(createOrgDto.ownerId).exec();
-        if (!owner)
+        try 
         {
-            throw new BadRequestException(`Owner user with ID "${createOrgDto.ownerId}" not found.`);
+            // Validate ownerId exists
+            const owner = await this.userModel.findById(createOrgDto.ownerId).exec();
+            if (!owner)
+            {
+                throw new BadRequestException(`Owner user with ID "${createOrgDto.ownerId}" not found.`);
+            }
+
+            const newOrg = new this.orgModel(createOrgDto);
+            const savedOrg = await newOrg.save();
+
+            // Automatically add the owner to the UserOrg collection
+            await this.addUserToOrg((savedOrg._id as Types.ObjectId).toString(), (owner._id as Types.ObjectId).toString(), OrgRole.OWNER);
+
+            return savedOrg;
+        } 
+        catch (error: any) 
+        {
+            // Handle MongoDB validation errors
+            if (error.name === 'ValidationError') 
+            {
+                const messages = Object.values(error.errors).map((err: any) => err.message);
+                throw new BadRequestException(`Validation failed: ${messages.join(', ')}`);
+            }
+            
+            // Re-throw other errors (including our own BadRequestException)
+            throw error;
         }
-
-        const newOrg = new this.orgModel(createOrgDto);
-        const savedOrg = await newOrg.save();
-
-        // Automatically add the owner to the UserOrg collection
-        await this.addUserToOrg((savedOrg._id as Types.ObjectId).toString(), (owner._id as Types.ObjectId).toString(), OrgRole.OWNER);
-
-        return savedOrg;
     }
 
     async findAll(limit: number, offset: number): Promise<Org[]>
