@@ -122,19 +122,6 @@ The following TypeScript compiler options from `tsconfig.json` directly influenc
 - Apply the principle of least privilege
 - Keep dependencies up to date
 
-## Commit Guidelines
-
-- Use descriptive commit messages
-- Keep commits focused on a single change
-- Reference issue numbers where applicable
-
-## Review Process
-
-- Code should be reviewed by at least one other developer
-- Automated tests must pass before merging
-- Review for security implications
-- Consider performance impact
-
 ---
 
 Remember: The best code is often the code you don't write. Solve the actual problem, not the imagined one.
