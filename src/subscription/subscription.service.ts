@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Subscription, SubscriptionStatus, SubscriptionTier } from './schemas/subscription.schema';
+import { Subscription, SubscriptionStatus } from './schemas/subscription.schema';
 import { User } from '../user/schemas/user.schema';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
-import { ChangeSubscriptionTierDto } from './dto/change-subscription-tier.dto';
 import { CancelSubscriptionDto } from './dto/cancel-subscription.dto';
 
 @Injectable()
@@ -36,12 +35,11 @@ export class SubscriptionService
             throw new ConflictException(`User "${createSubscriptionDto.userId}" already has an active subscription.`);
         }
 
-        // Set default values based on tier
+        // Set default values
         const subscriptionData = {
             ...createSubscriptionDto,
             userId: new Types.ObjectId(createSubscriptionDto.userId),
             startDate: createSubscriptionDto.startDate ? new Date(createSubscriptionDto.startDate) : new Date(),
-            ...this.getDefaultTierFeatures(createSubscriptionDto.tier),
         };
 
         const newSubscription = new this.subscriptionModel(subscriptionData);
@@ -106,70 +104,40 @@ export class SubscriptionService
         return existingSubscription;
     }
 
-    async changeTier(id: string, changeTierDto: ChangeSubscriptionTierDto): Promise<Subscription>
+    async cancel(id: string, cancelSubscriptionDto: CancelSubscriptionDto): Promise<Subscription>
     {
         if (!Types.ObjectId.isValid(id))
         {
             throw new BadRequestException(`Invalid Subscription ID format: "${id}"`);
         }
-
         const subscription = await this.subscriptionModel.findById(id).exec();
         if (!subscription)
         {
             throw new NotFoundException(`Subscription with ID "${id}" not found`);
         }
 
-        if (subscription.status !== SubscriptionStatus.ACTIVE)
+        if (subscription.status === SubscriptionStatus.INACTIVE)
         {
-            throw new BadRequestException('Can only change tier for active subscriptions');
+            throw new ConflictException('Subscription is already inactive.');
         }
 
-        const tierFeatures = this.getDefaultTierFeatures(changeTierDto.newTier);
-        
+
         const updatedSubscription = await this.subscriptionModel.findByIdAndUpdate(
             id,
             {
-                tier: changeTierDto.newTier,
-                ...tierFeatures,
-                // Reset billing cycle for tier changes
-                nextRenewDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+                status: SubscriptionStatus.INACTIVE,
+                cancellationReason: cancelSubscriptionDto.reason,
+                cancellationDate: new Date(),
+                autoRenew: false,
             },
             { new: true },
         ).populate('userId').exec();
 
-        return updatedSubscription!;
-    }
-
-    async cancel(id: string, cancelDto: CancelSubscriptionDto): Promise<Subscription>
-    {
-        if (!Types.ObjectId.isValid(id))
+        if (!updatedSubscription)
         {
-            throw new BadRequestException(`Invalid Subscription ID format: "${id}"`);
+            throw new NotFoundException(`Subscription with ID "${id}" could not be updated.`);
         }
-
-        const subscription = await this.subscriptionModel.findById(id).exec();
-        if (!subscription)
-        {
-            throw new NotFoundException(`Subscription with ID "${id}" not found`);
-        }
-
-        if (subscription.status === SubscriptionStatus.SUSPENDED)
-        {
-            throw new BadRequestException('Subscription is already suspended');
-        }
-
-        const updateData: any = {
-            status: SubscriptionStatus.SUSPENDED,
-        };
-
-        // If immediate cancellation, set auto-renew to false
-        if (cancelDto.cancelAt === 'immediately')
-        {
-            updateData.autoRenew = false;
-        }
-
-        const updatedSubscription = await this.subscriptionModel.findByIdAndUpdate(id, updateData, { new: true }).populate('userId').exec();
-        return updatedSubscription!;
+        return updatedSubscription;
     }
 
     async reactivate(id: string): Promise<Subscription>
@@ -178,29 +146,32 @@ export class SubscriptionService
         {
             throw new BadRequestException(`Invalid Subscription ID format: "${id}"`);
         }
-
         const subscription = await this.subscriptionModel.findById(id).exec();
         if (!subscription)
         {
             throw new NotFoundException(`Subscription with ID "${id}" not found`);
         }
 
-        if (subscription.status === SubscriptionStatus.ACTIVE)
+        if (subscription.status !== SubscriptionStatus.INACTIVE)
         {
-            throw new BadRequestException('Subscription is already active');
+            throw new ConflictException(`Subscription must be inactive to be reactivated. Current status: ${subscription.status}`);
         }
 
         const updatedSubscription = await this.subscriptionModel.findByIdAndUpdate(
             id,
             {
-                status: SubscriptionStatus.ACTIVE,
-                autoRenew: true,
-                nextRenewDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+                status: SubscriptionStatus.PENDING,
+                cancellationReason: undefined,
+                cancellationDate: undefined,
             },
             { new: true },
         ).populate('userId').exec();
 
-        return updatedSubscription!;
+        if (!updatedSubscription)
+        {
+            throw new NotFoundException(`Subscription with ID "${id}" could not be updated.`);
+        }
+        return updatedSubscription;
     }
 
     async remove(id: string): Promise<any>
@@ -215,39 +186,5 @@ export class SubscriptionService
             throw new NotFoundException(`Subscription with ID "${id}" not found or already deleted`);
         }
         return { message: `Subscription with ID "${id}" successfully deleted` };
-    }
-
-    // Helper method to get default features and limits for each tier
-    private getDefaultTierFeatures(tier: SubscriptionTier): Partial<Subscription>
-    {
-        switch (tier)
-        {
-        case SubscriptionTier.TRIAL:
-            return {
-                price: 0,
-                currency: 'EUR',
-                limits: {
-                    maxOrganizations: 1,
-                },
-            };
-        case SubscriptionTier.BASIC:
-            return {
-                price: 9.99,
-                currency: 'EUR',
-                limits: {
-                    maxOrganizations: 1,
-                },
-            };
-        case SubscriptionTier.PREMIUM:
-            return {
-                price: 29.99,
-                currency: 'EUR',
-                limits: {
-                    maxOrganizations: 10,
-                },
-            };
-        default:
-            return this.getDefaultTierFeatures(SubscriptionTier.TRIAL);
-        }
     }
 }

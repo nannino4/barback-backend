@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Org } from './schemas/org.schema';
 import { UserOrg, OrgRole } from './schemas/user-org.schema';
 import { User } from '../user/schemas/user.schema';
+import { Subscription } from '../subscription/schemas/subscription.schema'; // Added Subscription import
 import { CreateOrgDto } from './dto/create-org.dto';
 import { UpdateOrgDto } from './dto/update-org.dto';
 
@@ -14,6 +15,7 @@ export class OrgService
         @InjectModel(Org.name) private readonly orgModel: Model<Org>,
         @InjectModel(UserOrg.name) private readonly userOrgModel: Model<UserOrg>,
         @InjectModel(User.name) private readonly userModel: Model<User>,
+        @InjectModel(Subscription.name) private readonly subscriptionModel: Model<Subscription>, // Added SubscriptionModel
     ) { }
 
     async create(createOrgDto: CreateOrgDto): Promise<Org>
@@ -27,7 +29,30 @@ export class OrgService
                 throw new BadRequestException(`Owner user with ID "${createOrgDto.ownerId}" not found.`);
             }
 
-            const newOrg = new this.orgModel(createOrgDto);
+            // Validate subscriptionId exists
+            const subscription = await this.subscriptionModel.findById(createOrgDto.subscriptionId).exec();
+            if (!subscription)
+            {
+                throw new BadRequestException(`Subscription with ID "${createOrgDto.subscriptionId}" not found.`);
+            }
+
+            // Check if subscription is already linked to another organization
+            const existingOrgWithSubscription = await this.orgModel.findOne({ subscriptionId: new Types.ObjectId(createOrgDto.subscriptionId) }).exec(); // Ensure ObjectId comparison
+            if (existingOrgWithSubscription)
+            {
+                throw new ConflictException(`Subscription with ID "${createOrgDto.subscriptionId}" is already linked to organization "${existingOrgWithSubscription.name}".`);
+            }
+
+            // Create a new object for newOrg, excluding address and fiscalData explicitly if they were part of createOrgDto
+            const { name, ownerId, subscriptionId, settings } = createOrgDto;
+            const orgDataToSave = {
+                name,
+                ownerId: new Types.ObjectId(ownerId),
+                subscriptionId: new Types.ObjectId(subscriptionId),
+                settings, // settings can be undefined if not provided, which is fine
+            };
+
+            const newOrg = new this.orgModel(orgDataToSave);
             const savedOrg = await newOrg.save();
 
             // Automatically add the owner to the UserOrg collection

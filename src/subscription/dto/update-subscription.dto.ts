@@ -1,14 +1,10 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateSubscriptionDto } from './create-subscription.dto';
 import { IsOptional, IsEnum, IsDateString, IsString, IsBoolean, IsNumber } from 'class-validator';
-import { SubscriptionStatus, SubscriptionTier, BillingPeriod } from '../schemas/subscription.schema';
+import { SubscriptionStatus, BillingPeriod } from '../schemas/subscription.schema';
 
 export class UpdateSubscriptionDto extends PartialType(CreateSubscriptionDto)
 {
-    @IsOptional()
-    @IsEnum(SubscriptionTier)
-    tier?: SubscriptionTier;
-
     @IsOptional()
     @IsEnum(SubscriptionStatus)
     status?: SubscriptionStatus;

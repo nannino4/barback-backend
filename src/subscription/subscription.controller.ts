@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestj
 import { SubscriptionService } from './subscription.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
-import { ChangeSubscriptionTierDto } from './dto/change-subscription-tier.dto';
 import { CancelSubscriptionDto } from './dto/cancel-subscription.dto';
 
 @Controller('subscriptions')
@@ -38,12 +37,6 @@ export class SubscriptionController
     update(@Param('id') id: string, @Body() updateSubscriptionDto: UpdateSubscriptionDto)
     {
         return this.subscriptionService.update(id, updateSubscriptionDto);
-    }
-
-    @Patch(':id/change-tier')
-    changeTier(@Param('id') id: string, @Body() changeTierDto: ChangeSubscriptionTierDto)
-    {
-        return this.subscriptionService.changeTier(id, changeTierDto);
     }
 
     @Patch(':id/cancel')

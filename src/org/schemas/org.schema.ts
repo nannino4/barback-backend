@@ -2,49 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 @Schema()
-export class Address
-{
-    @Prop({ type: String, required: false })
-    street?: string;
-
-    @Prop({ type: String, required: false })
-    city?: string;
-
-    @Prop({ type: String, required: false })
-    state?: string;
-
-    @Prop({ type: String, required: false })
-    postalCode?: string;
-
-    @Prop({ type: String, required: false })
-    country?: string;
-}
-export const AddressSchema = SchemaFactory.createForClass(Address);
-
-@Schema()
-export class FiscalData
-{
-    @Prop({ type: String, required: false })
-    companyName?: string;
-
-    @Prop({ type: String, required: false })
-    taxId?: string;
-
-    @Prop({ type: String, required: false })
-    vatNumber?: string;
-
-    @Prop({ type: String, required: false })
-    fiscalCode?: string;
-
-    @Prop({ type: String, required: false })
-    legalEntityType?: string;
-
-    @Prop({ type: AddressSchema, required: false })
-    fiscalAddress?: Address;
-}
-export const FiscalDataSchema = SchemaFactory.createForClass(FiscalData);
-
-@Schema()
 export class OrgSettings
 {
     @Prop({ type: String, default: 'EUR' })
@@ -65,12 +22,6 @@ export class Org extends Document
 
     @Prop({ type: Types.ObjectId, ref: 'Subscription', required: true, unique: true })
     subscriptionId!: Types.ObjectId;
-
-    @Prop({ type: AddressSchema, required: false })
-    address?: Address;
-
-    @Prop({ type: FiscalDataSchema, required: false })
-    fiscalData?: FiscalData;
 
     @Prop({ type: OrgSettingsSchema, required: false })
     settings?: OrgSettings;

@@ -1,14 +1,11 @@
 import { IsNotEmpty, IsEnum, IsOptional, IsNumber, IsString, IsDateString, IsBoolean, Min } from 'class-validator';
-import { SubscriptionTier, BillingPeriod } from '../schemas/subscription.schema';
+import { BillingPeriod } from '../schemas/subscription.schema';
 
 export class CreateSubscriptionDto
 {
     @IsNotEmpty()
     @IsString()
     userId!: string;
-
-    @IsEnum(SubscriptionTier)
-    tier!: SubscriptionTier;
 
     @IsOptional()
     @IsNumber()

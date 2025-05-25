@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from './schemas/user.schema';
+import { User, AuthProvider } from './schemas/user.schema'; // Added AuthProvider import
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+// import * as bcrypt from 'bcrypt'; // Would be needed for actual hashing
 
 @Injectable()
 export class UserService
@@ -14,27 +15,77 @@ export class UserService
     {
         try 
         {
-            // In a real app, hash the password before saving
-            // For now, we'll store it as is, or make it optional if not provided during initial dev
-            const newUser = new this.userModel(createUserDto);
+            const { authProvider, hashedPassword, googleId, email } = createUserDto;
+            let finalHashedPassword = hashedPassword;
+
+            if (authProvider === AuthProvider.GOOGLE) 
+            {
+                if (!googleId) 
+                {
+                    throw new BadRequestException('Google ID is required for Google authentication.');
+                }
+                if (hashedPassword) 
+                {
+                    throw new BadRequestException('Password should not be provided for Google authentication.');
+                }
+                // Ensure email is unique for googleId as well, or handle linking accounts
+                const existingUserWithGoogleId = await this.userModel.findOne({ googleId }).exec();
+                if (existingUserWithGoogleId) 
+                {
+                    throw new ConflictException('User with this Google ID already exists.');
+                }
+                createUserDto.isEmailVerified = true; // Assume Google verifies email
+                finalHashedPassword = null; // Ensure password is not stored
+            }
+            else 
+            { // Defaults to AuthProvider.EMAIL or if authProvider is explicitly EMAIL
+                if (!hashedPassword) 
+                {
+                    throw new BadRequestException('Password is required for email authentication.');
+                }
+                if (googleId) 
+                {
+                    throw new BadRequestException('Google ID should not be provided for email authentication.');
+                }
+                // const saltOrRounds = 10; // Example for bcrypt
+                // finalHashedPassword = await bcrypt.hash(hashedPassword, saltOrRounds); // Actual hashing
+                // For now, we keep the placeholder for hashing, actual hashing to be implemented
+                // If you have a hashing utility, call it here.
+                // For this step, we are just ensuring the logic flow.
+                createUserDto.isEmailVerified = createUserDto.isEmailVerified !== undefined ? createUserDto.isEmailVerified : false;
+            }
+
+            const userToSave = {
+                ...createUserDto,
+                hashedPassword: finalHashedPassword,
+                authProvider: authProvider || AuthProvider.EMAIL, // Default to email if not provided
+            };
+
+            const newUser = new this.userModel(userToSave);
             return await newUser.save();
         } 
         catch (error: any) 
         {
-            // Handle MongoDB duplicate key error (E11000)
             if (error.code === 11000) 
             {
-                throw new ConflictException('Email already exists');
+                // More specific error message based on which field caused the duplicate error
+                if (error.keyPattern?.email) 
+                {
+                    throw new ConflictException('Email already exists.');
+                }
+                if (error.keyPattern?.googleId) 
+                {
+                    throw new ConflictException('Google ID already exists. It must be unique.');
+                }
+                throw new ConflictException('A unique field constraint was violated.');
             }
             
-            // Handle MongoDB validation errors
             if (error.name === 'ValidationError') 
             {
                 const messages = Object.values(error.errors).map((err: any) => err.message);
                 throw new BadRequestException(`Validation failed: ${messages.join(', ')}`);
             }
             
-            // Re-throw other errors
             throw error;
         }
     }
