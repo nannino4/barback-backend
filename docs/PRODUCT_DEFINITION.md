@@ -1,139 +1,109 @@
-# Barback Application - Product Definition
+# Barback - Product Definition
 
-## Target Users
+## MVP Stage
 
-### MVP Stage
-**Primary Users:**
-- Cocktail Bar Owners (small to large operations)
-- Bar Managers
-- Bartenders
+### Target Users
+- **User Profile**: Cocktail bar owners, managers, bartenders in Rome/Italy using manual inventory systems
+- **Value Proposition**: 
+  - **Owners**: Reduce waste, gain consumption insights, optimize ordering, identify sitting stock
+  - **Managers**: Real-time stock visibility, improve staff communication, automated low stock reminders, faster inventory accounting
+  - **Staff**: Faster inventory accounting
 
-**Initial Geographic Focus:**
-- Rome, Italy
-- Expansion throughout Italy planned
+### Features
 
-**User Profile:**
-- All cocktail bar operations (small to large)
-- Currently using manual inventory systems
-- Experiencing friction with inventory management
-- Need better operational visibility
+#### Auth
+- Registration and login via
+  - Google
+  - email/password
+    - Password reset via email
+    - Email verification
+- Role-based access (Owner, Manager, Staff)
 
-### Future Stages
-**Expanded User Base:**
-- Italian cafés and coffee shops
-- Restaurants
-- Other food & beverage establishments
+#### Inventory
+- Create/edit/remove products with name, category, unit, par level
+- Manual stock adjustments with reason codes
+- Real-time stock level display
+- Generate inventory reports by date range or by specific date
 
-## Value Proposition
+#### Alerts
+- Low stock alerts with user-defined thresholds
+- Time based reminders
 
-### Core Value
-Simplified, accurate, and real-time inventory tracking system that replaces outdated manual systems.
+#### Analytics
+- Consumption by time period, category, product
 
-### Benefits
-- Reduce inventory inaccuracies
-- Prevent stockouts and overordering
-- Provide real-time visibility of stock levels
-- Minimize communication friction between staff
-- Optimize ordering and reduce waste
-- Improve financial management through better inventory control
+#### Notifications
+- Email/Push notifications
 
-## Features
+#### Organizations
+- Multi-inventory management
+- Single subscription per organization
 
-### MVP Stage
+## Growth Stage
 
-#### 1. Authentication
-- User registration and login
-- Role-based access (Owner, Manager, Bartender)
-- Password recovery
+### Target Users
+- **User Profile**: Scaling bar operations seeking operational efficiency and cost optimization
+- **Value Proposition**: Automate ordering, optimize profit through recipe management, simplify staff management
 
-#### 2. Inventory Management
-- Product database with categories
-- Category creation and management
-- Stock level tracking
-- Manual stock adjustments
-- Low stock alerts
-- Basic inventory reports
-- Product categorization and organization
+### Features
 
-#### 3. Analytics
-- Usage trends
-- Cost analysis
-- Waste tracking
+#### POS Integration
+- Connect Square, Toast, Resy POS systems
+- Auto-deduct inventory based on sales data
+- Forecast demand using historical sales patterns
 
-#### 4. Alerts
-- Low stock notifications
-- Time based notifications
-- Unused stock notifications
-- Custom alert configurations
+#### Suppliers
+- Supplier database with contact info and product catalogs
+- Create order templates with preferred suppliers
+- Auto-generate orders when stock hits reorder point
+- Order history tracking with delivery confirmations
 
-#### 5. Organization Management
-- Multi-inventory organization structure
-- Organization-level configuration and settings
-- Subscription model for different tiers of service
+#### Recipes
+- Create cocktail recipes with ingredient quantities
+- Auto-calculate recipe costs based on current inventory prices
+- Profit margin analysis per cocktail
+- Auto-deduct ingredients when drinks are recorded
 
-### Middle Stage
+#### Staff Management
+- Shift scheduling with role assignments
+- Opening/closing checklists with task verification
+- Staff performance tracking for inventory accuracy
+- Task assignment with completion deadlines
 
-#### 1. Inventory & Sales System
-- Inventory forecasting based on historical data
-- Connect with existing POS systems
-- Automated inventory adjustments based on sales
+## Advanced Stage
 
-#### 2. Order & Supplier Management
-- Order templates
-- Track orders
-- Order history and analytics
-- Supplier database
-- Associate products with suppliers
-- Automated order generation based on par levels
-- Integration with popular supplier systems to order directly through the platform
+### Target Users
+- **User Profile**: Large bar operations and restaurant groups requiring enterprise-level features
+- **Value Proposition**: AI-driven optimization, complete business management, marketplace access
 
-#### 3. Recipe & Cost Management
-- Cocktail recipe database
-- Ingredient requirements tracking
-- Automatic inventory deduction when drinks are made
-- Cost calculation per recipe
-- Profit margin analysis per product/cocktail
+### Features
 
-#### 4. Staff & Task Management
-- Staff scheduling
-- Staff pay tracking
-- Shift management
-- To-do lists for opening and closing procedures
-- Task assignment and tracking
-- Checklist templates and customization
-- Task completion verification
+#### AI Analytics
+- Predictive ordering based on weather, events, seasonality
+- Anomaly detection for theft or waste patterns
+- Customer preference correlation with inventory needs
+- Automated seasonal menu recommendations
 
-### Later Stage
+#### Scanning
+- Barcode/QR scanning for instant inventory updates
+- Mobile app for off-site inventory checks
+- Auto-recognize products via image scanning
+- Generate/print shelf labels with QR codes
 
-#### 1. Advanced Analytics & AI
-- Predictive ordering
-- Seasonal trend analysis
-- AI-powered inventory optimization
-- Anomaly detection for inventory discrepancies
-- Customer preference correlation with inventory
-- Business intelligence tools
+#### Customer Management
+- Customer database with order history
+- Event booking and inventory planning
+- Reservation system integration
+- Customer preference tracking for targeted promotions
 
-#### 2. Advanced Scanning
-- Barcode/QR code scanning for inventory checks
-- Mobile scanning integration
-- Automated product recognition
-- Label generation and printing
+#### Finance
+- Monthly budget planning with variance reports
+- Tax reporting with category breakdowns
+- QuickBooks/Xero accounting integration
+- Credit card processing for supplier payments
 
-#### 3. Customer & Event Management
-- Customer database
-- Event management
-- Reservation system
-- Customer preferences tracking
-
-#### 4. Financial System
-- Budget planning tools
-- Financial reporting
-- Tax management
-- Integrated accounting
-- Payment processing
-
-#### 5. Marketplace & Supplier Platform
-- Discover new products
-- Negotiated rates for platform users
-- Advanced supplier integrations
-- Marketing tools integration
+#### Marketplace
+- Browse vetted suppliers with negotiated platform rates
+- Discover trending products by region
+- Bulk purchasing coordination with other platform users
+- Marketing campaign management for product launches
