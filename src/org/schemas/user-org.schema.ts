@@ -11,13 +11,13 @@ export enum OrgRole
 @Schema({ timestamps: true, collection: 'user_organizations' })
 export class UserOrg extends Document
 {
-    @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     userId!: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: 'Org', required: true, index: true })
+    @Prop({ type: Types.ObjectId, ref: 'Org', required: true })
     orgId!: Types.ObjectId;
 
-    @Prop({ type: String, enum: OrgRole, required: true, index: true })
+    @Prop({ type: String, enum: OrgRole, required: true })
     role!: OrgRole;
 
     // createdAt and updatedAt are handled by timestamps: true
@@ -25,5 +25,8 @@ export class UserOrg extends Document
 
 export const UserOrgSchema = SchemaFactory.createForClass(UserOrg);
 
+UserOrgSchema.index({ userId: 1 });
+UserOrgSchema.index({ orgId: 1 });
+UserOrgSchema.index({ role: 1 });
 // Composite unique index for userId and orgId
 UserOrgSchema.index({ userId: 1, orgId: 1 }, { unique: true });

@@ -8,18 +8,26 @@
       "fields": {
         "_id": { "type": "ObjectId", "description": "Unique identifier for the user" },
         "email": { "type": "string", "description": "User's email address", "unique": true },
-        "hashedPassword": { "type": "string", "description": "Hashed user password" },
+        "hashedPassword": { "type": ["string", "null"], "description": "Hashed user password (null if using OAuth provider like Google)" },
         "firstName": { "type": "string", "description": "User's first name" },
         "lastName": { "type": "string", "description": "User's last name" },
-        "phoneNumber": { "type": "string", "description": "User's phone number" },
+        "phoneNumber": { "type": ["string", "null"], "description": "User's phone number (optional)" },
         "role": { "type": "string", "description": "System-level user role", "enum": ["admin", "user"], "default": "user" },
         "isActive": { "type": "boolean", "description": "Whether the user account is active", "default": true },
-        "lastLogin": { "type": "Date", "description": "Timestamp of the last login" },
+        "lastLogin": { "type": ["Date", "null"], "description": "Timestamp of the last login" },
+        "authProvider": { "type": "string", "description": "Authentication provider", "enum": ["email", "google"], "default": "email" },
+        "googleId": { "type": ["string", "null"], "description": "Google user identifier (if authProvider is google)", "unique": true, "sparse": true },
+        "profilePictureUrl": { "type": ["string", "null"], "description": "URL of the user's profile picture (optional)" },
+        "isEmailVerified": { "type": "boolean", "description": "Whether the user's email has been verified", "default": false },
+        "emailVerificationToken": { "type": ["string", "null"], "description": "Token for email verification (optional)" },
+        "passwordResetToken": { "type": ["string", "null"], "description": "Token for password reset (optional)" },
+        "passwordResetExpires": { "type": ["Date", "null"], "description": "Expiration date for password reset token (optional)" },
         "createdAt": { "type": "Date", "description": "Timestamp of when the user was created" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the user was last updated" }
       },
       "indexes": [
-        { "fields": { "email": 1 }, "options": { "unique": true } }
+        { "fields": { "email": 1 }, "options": { "unique": true } },
+        { "fields": { "googleId": 1 }, "options": { "unique": true, "sparse": true } }
       ]
     },
     "Organization": {
@@ -28,6 +36,7 @@
         "_id": { "type": "ObjectId", "description": "Unique identifier for the organization" },
         "name": { "type": "string", "description": "Organization name" },
         "ownerId": { "type": "ObjectId", "description": "Reference to the user who owns this organization" },
+        "subscriptionId": { "type": "ObjectId", "description": "Reference to the subscription for this organization", "unique": true },
         "settings": {
           "type": "object",
           "description": "Organization-wide settings",
@@ -39,7 +48,8 @@
         "updatedAt": { "type": "Date", "description": "Timestamp of when the organization was last updated" }
       },
       "indexes": [
-        { "fields": { "ownerId": 1 } }
+        { "fields": { "ownerId": 1 } },
+        { "fields": { "subscriptionId": 1 }, "options": { "unique": true } }
       ]
     },
     "UserOrganization": {
@@ -71,38 +81,41 @@
         "lastRenewDate": { "type": "Date", "description": "Date when the subscription was last renewed" },
         "nextRenewDate": { "type": "Date", "description": "Date when the subscription will renew next" },
         "autoRenew": { "type": "boolean", "description": "Whether the subscription auto-renews", "default": true },
-        "status": { 
-          "type": "string", 
+        "status": {
+          "type": "string",
           "description": "Current status of the subscription",
           "enum": ["pending", "trial", "active", "inactive"]
         },
-        "paymentMethod": { "type": "object", "description": "Payment method information", 
+        "paymentMethod": {
+          "type": ["object", "null"],
+          "description": "Payment method information (optional, could be managed externally)",
           "properties": {
-            "paymentMethodId": { "type": "string", "description": "Unique identifier for the payment method" },
+            "paymentMethodId": { "type": "string", "description": "Unique identifier for the payment method (e.g., from Stripe)" },
             "type": { "type": "string", "enum": ["credit_card", "bank_transfer", "paypal", "other"] },
-            "lastFour": { "type": "string", "description": "Last four digits of credit card (if applicable)" },
-            "expiryDate": { "type": "string", "description": "Expiry date of payment method (if applicable)" }
+            "lastFour": { "type": ["string", "null"], "description": "Last four digits of credit card (if applicable)" },
+            "expiryDate": { "type": ["string", "null"], "description": "Expiry date of payment method (MM/YYYY, if applicable)" }
           }
         },
-        "payments": { 
-          "type": "array", 
+        "payments": {
+          "type": "array",
           "description": "History of payments for this subscription",
           "items": {
             "type": "object",
             "properties": {
-              "paymentId": { "type": "string", "description": "Unique identifier for the payment" },
+              "paymentId": { "type": "string", "description": "Unique identifier for the payment (e.g., from Stripe)" },
               "amount": { "type": "number", "description": "Payment amount" },
               "date": { "type": "Date", "description": "Date of payment" },
               "status": { "type": "string", "enum": ["succeeded", "failed", "refunded", "pending"] }
             }
-          }
+          },
+          "default": []
         },
         "createdAt": { "type": "Date", "description": "Timestamp of when the subscription was created" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the subscription was last updated" }
       },
       "indexes": [
         { "fields": { "userId": 1 } },
-        { "fields": { "tier": 1 } }
+        { "fields": { "status": 1 } }
       ]
     },
     "Inventory": {

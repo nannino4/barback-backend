@@ -4,16 +4,9 @@ import { Document, Types } from 'mongoose';
 export enum SubscriptionStatus
 {
     PENDING = 'pending',
-    ACTIVE = 'active',
-    EXPIRED = 'expired',
-    SUSPENDED = 'suspended',
-}
-
-export enum SubscriptionTier
-{
     TRIAL = 'trial',
-    BASIC = 'basic',
-    PREMIUM = 'premium',
+    ACTIVE = 'active',
+    INACTIVE = 'inactive',
 }
 
 export enum BillingPeriod
@@ -23,14 +16,11 @@ export enum BillingPeriod
     ANNUAL = 'annual',
 }
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, collection: 'subscriptions' })
 export class Subscription extends Document
 {
     @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     userId!: Types.ObjectId;
-
-    @Prop({ required: true, enum: SubscriptionTier, default: SubscriptionTier.TRIAL })
-    tier!: SubscriptionTier;
 
     @Prop({ required: true, default: 0 })
     price!: number;
@@ -41,7 +31,7 @@ export class Subscription extends Document
     @Prop({ required: true, enum: BillingPeriod, default: BillingPeriod.MONTHLY })
     billingPeriod!: BillingPeriod;
 
-    @Prop({ type: Object })
+    @Prop({ type: Object, required: false })
     limits?: {
         maxOrganizations?: number;
     };
@@ -49,11 +39,11 @@ export class Subscription extends Document
     @Prop({ required: true })
     startDate!: Date;
 
-    @Prop()
+    @Prop({ required: false })
     lastRenewDate?: Date;
 
-    @Prop()
-    nextRenewDate?: Date;
+    @Prop({ required: true })
+    nextRenewDate!: Date;
 
     @Prop({ default: true })
     autoRenew!: boolean;
@@ -61,17 +51,19 @@ export class Subscription extends Document
     @Prop({ required: true, enum: SubscriptionStatus, default: SubscriptionStatus.PENDING })
     status!: SubscriptionStatus;
 
-    @Prop({ type: Object })
+    @Prop({ type: Object, required: false })
     paymentMethod?: {
+        paymentMethodId?: string;
         type?: string;
         last4?: string;
-        expiryMonth?: number;
-        expiryYear?: number;
+        lastFour?: string;
+        expiryDate?: string;
         brand?: string;
     };
 
-    @Prop({ type: [Object] })
+    @Prop({ type: [Object], default: [] })
     payments?: Array<{
+        paymentId?: string;
         amount?: number;
         currency?: string;
         date?: Date;
@@ -81,3 +73,6 @@ export class Subscription extends Document
 }
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);
+
+SubscriptionSchema.index({ userId: 1 });
+SubscriptionSchema.index({ status: 1 });

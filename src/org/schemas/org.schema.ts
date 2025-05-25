@@ -60,8 +60,11 @@ export class Org extends Document
     @Prop({ type: String, required: true })
     name!: string; // Added ! for definite assignment assertion
 
-    @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+    @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     ownerId!: Types.ObjectId; // Added ! for definite assignment assertion
+
+    @Prop({ type: Types.ObjectId, ref: 'Subscription', required: true, unique: true })
+    subscriptionId!: Types.ObjectId;
 
     @Prop({ type: AddressSchema, required: false })
     address?: Address;
@@ -76,3 +79,6 @@ export class Org extends Document
 }
 
 export const OrgSchema = SchemaFactory.createForClass(Org);
+
+OrgSchema.index({ ownerId: 1 });
+OrgSchema.index({ subscriptionId: 1 }, { unique: true });

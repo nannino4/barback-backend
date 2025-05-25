@@ -90,6 +90,7 @@ The following TypeScript compiler options from `tsconfig.json` directly influenc
 
 - Model data according to access patterns, not just entity relationships
 - Use appropriate indexes for frequently queried fields
+- **Index Definition**: All database indexes must be defined explicitly using the `SchemaName.index({ field: 1 }, { options });` method after the schema is created (e.g., `UserSchema.index(...)`). Do not rely on shorthand index definitions within `@Prop` decorators (like `index: true` or `unique: true` for indexing purposes). This ensures clarity and centralized control over index configurations.
 - Validate data before saving to database
 - Use transactions for operations that must succeed or fail as a unit
 - When using NestJS with MongoDB, leverage an ODM like Mongoose and the `@nestjs/mongoose` module for integration.
