@@ -59,7 +59,6 @@ Simplified, accurate, and real-time inventory tracking system that replaces outd
 - Usage trends
 - Cost analysis
 - Waste tracking
-- Sales vs. inventory correlation
 
 #### 4. Alerts
 - Low stock notifications
@@ -70,14 +69,12 @@ Simplified, accurate, and real-time inventory tracking system that replaces outd
 #### 5. Organization Management
 - Multi-inventory organization structure
 - Organization-level configuration and settings
-- Centralized management with inventory-specific views
 - Subscription model for different tiers of service
 
 ### Middle Stage
 
 #### 1. Inventory & Sales System
 - Inventory forecasting based on historical data
-- Multiple storage locations tracking
 - Connect with existing POS systems
 - Automated inventory adjustments based on sales
 

@@ -7,7 +7,6 @@ This document outlines the coding standards and practices to follow when working
 - **Readability & Maintainability**: Code should be easy to understand, navigate, and modify. Prioritize clarity over cleverness.
 - **Code Economy**: Write the least amount of code possible to achieve the objective. Avoid unnecessary abstractions and boilerplate.
 - **SOLID Principles**: Follow SOLID principles where they add value, but don't over-engineer.
-- **Pragmatism over Purism**: Choose practical solutions that solve real problems rather than theoretical perfection.
 
 ## General Guidelines
 
@@ -46,20 +45,6 @@ This document outlines the coding standards and practices to follow when working
 3. **Liskov Substitution Principle**: Derived types should be substitutable for their base types
 4. **Interface Segregation**: Many specific interfaces are better than one general-purpose interface
 5. **Dependency Inversion**: Depend on abstractions, not concretions
-
-### When to Abstract
-
-Before adding a new abstraction layer or dependency, ask:
-- Will this code be reused in multiple places?
-- Does the abstraction simplify rather than complicate?
-- Is the value provided greater than the cost of maintenance?
-- Would a simpler solution work almost as well?
-
-**⚠️ Seek confirmation before:**
-- Adding a new npm package
-- Creating a new abstraction layer
-- Implementing complex design patterns
-- Making significant architectural changes
 
 ## Code Formatting Style
 

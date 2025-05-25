@@ -235,7 +235,7 @@ export class SubscriptionService
                 price: 9.99,
                 currency: 'EUR',
                 limits: {
-                    maxOrganizations: 3,
+                    maxOrganizations: 1,
                 },
             };
         case SubscriptionTier.PREMIUM:
