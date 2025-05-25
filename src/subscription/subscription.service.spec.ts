@@ -1,12 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { Subscription, SubscriptionTier, SubscriptionStatus } from './schemas/subscription.schema';
 import { User } from '../user/schemas/user.schema';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { ChangeSubscriptionTierDto } from './dto/change-subscription-tier.dto';
 import { CancelSubscriptionDto } from './dto/cancel-subscription.dto';
 import { createMockUser, createMockSubscription } from '../__tests__/test-utils';
@@ -20,7 +19,6 @@ describe('SubscriptionService', () =>
     beforeEach(async () =>
     {
         const mockSubscription = createMockSubscription();
-        const mockUser = createMockUser();
 
         subscriptionModel = {
             new: jest.fn().mockResolvedValue(mockSubscription),

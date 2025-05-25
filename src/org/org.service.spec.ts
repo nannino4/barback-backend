@@ -1,13 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { OrgService } from './org.service';
 import { Org } from './schemas/org.schema';
 import { UserOrg, OrgRole } from './schemas/user-org.schema';
 import { User } from '../user/schemas/user.schema';
 import { CreateOrgDto } from './dto/create-org.dto';
-import { UpdateOrgDto } from './dto/update-org.dto';
 import { createMockUser, createMockOrg } from '../__tests__/test-utils';
 
 describe('OrgService', () =>
@@ -20,7 +19,6 @@ describe('OrgService', () =>
     beforeEach(async () =>
     {
         const mockOrg = createMockOrg();
-        const mockUser = createMockUser();
         const mockUserOrg = {
             _id: new Types.ObjectId(),
             userId: new Types.ObjectId(),

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
 import { NotFoundException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User } from './schemas/user.schema';
@@ -11,7 +11,6 @@ import { createMockUser } from '../__tests__/test-utils';
 describe('UserService', () =>
 {
     let service: UserService;
-    let model: Model<User>;
     let mockUserModel: any;
 
     beforeEach(async () =>
@@ -43,7 +42,6 @@ describe('UserService', () =>
         }).compile();
 
         service = module.get<UserService>(UserService);
-        model = module.get<Model<User>>(getModelToken(User.name));
     });
 
     afterEach(() =>
