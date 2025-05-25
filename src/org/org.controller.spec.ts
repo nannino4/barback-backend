@@ -279,7 +279,7 @@ describe('OrgController', () =>
             const orgId = '507f1f77bcf86cd799439011';
             const addUserDto: AddUserToOrgDto = {
                 userId: '507f1f77bcf86cd799439012',
-                role: OrgRole.MEMBER,
+                role: OrgRole.STAFF, // Changed from MEMBER to STAFF
             };
             const mockOrg = createMockOrg({
                 _id: orgId,
@@ -307,7 +307,7 @@ describe('OrgController', () =>
             const orgId = '507f1f77bcf86cd799439011';
             const addUserDto: AddUserToOrgDto = {
                 userId: '507f1f77bcf86cd799439012',
-                role: OrgRole.ADMIN,
+                role: OrgRole.MANAGER, // Changed from ADMIN to MANAGER
             };
             const mockOrg = createMockOrg({ _id: orgId });
             mockOrgService.addUserToOrg.mockResolvedValue(mockOrg);
@@ -316,7 +316,7 @@ describe('OrgController', () =>
             const result = await controller.addUserToOrg(orgId, addUserDto);
 
             // Assert
-            expect(service.addUserToOrg).toHaveBeenCalledWith(orgId, addUserDto.userId, OrgRole.ADMIN);
+            expect(service.addUserToOrg).toHaveBeenCalledWith(orgId, addUserDto.userId, OrgRole.MANAGER); // Changed from ADMIN to MANAGER
             expect(result).toEqual(mockOrg);
         });
 
@@ -326,7 +326,7 @@ describe('OrgController', () =>
             const orgId = '507f1f77bcf86cd799439011';
             const addUserDto: AddUserToOrgDto = {
                 userId: '507f1f77bcf86cd799439012',
-                role: OrgRole.MEMBER,
+                role: OrgRole.STAFF, // Changed from MEMBER to STAFF
             };
             const error = new Error('User already in organization');
             mockOrgService.addUserToOrg.mockRejectedValue(error);
@@ -392,14 +392,14 @@ describe('OrgController', () =>
             const orgId = '507f1f77bcf86cd799439011';
             const userId = '507f1f77bcf86cd799439012';
             const updateUserRoleDto: UpdateUserRoleInOrgDto = {
-                role: OrgRole.ADMIN,
+                role: OrgRole.MANAGER, // Changed from ADMIN to MANAGER
             };
             const mockOrg = createMockOrg({
                 _id: orgId,
                 users: [
                     {
                         user: userId,
-                        role: OrgRole.ADMIN,
+                        role: OrgRole.MANAGER, // Changed from ADMIN to MANAGER
                         joinedAt: new Date(),
                     },
                 ],
@@ -410,7 +410,7 @@ describe('OrgController', () =>
             const result = await controller.updateUserRoleInOrg(orgId, userId, updateUserRoleDto);
 
             // Assert
-            expect(service.updateUserRoleInOrg).toHaveBeenCalledWith(orgId, userId, OrgRole.ADMIN);
+            expect(service.updateUserRoleInOrg).toHaveBeenCalledWith(orgId, userId, OrgRole.MANAGER); // Changed from ADMIN to MANAGER
             expect(result).toEqual(mockOrg);
         });
 
@@ -420,7 +420,7 @@ describe('OrgController', () =>
             const orgId = '507f1f77bcf86cd799439011';
             const userId = '507f1f77bcf86cd799439012';
             const updateUserRoleDto: UpdateUserRoleInOrgDto = {
-                role: OrgRole.MEMBER,
+                role: OrgRole.STAFF, // Changed from MEMBER to STAFF
             };
             const mockOrg = createMockOrg({ _id: orgId });
             mockOrgService.updateUserRoleInOrg.mockResolvedValue(mockOrg);
@@ -429,7 +429,7 @@ describe('OrgController', () =>
             const result = await controller.updateUserRoleInOrg(orgId, userId, updateUserRoleDto);
 
             // Assert
-            expect(service.updateUserRoleInOrg).toHaveBeenCalledWith(orgId, userId, OrgRole.MEMBER);
+            expect(service.updateUserRoleInOrg).toHaveBeenCalledWith(orgId, userId, OrgRole.STAFF); // Changed from MEMBER to STAFF
             expect(result).toEqual(mockOrg);
         });
 
@@ -439,14 +439,14 @@ describe('OrgController', () =>
             const orgId = '507f1f77bcf86cd799439011';
             const userId = '507f1f77bcf86cd799439012';
             const updateUserRoleDto: UpdateUserRoleInOrgDto = {
-                role: OrgRole.ADMIN,
+                role: OrgRole.MANAGER, // Changed from ADMIN to MANAGER
             };
             const error = new Error('User not found in organization');
             mockOrgService.updateUserRoleInOrg.mockRejectedValue(error);
 
             // Act & Assert
             await expect(controller.updateUserRoleInOrg(orgId, userId, updateUserRoleDto)).rejects.toThrow('User not found in organization');
-            expect(service.updateUserRoleInOrg).toHaveBeenCalledWith(orgId, userId, OrgRole.ADMIN);
+            expect(service.updateUserRoleInOrg).toHaveBeenCalledWith(orgId, userId, OrgRole.MANAGER); // Changed from ADMIN to MANAGER
         });
     });
 
