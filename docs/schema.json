@@ -28,39 +28,6 @@
         "_id": { "type": "ObjectId", "description": "Unique identifier for the organization" },
         "name": { "type": "string", "description": "Organization name" },
         "ownerId": { "type": "ObjectId", "description": "Reference to the user who owns this organization" },
-        "address": {
-          "type": "object",
-          "description": "Organization address",
-          "properties": {
-            "street": { "type": "string" },
-            "city": { "type": "string" },
-            "state": { "type": "string" },
-            "postalCode": { "type": "string" },
-            "country": { "type": "string" }
-          }
-        },
-        "fiscalData": {
-          "type": "object",
-          "description": "Organization fiscal information",
-          "properties": {
-            "companyName": { "type": "string", "description": "Legal company name" },
-            "taxId": { "type": "string", "description": "Tax identification number" },
-            "vatNumber": { "type": "string", "description": "VAT registration number" },
-            "fiscalCode": { "type": "string", "description": "Additional fiscal identification code" },
-            "legalEntityType": { "type": "string", "description": "Type of legal entity (e.g., LLC, Ltd, etc.)" },
-            "fiscalAddress": {
-              "type": "object",
-              "description": "Legal/fiscal address (if different from main address)",
-              "properties": {
-                "street": { "type": "string" },
-                "city": { "type": "string" },
-                "state": { "type": "string" },
-                "postalCode": { "type": "string" },
-                "country": { "type": "string" }
-              }
-            }
-          }
-        },
         "settings": {
           "type": "object",
           "description": "Organization-wide settings",
@@ -97,17 +64,9 @@
       "fields": {
         "_id": { "type": "ObjectId", "description": "Unique identifier for the subscription" },
         "userId": { "type": "ObjectId", "description": "Reference to the user who owns this subscription" },
-        "tier": { "type": "string", "description": "Subscription tier", "enum": ["trial", "basic", "premium"] },
         "price": { "type": "number", "description": "Price per billing period" },
         "currency": { "type": "string", "description": "Currency code (e.g., EUR, USD)", "default": "EUR" },
         "billingPeriod": { "type": "string", "description": "Billing frequency", "enum": ["monthly", "quarterly", "annual"], "default": "monthly" },
-        "limits": {
-          "type": "object",
-          "description": "Limits based on subscription tier",
-          "properties": {
-            "maxOrganizations": { "type": "number", "description": "Maximum number of organizations allowed under this subscription" }
-          }
-        },
         "startDate": { "type": "Date", "description": "Start date of the subscription" },
         "lastRenewDate": { "type": "Date", "description": "Date when the subscription was last renewed" },
         "nextRenewDate": { "type": "Date", "description": "Date when the subscription will renew next" },
@@ -115,10 +74,11 @@
         "status": { 
           "type": "string", 
           "description": "Current status of the subscription",
-          "enum": ["pending", "active", "expired", "suspended"]
+          "enum": ["pending", "trial", "active", "inactive"]
         },
         "paymentMethod": { "type": "object", "description": "Payment method information", 
           "properties": {
+            "paymentMethodId": { "type": "string", "description": "Unique identifier for the payment method" },
             "type": { "type": "string", "enum": ["credit_card", "bank_transfer", "paypal", "other"] },
             "lastFour": { "type": "string", "description": "Last four digits of credit card (if applicable)" },
             "expiryDate": { "type": "string", "description": "Expiry date of payment method (if applicable)" }
