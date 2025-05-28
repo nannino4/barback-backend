@@ -81,10 +81,7 @@ The following TypeScript compiler options from `tsconfig.json` directly influenc
 
 ## Testing Guidelines
 
-- Write tests for all business logic
-- Follow the AAA pattern: Arrange, Act, Assert
-- Mock external dependencies
-- Aim for meaningful test coverage, not just percentage
+See [TestingGuidelines.md](./TestingGuidelines.md).
 
 ## MongoDB/Database Guidelines
 
