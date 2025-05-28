@@ -29,6 +29,12 @@ export class JwtAuthGuard implements CanActivate
                     secret: this.configService.get<string>('JWT_SECRET'),
                 },
             );
+
+            if (payload.type !== 'access')
+            {
+                throw new UnauthorizedException('Invalid token type: Must be an access token');
+            }
+
             // Assign the payload to the request object
             // so that we can access it in our route handlers
             request['user'] = payload;

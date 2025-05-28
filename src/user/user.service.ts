@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { User, AuthProvider } from './schemas/user.schema'; // Added AuthProvider import
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-// import * as bcrypt from 'bcrypt'; // Would be needed for actual hashing
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService
@@ -15,8 +15,8 @@ export class UserService
     {
         try 
         {
-            const { authProvider, hashedPassword, googleId, email } = createUserDto;
-            let finalHashedPassword = hashedPassword;
+            const { authProvider, password, googleId } = createUserDto; // Changed hashedPassword to password
+            let hashedPassword: string | null = null;
 
             if (authProvider === AuthProvider.GOOGLE) 
             {
@@ -24,7 +24,7 @@ export class UserService
                 {
                     throw new BadRequestException('Google ID is required for Google authentication.');
                 }
-                if (hashedPassword) 
+                if (password) // Check if password was provided for Google auth
                 {
                     throw new BadRequestException('Password should not be provided for Google authentication.');
                 }
@@ -35,11 +35,11 @@ export class UserService
                     throw new ConflictException('User with this Google ID already exists.');
                 }
                 createUserDto.isEmailVerified = true; // Assume Google verifies email
-                finalHashedPassword = null; // Ensure password is not stored
+                // finalHashedPassword remains null for Google Auth
             }
-            else 
-            { // Defaults to AuthProvider.EMAIL or if authProvider is explicitly EMAIL
-                if (!hashedPassword) 
+            else // Defaults to AuthProvider.EMAIL or if authProvider is explicitly EMAIL
+            {
+                if (!password) // Check if password is provided for email auth
                 {
                     throw new BadRequestException('Password is required for email authentication.');
                 }
@@ -47,17 +47,18 @@ export class UserService
                 {
                     throw new BadRequestException('Google ID should not be provided for email authentication.');
                 }
-                // const saltOrRounds = 10; // Example for bcrypt
-                // finalHashedPassword = await bcrypt.hash(hashedPassword, saltOrRounds); // Actual hashing
-                // For now, we keep the placeholder for hashing, actual hashing to be implemented
-                // If you have a hashing utility, call it here.
-                // For this step, we are just ensuring the logic flow.
+                const saltOrRounds = 10;
+                hashedPassword = await bcrypt.hash(password, saltOrRounds);
                 createUserDto.isEmailVerified = createUserDto.isEmailVerified !== undefined ? createUserDto.isEmailVerified : false;
             }
 
+            // Remove password from the DTO before spreading, as we use finalHashedPassword
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { password: dtoPassword, ...restOfDto } = createUserDto;
+
             const userToSave = {
-                ...createUserDto,
-                hashedPassword: finalHashedPassword,
+                ...restOfDto,
+                hashedPassword: hashedPassword, // Save the processed password here
                 authProvider: authProvider || AuthProvider.EMAIL, // Default to email if not provided
             };
 

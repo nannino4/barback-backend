@@ -38,7 +38,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] **User Session Strategy**:
   - [X] Define and implement user session management (e.g., JWT-based). // Marked as complete
 - [ ] **Email/Password Authentication**:
-  - [ ] Implement User Registration with email and password.
+  - [X] Implement User Registration with email and password.
   - [ ] Implement Email Verification for new accounts.
   - [ ] Implement User Login with email and password.
   - [ ] Implement Password Reset functionality via email.
