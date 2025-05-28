@@ -12,6 +12,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [X] Configure ESLint and Prettier according to `CodingGuidelines.md`.
 - [X] Establish basic project structure (modules, services, controllers).
 - [X] Configure different environments (dev, test, prod).
+- [X] Define logging guidelines and configure logging.
 
 ### Define Core Data Models
 - [X] **User Model**:
