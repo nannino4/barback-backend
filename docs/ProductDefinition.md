@@ -21,7 +21,7 @@
 
 #### Inventory
 - Create/edit/remove products with name, category, unit, par level
-- Manual stock adjustments with reason codes
+- Manual stock adjustments with reason codes via inventory logs
 - Real-time stock level display
 - Generate inventory reports by date range or by specific date
 
@@ -37,7 +37,7 @@
 
 #### Organizations
 - Multi-inventory management
-- Single subscription per organization
+- Each owner has one organization per subscription
 
 ## Growth Stage
 
