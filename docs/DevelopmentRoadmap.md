@@ -16,9 +16,10 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 ### Define Core Data Models
 - [X] **User Model**:
   - [X] Define schema (e.g., email, password hash, Google ID, roles).
-  - [X] Implement roles: Owner, Manager, Staff.
+  - [X] Define roles: Admin, User.
 - [X] **Organization Model**:
   - [X] Define schema (e.g., name, owner, associated inventories).
+  - [X] Define org related user roles: Owner, Manager, Staff.
 - [X] **Subscription Model**:
   - [X] Define schema (e.g., tier, status, organization link).
 - [X] **Product Model**:
@@ -46,6 +47,20 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Implement User Login with Google.
 - [ ] **Role-Based Access Control (RBAC)**:
   - [ ] Implement guards and decorators for Owner, Manager, Staff roles.
+- [ ] **User Account Management (Admin)**:
+  - [ ] Implement Admin functionality to list all users.
+  - [ ] Implement Admin functionality to view individual user details.
+  - [ ] Implement Admin functionality to update user profile information.
+  - [ ] Implement Admin functionality to manage user roles (e.g., assign/revoke Admin role).
+  - [ ] Implement Admin functionality to manage user account status (e.g., activate/deactivate).
+  - [ ] Implement Admin functionality to delete user accounts (consider soft delete).
+  - [ ] Develop API endpoints for these admin user management operations (e.g., under `/admin/users`).
+- [ ] **User Profile Management (User-Self)**:
+  - [ ] Allow users to view their own profile information.
+  - [ ] Allow users to update their own profile information (e.g., name, contact details - excluding email/password which are handled separately).
+  - [ ] Allow users to change their password (after verifying current password).
+  - [ ] Allow users to delete their own account (consider implications and data retention policies).
+  - [ ] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
 - [ ] **API Endpoints**:
   - [ ] Develop all necessary authentication endpoints (`/auth/register`, `/auth/login`, `/auth/google`, `/auth/reset-password`, etc.).
 
