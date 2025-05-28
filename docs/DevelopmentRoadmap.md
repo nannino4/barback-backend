@@ -1,155 +1,116 @@
-# Barback Application - Development Roadmap
+# Barback Application - MVP Development Roadmap
 
-## Implementation Steps
+This document outlines the development tasks for the Minimum Viable Product (MVP) of the Barback application.
 
-### MVP Stage
+## MVP Stage
 
-1. **Setup & Infrastructure**
-   - Set up NestJS backend with TypeScript
-   - Design database schema
-   - Implement authentication system
-   - Set up testing environment
+### Workspace Setup
+- [ ] Set up NestJS backend project with TypeScript.
+- [ ] Define product requirements.
+- [ ] Define coding guidelines.
+- [ ] Define testing guidelines.
+- [ ] Configure ESLint and Prettier according to `CodingGuidelines.md`.
+- [ ] Establish basic project structure (modules, services, controllers).
+- [ ] Configure different environments (dev, test, prod).
 
-2. **Core Data Models**
-   - User model (with roles)
-   - Category model
-   - Product model
-   - Inventory model
-   - Alerts model
-   - Organization model
-   - Subscription model
+### Define Core Data Models
+- [ ] **User Model**:
+  - [ ] Define schema (e.g., email, password hash, Google ID, roles).
+  - [ ] Implement roles: Owner, Manager, Staff.
+- [ ] **Organization Model**:
+  - [ ] Define schema (e.g., name, owner, associated inventories).
+- [ ] **Subscription Model**:
+  - [ ] Define schema (e.g., tier, status, organization link).
+- [ ] **Product Model**:
+  - [ ] Define schema (e.g., name, category link, unit of measure, par level).
+- [ ] **Category Model**:
+  - [ ] Define schema (e.g., name, description) for product categorization.
+- [ ] **Inventory Model**:
+  - [ ] Define schema for current stock levels (product link, quantity).
+  - [ ] Define schema for inventory logs (stock adjustments, reason codes, timestamp, user).
+- [ ] **Alerts Model**:
+  - [ ] Define schema (e.g., type - low stock/reminder, target - product/task, threshold, status).
 
-3. **API Development**
-   - Authentication endpoints
-   - Category management endpoints
-   - Inventory management endpoints
-   - Analytics endpoints
-   - Alerts endpoints
-   - Organization management endpoints
-   - Subscription management endpoints
+### Features
 
-4. **MVP Features Implementation**
-   - Organization structure implementation
-   - Subscription tier configuration
-   - Multi-inventory management
-   - Organization configuration system
-   - Category management system
-   - Product categorization functionality
+#### Authentication & Authorization
+- [ ] **User Session Strategy**:
+  - [ ] Define and implement user session management (e.g., JWT-based).
+- [ ] **Email/Password Authentication**:
+  - [ ] Implement User Registration with email and password.
+  - [ ] Implement Email Verification for new accounts.
+  - [ ] Implement User Login with email and password.
+  - [ ] Implement Password Reset functionality via email.
+- [ ] **Google OAuth Authentication**:
+  - [ ] Implement User Registration with Google.
+  - [ ] Implement User Login with Google.
+- [ ] **Role-Based Access Control (RBAC)**:
+  - [ ] Implement guards and decorators for Owner, Manager, Staff roles.
+- [ ] **API Endpoints**:
+  - [ ] Develop all necessary authentication endpoints (`/auth/register`, `/auth/login`, `/auth/google`, `/auth/reset-password`, etc.).
 
-5. **Testing & Deployment**
-   - Unit and integration tests
-   - Initial deployment to staging
-   - Testing with selected bar partners in Rome
-   - MVP release
+#### Organization Management
+- [ ] **Core Functionality**:
+  - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
+  - [ ] Implement functionality for an Owner to manage their organization details.
+  - [ ] Implement multi-inventory support within an organization (conceptual setup, linking inventories to an org).
+- [ ] **User Management within Organization**:
+  - [ ] Allow Owners/Managers to invite users to their organization.
+  - [ ] Allow Owners/Managers to assign/update roles for users within their organization.
+- [ ] **API Endpoints**:
+  - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
 
-### Middle Stage
+#### Subscription Management (Basic MVP)
+- [ ] **Core Functionality**:
+  - [ ] Define basic subscription tier structure (e.g., MVP tier).
+  - [ ] Implement linking of an organization to a subscription.
+- [ ] **API Endpoints**:
+  - [ ] Develop basic Subscription management endpoints (e.g., view current subscription).
 
-1. **Enhanced Data Models**
-   - Recipe & cost model
-   - Order & supplier model
-   - POS integration model
-   - Staff & task management model
+#### Product Management
+- [ ] **Core Functionality**:
+  - [ ] Implement CRUD operations for Products (name, category, unit, par level).
+- [ ] **API Endpoints**:
+  - [ ] Develop Product management endpoints.
 
-2. **Advanced Features Development**
-   - Inventory forecasting system
-   - POS system integration
-   - Order & supplier management system
-   - Recipe & cost management system
-   - Staff scheduling and task management
+#### Category Management
+- [ ] **Core Functionality**:
+  - [ ] Implement CRUD operations for Product Categories.
+  - [ ] Implement functionality to link Products to Categories.
+- [ ] **API Endpoints**:
+  - [ ] Develop Category management endpoints.
 
-3. **Integration Points**
-   - Develop supplier integration APIs
-   - POS system integration capabilities
-   - Staff & task management system
+#### Inventory Management
+- [ ] **Stock Tracking**:
+  - [ ] Implement manual stock adjustments with reason codes (creating inventory log entries).
+  - [ ] Implement real-time stock level display (calculating from logs or a snapshot).
+- [ ] **Reporting**:
+  - [ ] Implement generation of inventory reports by date range.
+  - [ ] Implement generation of inventory reports for a specific date (snapshot).
+- [ ] **API Endpoints**:
+  - [ ] Develop Inventory management endpoints (adjust stock, view stock, generate reports).
 
-4. **Testing & Rollout**
-   - Beta testing with expanded user group
-   - Phased rollout of new features
-   - Performance optimization
+#### Alerts & Notifications
+- [ ] **Low Stock Alerts**:
+  - [ ] Implement system to trigger alerts when product stock falls below its defined par level.
+  - [ ] Allow users to define/update par levels for products.
+- [ ] **Time-Based Reminders**:
+  - [ ] Implement basic functionality for creating and triggering time-based reminders (e.g., weekly inventory count reminder).
+- [ ] **Notification Delivery**:
+  - [ ] Implement Email notifications for alerts.
+  - [ ] (Optional MVP Stretch) Implement basic Push notification infrastructure for alerts.
+- [ ] **API Endpoints**:
+  - [ ] Develop Alerts endpoints (configure alerts, view active alerts).
 
-### Later Stage
+#### Analytics (Basic MVP)
+- [ ] **Data Collection**:
+  - [ ] Ensure inventory changes (consumption) are logged appropriately for analytics.
+- [ ] **Consumption Tracking**:
+  - [ ] Implement API to retrieve product consumption data by a specified time period.
+  - [ ] Implement API to retrieve product consumption data by category over a time period.
+  - [ ] Implement API to retrieve consumption data for a specific product over a time period.
+- [ ] **API Endpoints**:
+  - [ ] Develop Analytics endpoints to expose consumption data.
 
-1. **AI and Advanced Analytics**
-   - Develop machine learning models for prediction and optimization
-   - Implement data processing pipeline
-   - Create advanced visualization tools
-   - Anomaly detection systems
-   - Business intelligence integration
-
-2. **Advanced Technology Integration**
-   - Advanced scanning system implementation (barcode/QR)
-   - Mobile scanning integration
-   - Automated product recognition
-
-3. **Customer & Event Management**
-   - Customer database systems
-   - Event management functionality
-   - Reservation system
-   - Customer preferences tracking
-
-4. **Financial & Payment Systems**
-   - Budget planning tools
-   - Financial reporting systems
-   - Tax management integration
-   - Integrated accounting
-   - Payment processing
-
-5. **Marketplace Platform**
-   - Product discovery system
-   - Supplier integration platform
-   - Negotiated rates infrastructure
-   - Marketing tools integration
-
-6. **Scale Infrastructure**
-   - Optimize for larger data volumes
-   - Implement advanced caching
-   - Enhance security measures
-   - Geographic distribution of services
-
-4. **Market Expansion**
-   - Localization for international markets
-   - Currency and regulatory adaptations
-   - Regional supplier networks
-
-## Technical Architecture Considerations
-
-### Backend (NestJS)
-- Modular architecture to enable progressive feature addition
-- Robust authentication and authorization
-- Scalable database design (MongoDB)
-- API versioning for backward compatibility
-- Comprehensive test coverage
-- Message queuing for asynchronous processes
-- Caching strategy for performance
-- Scheduled jobs for automated processes
-
-### Frontend Considerations
-Note: Frontend will be handled as a separate project
-
-### Infrastructure
-- Containerized deployment
-- CI/CD pipeline
-- Monitoring and alerting
-- Backup strategy
-- GDPR compliance (EU data protection)
-- Scalable hosting solution
-
-## Development Approach
-
-1. **Agile Methodology**
-   - 2-week sprints
-   - Regular user feedback incorporation
-   - Feature prioritization based on user value
-
-2. **Testing Strategy**
-   - Comprehensive unit testing
-   - Integration testing
-   - E2E testing for critical paths
-   - User acceptance testing with bar partners
-
-3. **Documentation**
-   - API documentation
-   - User guides
-   - Technical documentation for future developers
-
-This roadmap serves as a living document that will evolve as development progresses and user feedback is incorporated.
+---
+This roadmap will be updated as development progresses.
