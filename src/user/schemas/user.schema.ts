@@ -16,7 +16,7 @@ export enum AuthProvider
 @Schema({ timestamps: true, collection: 'users' })
 export class User extends Document 
 {
-    @Prop({ type: String, required: true, unique: true }) // removed index: true
+    @Prop({ type: String, required: true, unique: true })
     email!: string;
 
     @Prop({ type: String, required: false }) 
@@ -43,7 +43,7 @@ export class User extends Document
     @Prop({ type: String, enum: AuthProvider, default: AuthProvider.EMAIL })
     authProvider!: AuthProvider;
 
-    @Prop({ type: String, required: false, unique: true, sparse: true, default: null }) // unique and sparse remain for Mongoose validation layer
+    @Prop({ type: String, required: false, unique: true, sparse: true, default: null })
     googleId?: string | null;
 
     @Prop({ type: String, required: false, default: null })

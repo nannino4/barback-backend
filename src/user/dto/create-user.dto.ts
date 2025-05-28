@@ -49,10 +49,4 @@ export class CreateUserDto
     @IsOptional()
     @IsBoolean()
     isEmailVerified?: boolean;
-
-    // Tokens and expiry dates are typically not part of CreateUserDto,
-    // they are set internally by the system.
-    // emailVerificationToken?: string | null;
-    // passwordResetToken?: string | null;
-    // passwordResetExpires?: Date | null;
 }

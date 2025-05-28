@@ -21,7 +21,7 @@ export class AuthService
      * and a user record is created/retrieved based on the provider's user ID.
      * This method is primarily for the local email/password login strategy.
      */
-    async validateUser(email: string, pass?: string, authProvider: AuthProvider = AuthProvider.EMAIL): Promise<Omit<User, 'hashedPassword'> | null>
+    async validateUser(email: string, pass?: string, authProvider: AuthProvider = AuthProvider.EMAIL): Promise<User | null>
     {
         const user = await this.userService.findByEmail(email);
 
@@ -46,41 +46,21 @@ export class AuthService
         // For Google/OAuth, if the user exists and authProvider matches, we consider them validated at this stage
         // as the external provider has already authenticated them.
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { hashedPassword, ...result } = user.toObject();
-        return result;
+        return user;
     }
 
-    async login(user: Omit<User, 'hashedPassword'>) // User object without password hash
+    async login(user: User) : Promise<{ access_token: string, refresh_token: string }>
     {
-        const accessTokenPayload = {
-            email: user.email,
-            sub: user._id, // subject: userId
-            role: user.role, // Corrected from user.roles to user.role
-            type: 'access', // Differentiate token type
-        };
-        const refreshTokenPayload = {
-            sub: user._id, // subject: userId
-            type: 'refresh', // Differentiate token type
-        };
+        // Generate JWT tokens
+        const tokens = await this.generateTokens(user);
 
-        const accessToken = this.jwtService.sign(accessTokenPayload, {
-            secret: this.configService.get<string>('JWT_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME'),
-        });
+        // Update last login time
+        // await this.userService.updateLastLogin(user._id);
 
-        const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-            secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
-        });
-
-        return {
-            access_token: accessToken,
-            refresh_token: refreshToken,
-        };
+        return tokens;
     }
 
-    async refreshToken(refreshTokenString: string)
+    async refreshToken(refreshTokenString: string) : Promise<{ access_token: string, refresh_token: string }>
     {
         try
         {
@@ -96,38 +76,15 @@ export class AuthService
                 throw new UnauthorizedException('Invalid token type for refresh');
             }
 
-            const user = await this.userService.findOne(payload.sub);
+            const user = await this.userService.findById(payload.sub);
             if (!user)
             {
                 throw new UnauthorizedException('User not found for refresh token');
             }
 
             // User is valid, issue new tokens
-            const newAccessTokenPayload = {
-                email: user.email,
-                sub: user._id,
-                role: user.role,
-                type: 'access',
-            };
-            const newRefreshTokenPayload = { // Payload for the new refresh token
-                sub: user._id,
-                type: 'refresh',
-            };
-
-            const newAccessToken = this.jwtService.sign(newAccessTokenPayload, {
-                secret: this.configService.get<string>('JWT_SECRET'),
-                expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME'),
-            });
-
-            const newRefreshToken = this.jwtService.sign(newRefreshTokenPayload, {
-                secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-                expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
-            });
-
-            return {
-                access_token: newAccessToken,
-                refresh_token: newRefreshToken, // Return the new refresh token
-            };
+            const tokens = await this.generateTokens(user);
+            return tokens;
         }
         catch (error)
         {
@@ -139,7 +96,7 @@ export class AuthService
 
     // We will add methods for registration, password reset, etc. later
 
-    async register(createUserDto: CreateUserDto): Promise<{ access_token: string, refresh_token: string, user: Omit<User, 'hashedPassword'> }>
+    async register(createUserDto: CreateUserDto): Promise<{ access_token: string, refresh_token: string, user: User }>
     {
         if (createUserDto.authProvider === AuthProvider.GOOGLE)
         {
@@ -193,5 +150,31 @@ export class AuthService
             ...tokens,
             user: userResult,
         };
+    }
+
+    private async generateTokens(user: User)
+    {
+        const accessTokenPayload = {
+            email: user.email,
+            sub: user._id,
+            role: user.role,
+            type: 'access',
+        };
+        const refreshTokenPayload = {
+            sub: user._id,
+            type: 'refresh',
+        };
+
+        const accessToken = this.jwtService.sign(accessTokenPayload, {
+            secret: this.configService.get<string>('JWT_SECRET'),
+            expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME'),
+        });
+
+        const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+            secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+            expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
+        });
+
+        return { access_token: accessToken, refresh_token: refreshToken };
     }
 }

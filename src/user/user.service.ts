@@ -96,7 +96,7 @@ export class UserService
         return this.userModel.find().skip(offset).limit(limit).exec();
     }
 
-    async findOne(id: string): Promise<User>
+    async findById(id: string): Promise<User>
     {
         const user = await this.userModel.findById(id).exec();
         if (!user)
