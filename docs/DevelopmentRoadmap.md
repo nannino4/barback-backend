@@ -5,31 +5,31 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 ## MVP Stage
 
 ### Workspace Setup
-- [ ] Set up NestJS backend project with TypeScript.
-- [ ] Define product requirements.
-- [ ] Define coding guidelines.
-- [ ] Define testing guidelines.
-- [ ] Configure ESLint and Prettier according to `CodingGuidelines.md`.
-- [ ] Establish basic project structure (modules, services, controllers).
-- [ ] Configure different environments (dev, test, prod).
+- [X] Set up NestJS backend project with TypeScript.
+- [X] Define product requirements.
+- [X] Define coding guidelines.
+- [X] Define testing guidelines.
+- [X] Configure ESLint and Prettier according to `CodingGuidelines.md`.
+- [X] Establish basic project structure (modules, services, controllers).
+- [X] Configure different environments (dev, test, prod).
 
 ### Define Core Data Models
-- [ ] **User Model**:
-  - [ ] Define schema (e.g., email, password hash, Google ID, roles).
-  - [ ] Implement roles: Owner, Manager, Staff.
-- [ ] **Organization Model**:
-  - [ ] Define schema (e.g., name, owner, associated inventories).
-- [ ] **Subscription Model**:
-  - [ ] Define schema (e.g., tier, status, organization link).
-- [ ] **Product Model**:
-  - [ ] Define schema (e.g., name, category link, unit of measure, par level).
-- [ ] **Category Model**:
-  - [ ] Define schema (e.g., name, description) for product categorization.
-- [ ] **Inventory Model**:
-  - [ ] Define schema for current stock levels (product link, quantity).
-  - [ ] Define schema for inventory logs (stock adjustments, reason codes, timestamp, user).
-- [ ] **Alerts Model**:
-  - [ ] Define schema (e.g., type - low stock/reminder, target - product/task, threshold, status).
+- [X] **User Model**:
+  - [X] Define schema (e.g., email, password hash, Google ID, roles).
+  - [X] Implement roles: Owner, Manager, Staff.
+- [X] **Organization Model**:
+  - [X] Define schema (e.g., name, owner, associated inventories).
+- [X] **Subscription Model**:
+  - [X] Define schema (e.g., tier, status, organization link).
+- [X] **Product Model**:
+  - [X] Define schema (e.g., name, category link, unit of measure, par level).
+- [X] **Category Model**:
+  - [X] Define schema (e.g., name, description) for product categorization.
+- [X] **Inventory Model**:
+  - [X] Define schema for current stock levels (product link, quantity).
+  - [X] Define schema for inventory logs (stock adjustments, reason codes, timestamp, user).
+- [X] **Alerts Model**:
+  - [X] Define schema (e.g., type - low stock/reminder, target - product/task, threshold, status).
 
 ### Features
 
@@ -50,22 +50,22 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Develop all necessary authentication endpoints (`/auth/register`, `/auth/login`, `/auth/google`, `/auth/reset-password`, etc.).
 
 #### Organization Management
-- [ ] **Core Functionality**:
-  - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
-  - [ ] Implement functionality for an Owner to manage their organization details.
+- [X] **Core Functionality**:
+  - [X] Implement Organization creation (ensuring one active organization per owner/subscription).
+  - [X] Implement functionality for an Owner to manage their organization details.
   - [ ] Implement multi-inventory support within an organization (conceptual setup, linking inventories to an org).
-- [ ] **User Management within Organization**:
-  - [ ] Allow Owners/Managers to invite users to their organization.
-  - [ ] Allow Owners/Managers to assign/update roles for users within their organization.
-- [ ] **API Endpoints**:
-  - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
+- [X] **User Management within Organization**:
+  - [X] Allow Owners/Managers to invite users to their organization.
+  - [X] Allow Owners/Managers to assign/update roles for users within their organization.
+- [X] **API Endpoints**:
+  - [X] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
 
 #### Subscription Management (Basic MVP)
-- [ ] **Core Functionality**:
-  - [ ] Define basic subscription tier structure (e.g., MVP tier).
-  - [ ] Implement linking of an organization to a subscription.
-- [ ] **API Endpoints**:
-  - [ ] Develop basic Subscription management endpoints (e.g., view current subscription).
+- [X] **Core Functionality**:
+  - [X] Define basic subscription tier structure (e.g., MVP tier).
+  - [X] Implement linking of an organization to a subscription.
+- [X] **API Endpoints**:
+  - [X] Develop basic Subscription management endpoints (e.g., view current subscription).
 
 #### Product Management
 - [ ] **Core Functionality**:
