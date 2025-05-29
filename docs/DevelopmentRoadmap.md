@@ -10,7 +10,6 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [X] Define coding guidelines.
 - [X] Define testing guidelines.
 - [X] Configure ESLint and Prettier according to `CodingGuidelines.md`.
-- [X] Establish basic project structure (modules, services, controllers).
 - [X] Configure different environments (dev, test, prod).
 - [X] Define logging guidelines and configure logging.
 
@@ -36,12 +35,12 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 ### Features
 
 #### Authentication & Authorization
-- [ ] **User Session Strategy**:
-  - [X] Define and implement user session management (e.g., JWT-based). // Marked as complete
+- [X] **User Session Strategy**:
+  - [X] Define and implement user session management (e.g., JWT-based).
 - [ ] **Email/Password Authentication**:
   - [X] Implement User Registration with email and password.
   - [ ] Implement Email Verification for new accounts.
-  - [ ] Implement User Login with email and password.
+  - [X] Implement User Login with email and password.
   - [ ] Implement Password Reset functionality via email.
 - [ ] **Google OAuth Authentication**:
   - [ ] Implement User Registration with Google.

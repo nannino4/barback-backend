@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { UserService } from 'src/user/user.service';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate
@@ -9,6 +10,7 @@ export class JwtAuthGuard implements CanActivate
     constructor(
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
+        private readonly userService: UserService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean>
@@ -35,9 +37,10 @@ export class JwtAuthGuard implements CanActivate
                 throw new UnauthorizedException('Invalid token type: Must be an access token');
             }
 
-            // Assign the payload to the request object
+            // Assign the current user to the request object
             // so that we can access it in our route handlers
-            request['user'] = payload;
+            const user = this.userService.findById(payload.sub);
+            request['user'] = user;
         }
         catch (error)
         {

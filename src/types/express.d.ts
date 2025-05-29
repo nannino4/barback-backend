@@ -1,5 +1,5 @@
 // src/types/express.d.ts
-import { JwtPayload } from 'jsonwebtoken'; // Or your custom payload type
+import { User } from 'src/user/schemas/user.schema';
 
 declare global
 {
@@ -7,7 +7,7 @@ declare global
     {
         interface Request
         {
-            user?: string | JwtPayload; // Or your specific user payload type
+            user?: User; // Or your specific user payload type
         }
     }
 }

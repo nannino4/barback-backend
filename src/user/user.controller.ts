@@ -8,6 +8,6 @@ export class UserController
 
     constructor(private readonly userService: UserService)
     {
-        this.logger.log('UserController initialized', 'UserController#constructor');
+        this.logger.debug('UserController initialized', 'UserController#constructor');
     }
 }

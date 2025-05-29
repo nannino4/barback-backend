@@ -3,8 +3,11 @@ import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
-import { CreateUserDto } from '../user/dto/create-user.dto';
 import { User, AuthProvider } from '../user/schemas/user.schema';
+import { AccessTokenPayloadDto } from './dto/access-token-payload.dto';
+import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
+import { EmailRegisterDto } from './dto/email-register.dto';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
 @Injectable()
 export class AuthService
@@ -17,59 +20,38 @@ export class AuthService
         private readonly configService: ConfigService,
     ) {}
 
-    /**
-     * Validates a user based on email and password (for EMAIL AuthProvider).
-     * For other providers like Google, the validation is typically handled by the OAuth flow itself,
-     * and a user record is created/retrieved based on the provider's user ID.
-     * This method is primarily for the local email/password login strategy.
-     */
-    async validateUser(email: string, pass?: string, authProvider: AuthProvider = AuthProvider.EMAIL): Promise<User | null>
+    async emailLogin(email: string, pass: string): Promise<User>
     {
-        this.logger.log(`Validating user: ${email} with provider: ${authProvider}`, 'AuthService#validateUser');
+        this.logger.debug(`Authenticating user: ${email}`, 'AuthService#emailLogin');
         const user = await this.userService.findByEmail(email);
 
         if (!user)
         {
-            this.logger.warn(`User not found: ${email}`, 'AuthService#validateUser');
-            return null;
+            this.logger.warn(`User not found: ${email}`, 'AuthService#emailLogin');
+            throw new UnauthorizedException('Email or password is incorrect');
         }
 
-        if (authProvider === AuthProvider.EMAIL)
+        if (user.authProvider !== AuthProvider.EMAIL)
         {
-            if (!pass || !user.hashedPassword || !(await bcrypt.compare(pass, user.hashedPassword)))
-            {
-                this.logger.warn(`Invalid password for user: ${email}`, 'AuthService#validateUser');
-                return null;
-            }
+            this.logger.warn(`User ${email} is not using EMAIL authentication`, 'AuthService#emailLogin');
+            throw new UnauthorizedException(`The user did not emailRegister with EMAIL authentication, but with ${user.authProvider}`);
         }
-        else if (user.authProvider !== authProvider)
+        if (!pass || !user.hashedPassword || !(await bcrypt.compare(pass, user.hashedPassword)))
         {
-            this.logger.warn(`User ${email} registered with ${user.authProvider}, not ${authProvider}.`, 'AuthService#validateUser');
-            throw new UnauthorizedException(`User is registered with ${user.authProvider}, not ${authProvider}.`);
+            this.logger.warn(`Invalid password for user: ${email}`, 'AuthService#emailLogin');
+            throw new UnauthorizedException('Email or password is incorrect');
         }
 
-        this.logger.log(`User ${email} validated successfully`, 'AuthService#validateUser');
+        this.logger.debug(`User ${email} authenticated successfully`, 'AuthService#emailLogin');
         return user;
-    }
-
-    async login(user: User) : Promise<{ access_token: string, refresh_token: string }>
-    {
-        this.logger.log(`Login process started for user: ${user.email}`, 'AuthService#login');
-        // Generate JWT tokens
-        const tokens = await this.generateTokens(user);
-
-        // Update last login time
-        // await this.userService.updateLastLogin(user._id);
-        this.logger.log(`Tokens generated for user: ${user.email}`, 'AuthService#login');
-        return tokens;
     }
 
     async refreshToken(refreshTokenString: string) : Promise<{ access_token: string, refresh_token: string }>
     {
-        this.logger.log('Refresh token process started', 'AuthService#refreshToken');
+        this.logger.debug('Refresh token process started', 'AuthService#refreshToken');
         try
         {
-            const payload = await this.jwtService.verifyAsync(
+            const payload = await this.jwtService.verifyAsync<RefreshTokenPayloadDto>(
                 refreshTokenString,
                 {
                     secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
@@ -89,10 +71,9 @@ export class AuthService
                 throw new UnauthorizedException('User not found for refresh token');
             }
 
-            this.logger.log(`User ${user.email} validated for token refresh`, 'AuthService#refreshToken');
-            // User is valid, issue new tokens
+            this.logger.debug(`User ${user.email} validated for token refresh`, 'AuthService#refreshToken');
             const tokens = await this.generateTokens(user);
-            this.logger.log(`Tokens refreshed for user: ${user.email}`, 'AuthService#refreshToken');
+            this.logger.debug(`Tokens refreshed for user: ${user.email}`, 'AuthService#refreshToken');
             return tokens;
         }
         catch (error)
@@ -109,83 +90,42 @@ export class AuthService
         }
     }
 
-    // We will add methods for registration, password reset, etc. later
-
-    async register(createUserDto: CreateUserDto): Promise<{ access_token: string, refresh_token: string, user: User }>
+    async emailRegister(registerUserDto: EmailRegisterDto): Promise<{ access_token: string, refresh_token: string }>
     {
-        this.logger.log(`Registration process started for user: ${createUserDto.email}`, 'AuthService#register');
-        if (createUserDto.authProvider === AuthProvider.GOOGLE)
+        this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#emailRegister');
+        const existingUserByEmail = await this.userService.findByEmail(registerUserDto.email);
+        if (existingUserByEmail)
         {
-            if (!createUserDto.googleId)
-            {
-                this.logger.warn(`Google ID is required for Google registration. User: ${createUserDto.email}`, 'AuthService#register');
-                throw new UnauthorizedException('Google ID is required for Google registration.');
-            }
-            if (createUserDto.password)
-            {
-                this.logger.warn(`Password should not be provided for Google registration. User: ${createUserDto.email}`, 'AuthService#register');
-                throw new UnauthorizedException('Password should not be provided for Google registration.');
-            }
+            this.logger.warn(`User with email ${registerUserDto.email} already exists.`, 'AuthService#emailRegister');
+            throw new ConflictException('Another user with this email already exists.');
         }
-        else if (createUserDto.authProvider === AuthProvider.EMAIL || !createUserDto.authProvider) // Default to EMAIL if not specified
+        const userData: CreateUserDto = new CreateUserDto();
+        const saltOrRounds = 10;
+        userData.hashedPassword = await bcrypt.hash(registerUserDto.password, saltOrRounds);
+        userData.email = registerUserDto.email;
+        userData.firstName = registerUserDto.firstName;
+        userData.lastName = registerUserDto.lastName;
+        if (registerUserDto.phoneNumber)
         {
-            if (!createUserDto.password)
-            {
-                this.logger.warn(`Password is required for email registration. User: ${createUserDto.email}`, 'AuthService#register');
-                throw new UnauthorizedException('Password is required for email registration.');
-            }
-            if (createUserDto.googleId)
-            {
-                this.logger.warn(`Google ID should not be provided for email registration. User: ${createUserDto.email}`, 'AuthService#register');
-                throw new UnauthorizedException('Google ID should not be provided for email registration.');
-            }
-            createUserDto.authProvider = AuthProvider.EMAIL; // Ensure it's set
+            userData.phoneNumber = registerUserDto.phoneNumber;
         }
-        else
-        {
-            this.logger.warn(`Unsupported authentication provider for registration: ${createUserDto.authProvider}. User: ${createUserDto.email}`, 'AuthService#register');
-            throw new UnauthorizedException('Unsupported authentication provider for registration.');
-        }
-
-        const existingUser = await this.userService.findByEmail(createUserDto.email);
-        if (existingUser)
-        {
-            this.logger.warn(`User with email ${createUserDto.email} already exists.`, 'AuthService#register');
-            throw new ConflictException('User with this email already exists.');
-        }
-
-        // For Google registration, isEmailVerified can be assumed true.
-        if (createUserDto.authProvider === AuthProvider.GOOGLE)
-        {
-            this.logger.log(`Setting isEmailVerified to true for Google user: ${createUserDto.email}`, 'AuthService#register');
-            createUserDto.isEmailVerified = true;
-        }
-
-        const newUser = await this.userService.create(createUserDto);
-        this.logger.log(`New user created: ${newUser.email}`, 'AuthService#register');
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { hashedPassword, ...userResult } = newUser.toObject();
-
-        const tokens = await this.login(userResult);
-        this.logger.log(`Tokens generated for new user: ${newUser.email}`, 'AuthService#register');
-
-        return {
-            ...tokens,
-            user: userResult,
-        };
+        const newUser = await this.userService.create(userData);
+        this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#emailRegister');
+        const tokens = await this.generateTokens(newUser);
+        this.logger.debug(`Tokens generated for new user: ${newUser.email}`, 'AuthService#emailRegister');
+        return tokens;
     }
 
-    private async generateTokens(user: User)
+    async generateTokens(user: User): Promise<{ access_token: string, refresh_token: string }>
     {
         this.logger.debug(`Generating tokens for user: ${user.email}`, 'AuthService#generateTokens');
-        const accessTokenPayload = {
-            email: user.email,
-            sub: user._id,
-            role: user.role,
+
+        const accessTokenPayload: AccessTokenPayloadDto = {
+            sub: user.id,
             type: 'access',
         };
-        const refreshTokenPayload = {
-            sub: user._id,
+        const refreshTokenPayload: RefreshTokenPayloadDto = {
+            sub: user.id,
             type: 'refresh',
         };
 

@@ -1,42 +1,38 @@
-import { IsEmail, IsString, IsOptional, IsEnum, IsBoolean, IsUrl, IsStrongPassword } from 'class-validator';
+import { IsEmail, IsString, IsOptional, IsEnum, IsBoolean, IsUrl, IsNotEmpty, IsPhoneNumber } from 'class-validator';
 import { AuthProvider, UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto
 {
+    @IsNotEmpty()
     @IsEmail()
     email!: string;
 
-    @IsOptional() // Password is now optional
-    @IsStrongPassword({
-        minLength: 8,
-        minLowercase: 1,
-        minUppercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-    }, { message: 'Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.' })
-    password?: string; // Renamed and made optional
+    @IsOptional()
+    hashedPassword?: string | null;
 
+    @IsNotEmpty()
     @IsString()
     firstName!: string;
 
+    @IsNotEmpty()
     @IsString()
     lastName!: string;
 
     @IsOptional()
-    @IsString()
+    @IsPhoneNumber()
     phoneNumber?: string | null;
 
     @IsOptional()
     @IsEnum(UserRole)
-    role?: UserRole;
+    role?: UserRole | null;
 
     @IsOptional()
     @IsBoolean()
-    isActive?: boolean;
+    isActive?: boolean | null;
 
     @IsOptional()
     @IsEnum(AuthProvider)
-    authProvider?: AuthProvider;
+    authProvider?: AuthProvider | null;
 
     @IsOptional()
     @IsString()
@@ -48,5 +44,5 @@ export class CreateUserDto
 
     @IsOptional()
     @IsBoolean()
-    isEmailVerified?: boolean;
+    isEmailVerified?: boolean | null;
 }

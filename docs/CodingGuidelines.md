@@ -37,7 +37,7 @@ This document outlines the coding standards and practices to follow when working
 -   **Request ID**: All log messages related to a specific HTTP request **must** include a unique Request ID. This is crucial for tracing the lifecycle of a request across different services and modules.
     -   *Implementation Note*: This will be integrated into `MyLogger` using a mechanism like `nestjs-cls` or custom middleware with `AsyncLocalStorage` to make the request ID available throughout the call stack.
 -   **Method Name & Context**: Provide context for your log messages.
-    -   Pass it as the second argument to the logger methods: `this.logger.log('User created successfully', 'UserService#createUser');`
+    -   Pass it as the second argument to the logger methods: `this.logger.debug('User created successfully', 'UserService#createUser');`
     -   The logger prefix includes `[ClassName]` or `[ClassName#methodName]` if provided.
 -   **Clear Messages**: Write log messages that are clear, concise, and provide enough information to understand the event without needing to read the source code.
 -   **Structured Information (for complex data)**: When logging objects or complex data, consider logging them as a JSON string (`JSON.stringify(object)`) if appropriate, especially for `debug` and `verbose` levels. Be mindful of performance for large objects.

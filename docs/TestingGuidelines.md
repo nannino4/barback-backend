@@ -77,12 +77,6 @@ jest.config.js              # Main Jest configuration (can target unit/integrati
 
 **Key Points for File Structure:**
 
--   **Co-location for Unit/Integration Tests**: Test files (`*.spec.ts` or `*.test.ts`) are placed in the same directory as the source file they are testing. This improves discoverability and encourages writing tests alongside feature development.
--   **Naming Convention**: Use a consistent suffix like `.spec.ts` (common in NestJS) or `.test.ts`.
--   **Separate `test/` Directory for E2E Tests**: End-to-end tests (`*-e2e-spec.ts`) are grouped in a root-level `test/` directory. This is because they test the application as a whole and often have different configuration needs.
--   **Test Configuration**:
-    -   A primary `jest.config.js` (or equivalent for your test runner) at the project root typically handles unit and integration tests.
-    -   A specialized configuration (e.g., `test/jest-e2e.json`) can be used for E2E tests to define different environments, setup files, or test match patterns.
 -   **Test Utilities**: Shared utilities for E2E tests can reside in `test/utils/`. Utilities specific to a module's unit/integration tests can be co-located within that module's directory.
     -   **In-Memory Database Configuration**:
         -   For E2E tests, manage the in-memory MongoDB (e.g., `mongodb-memory-server`) lifecycle (start, stop, connect, clear data) within `test/utils/database.helper.ts`.
