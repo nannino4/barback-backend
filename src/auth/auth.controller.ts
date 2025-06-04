@@ -3,6 +3,9 @@ import { AuthService } from './auth.service';
 import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
+import { TokensDto } from './dto/out.tokens.dto';
+import { RegisterResponseDto } from './dto/register-response.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @Controller('auth')
 export class AuthController
@@ -13,7 +16,7 @@ export class AuthController
 
     @Post('register/email')
     @HttpCode(HttpStatus.CREATED)
-    async register(@Body() registerUserDto: RegisterEmailDto)
+    async register(@Body() registerUserDto: RegisterEmailDto): Promise<RegisterResponseDto>
     {
         this.logger.debug(`Registration attempt for user: ${registerUserDto.email}`, 'AuthController#register');
         const result = await this.authService.registerEmail(registerUserDto);
@@ -23,19 +26,17 @@ export class AuthController
 
     @Post('login/email')
     @HttpCode(HttpStatus.OK)
-    async emailLogin(@Body() loginDto: LoginEmailDto)
+    async emailLogin(@Body() loginDto: LoginEmailDto): Promise<LoginResponseDto>
     {
         this.logger.debug(`Login attempt for user: ${loginDto.email}`, 'AuthController#emailLogin');
-        const user = await this.authService.loginEmail(loginDto.email, loginDto.password);
+        const result = await this.authService.loginEmailWithUser(loginDto.email, loginDto.password);
         this.logger.debug(`User ${loginDto.email} authenticated successfully`, 'AuthController#emailLogin');
-        const tokens = await this.authService.generateTokens(user);
-        this.logger.debug(`Login successful for user: ${loginDto.email}`, 'AuthController#emailLogin');
-        return tokens;
+        return result;
     }
 
     @Post('refresh-token')
     @HttpCode(HttpStatus.OK)
-    async refreshToken(@Body() refreshTokenDto: RefreshTokenDto)
+    async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<TokensDto>
     {
         this.logger.debug('Refresh token attempt', 'AuthController#refreshToken');
         if (!refreshTokenDto.refresh_token)

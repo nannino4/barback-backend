@@ -9,6 +9,8 @@ import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { TokensDto } from './dto/out.tokens.dto';
+import { RegisterResponseDto } from './dto/register-response.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
 
 @Injectable()
 export class AuthService
@@ -117,7 +119,7 @@ export class AuthService
         return user;
     }
 
-    async registerEmail(registerUserDto: RegisterEmailDto): Promise<TokensDto>
+    async registerEmail(registerUserDto: RegisterEmailDto): Promise<RegisterResponseDto>
     {
         this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#registerEmail');
         const existingUserByEmail = await this.userService.findByEmail(registerUserDto.email);
@@ -140,6 +142,24 @@ export class AuthService
         this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#registerEmail');
         const tokens = await this.generateTokens(newUser);
         this.logger.debug(`Tokens generated for new user: ${newUser.email}`, 'AuthService#registerEmail');
-        return tokens;
+        return {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            user: newUser as any, // Will be transformed by ClassSerializerInterceptor
+        };
+    }
+
+    async loginEmailWithUser(email: string, pass: string): Promise<LoginResponseDto>
+    {
+        this.logger.debug(`Authenticating user with user data: ${email}`, 'AuthService#loginEmailWithUser');
+        const user = await this.loginEmail(email, pass);
+        const tokens = await this.generateTokens(user);
+        this.logger.debug(`Login successful with user data for: ${email}`, 'AuthService#loginEmailWithUser');
+        
+        return {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            user: user as any, // Will be transformed by ClassSerializerInterceptor
+        };
     }
 }

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserRole, AuthProvider } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -81,9 +82,10 @@ export class UserService
         return user;
     }
 
-    async updateProfile(id: string, updateData: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber'>>): Promise<User>
+    async updateProfile(id: string, updateData: UpdateUserProfileDto): Promise<User>
     {
         this.logger.debug(`Attempting to update profile for user ID: ${id}`, 'UserService#updateProfile');
+
         const user = await this.userModel.findByIdAndUpdate(
             id,
             { $set: updateData },

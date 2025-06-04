@@ -19,6 +19,7 @@ import { UserRole } from '../user/schemas/user.schema';
 import { UpdateUserProfileDto } from '../user/dto/update-user-profile.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { UserResponseDto } from '../user/dto/user-response.dto';
 
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, UserRolesGuard)
@@ -36,7 +37,7 @@ export class AdminController
     async getAllUsers(
         @Query('limit') limit: string = '10',
         @Query('offset') offset: string = '0'
-    )
+    ): Promise<UserResponseDto[]>
     {
         this.logger.debug(`Admin fetching all users with limit: ${limit}, offset: ${offset}`, 'AdminController#getAllUsers');
         const limitNum = parseInt(limit, 10);
@@ -44,52 +45,52 @@ export class AdminController
         
         const users = await this.userService.findAll(limitNum, offsetNum);
         this.logger.debug(`Admin found ${users.length} users`, 'AdminController#getAllUsers');
-        return users;
+        return users as unknown as UserResponseDto[]; // Will be transformed by ClassSerializerInterceptor
     }
 
     @Get(':id')
-    async getUserById(@Param('id') id: string)
+    async getUserById(@Param('id') id: string): Promise<UserResponseDto>
     {
         this.logger.debug(`Admin fetching user by ID: ${id}`, 'AdminController#getUserById');
         const user = await this.userService.findById(id);
         this.logger.debug(`Admin found user: ${user.email}`, 'AdminController#getUserById');
-        return user;
+        return user as unknown as UserResponseDto; // Will be transformed by ClassSerializerInterceptor
     }
 
     @Put(':id/profile')
     async updateUserProfile(
         @Param('id') id: string,
         @Body() updateData: UpdateUserProfileDto
-    )
+    ): Promise<UserResponseDto>
     {
         this.logger.debug(`Admin updating user profile for ID: ${id}`, 'AdminController#updateUserProfile');
         const user = await this.userService.updateProfile(id, updateData);
         this.logger.debug(`Admin updated user profile: ${user.email}`, 'AdminController#updateUserProfile');
-        return user;
+        return user as unknown as UserResponseDto; // Will be transformed by ClassSerializerInterceptor
     }
 
     @Put(':id/role')
     async updateUserRole(
         @Param('id') id: string,
         @Body() updateData: UpdateUserRoleDto
-    )
+    ): Promise<UserResponseDto>
     {
         this.logger.debug(`Admin updating user role for ID: ${id} to role: ${updateData.role}`, 'AdminController#updateUserRole');
         const user = await this.userService.updateRole(id, updateData.role);
         this.logger.debug(`Admin updated user role: ${user.email} to ${user.role}`, 'AdminController#updateUserRole');
-        return user;
+        return user as unknown as UserResponseDto; // Will be transformed by ClassSerializerInterceptor
     }
 
     @Put(':id/status')
     async updateUserStatus(
         @Param('id') id: string,
         @Body() updateData: UpdateUserStatusDto
-    )
+    ): Promise<UserResponseDto>
     {
         this.logger.debug(`Admin updating user status for ID: ${id} to active: ${updateData.isActive}`, 'AdminController#updateUserStatus');
         const user = await this.userService.updateStatus(id, updateData.isActive);
         this.logger.debug(`Admin updated user status: ${user.email} to active: ${user.isActive}`, 'AdminController#updateUserStatus');
-        return user;
+        return user as unknown as UserResponseDto; // Will be transformed by ClassSerializerInterceptor
     }
 
     @Delete(':id')
