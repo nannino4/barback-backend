@@ -19,7 +19,7 @@ CMD [ "tail", "-f", "/dev/null" ]
 # --- Production Stage ---
 FROM node:18-alpine AS production
 
-ARG NODE_ENV=production
+ARG NODE_ENV=prod
 ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /usr/src/app
