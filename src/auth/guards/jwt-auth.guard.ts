@@ -40,7 +40,7 @@ export class JwtAuthGuard implements CanActivate
             // Assign the current user to the request object
             // so that we can access it in our route handlers
             const user = this.userService.findById(payload.sub);
-            request['user'] = user;
+            request['user'] = await user;
         }
         catch (error)
         {

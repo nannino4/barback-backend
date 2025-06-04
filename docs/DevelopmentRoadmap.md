@@ -46,7 +46,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Implement User Registration with Google.
   - [ ] Implement User Login with Google.
 - [ ] **Role-Based Access Control (RBAC)**:
-  - [ ] Implement guards and decorators for Owner, Manager, Staff roles.
+  - [ ] Implement guards for AppRoles.
 - [ ] **User Account Management (Admin)**:
   - [ ] Implement Admin functionality to list all users.
   - [ ] Implement Admin functionality to view individual user details.
@@ -70,6 +70,8 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] **User Management within Organization**:
   - [ ] Allow Owners/Managers to invite users to their organization.
   - [ ] Allow Owners/Managers to assign/update roles for users within their organization.
+- [ ] **Role-Based Access Control (RBAC)**:
+  - [ ] Implement guards for OrgRoles.
 - [ ] **API Endpoints**:
   - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
 

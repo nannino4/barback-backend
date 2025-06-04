@@ -40,25 +40,6 @@ This document outlines the coding standards and practices to follow when working
     -   Pass it as the second argument to the logger methods: `this.logger.debug('User created successfully', 'UserService#createUser');`
     -   The logger prefix includes `[ClassName]` or `[ClassName#methodName]` if provided.
 -   **Clear Messages**: Write log messages that are clear, concise, and provide enough information to understand the event without needing to read the source code.
--   **Structured Information (for complex data)**: When logging objects or complex data, consider logging them as a JSON string (`JSON.stringify(object)`) if appropriate, especially for `debug` and `verbose` levels. Be mindful of performance for large objects.
-
-### What to Log
-
--   **Errors and Exceptions**: All errors and exceptions must be logged, preferably with stack traces and relevant context (like request parameters, but sanitize sensitive data).
--   **Service Boundaries**: Log entry and exit points of service methods, especially those handling external requests or performing critical business logic (primarily at `debug` level).
--   **Key Decisions**: Log important decision points in your code.
--   **External Interactions**: Log requests made to external services and their responses (or at least success/failure and key identifiers).
--   **State Changes**: Log significant state changes in the application or for key entities.
-
-### What NOT to Log (Security)
-
--   **NEVER log sensitive information directly**. This includes, but is not limited to:
-    -   Passwords (even hashed if they are long-lived and being input)
-    -   API Keys, Tokens (e.g., JWTs, OAuth tokens)
-    -   Personally Identifiable Information (PII) such as full names (if not necessary for the log context), social security numbers, credit card details, precise addresses, etc.
-    -   Raw confidential data.
--   **Masking**: If there's a legitimate need to log an object that *might* contain sensitive data (e.g., a request DTO), ensure that sensitive fields are masked or omitted *before* logging. Create utility functions for this if necessary.
-    -   *Example*: `this.logger.debug(\`Login attempt for user: ${payload.username}\`, 'AuthService#login'); // DO NOT log payload.password`
 
 ## Code Formatting Style
 
@@ -81,6 +62,7 @@ The following formatting rules are enforced by ESLint and should be adhered to:
 - **Indentation**: Use 4 spaces for indentation.
 - **Tabs**: Do not use tabs; use spaces instead.
 - **Comma Dangle**: Use trailing commas for multiline object literals, array literals, function parameters, etc.
+- **Line length**: Try to keep the line length to a maximum of 80 columns when possible
 
 ## TypeScript Configuration
 
