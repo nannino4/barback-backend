@@ -11,7 +11,7 @@ import {
     HttpStatus,
     Logger,
 } from '@nestjs/common';
-import { AdminService } from './admin.service';
+import { UserService } from '../user/user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserRolesGuard } from '../auth/guards/user-roles.guard';
 import { UserRoles } from '../auth/decorators/user-roles.decorator';
@@ -27,7 +27,7 @@ export class AdminController
 {
     private readonly logger = new Logger(AdminController.name);
 
-    constructor(private readonly adminService: AdminService)
+    constructor(private readonly userService: UserService)
     {
         this.logger.debug('AdminController initialized', 'AdminController#constructor');
     }
@@ -42,7 +42,7 @@ export class AdminController
         const limitNum = parseInt(limit, 10);
         const offsetNum = parseInt(offset, 10);
         
-        const users = await this.adminService.getAllUsers(limitNum, offsetNum);
+        const users = await this.userService.findAll(limitNum, offsetNum);
         this.logger.debug(`Admin found ${users.length} users`, 'AdminController#getAllUsers');
         return users;
     }
@@ -51,7 +51,7 @@ export class AdminController
     async getUserById(@Param('id') id: string)
     {
         this.logger.debug(`Admin fetching user by ID: ${id}`, 'AdminController#getUserById');
-        const user = await this.adminService.getUserById(id);
+        const user = await this.userService.findById(id);
         this.logger.debug(`Admin found user: ${user.email}`, 'AdminController#getUserById');
         return user;
     }
@@ -63,7 +63,7 @@ export class AdminController
     )
     {
         this.logger.debug(`Admin updating user profile for ID: ${id}`, 'AdminController#updateUserProfile');
-        const user = await this.adminService.updateUserProfile(id, updateData);
+        const user = await this.userService.updateProfile(id, updateData);
         this.logger.debug(`Admin updated user profile: ${user.email}`, 'AdminController#updateUserProfile');
         return user;
     }
@@ -75,7 +75,7 @@ export class AdminController
     )
     {
         this.logger.debug(`Admin updating user role for ID: ${id} to role: ${updateData.role}`, 'AdminController#updateUserRole');
-        const user = await this.adminService.updateUserRole(id, updateData);
+        const user = await this.userService.updateRole(id, updateData.role);
         this.logger.debug(`Admin updated user role: ${user.email} to ${user.role}`, 'AdminController#updateUserRole');
         return user;
     }
@@ -87,7 +87,7 @@ export class AdminController
     )
     {
         this.logger.debug(`Admin updating user status for ID: ${id} to active: ${updateData.isActive}`, 'AdminController#updateUserStatus');
-        const user = await this.adminService.updateUserStatus(id, updateData);
+        const user = await this.userService.updateStatus(id, updateData.isActive);
         this.logger.debug(`Admin updated user status: ${user.email} to active: ${user.isActive}`, 'AdminController#updateUserStatus');
         return user;
     }
@@ -97,7 +97,7 @@ export class AdminController
     async deleteUser(@Param('id') id: string)
     {
         this.logger.debug(`Admin attempting to delete user with ID: ${id}`, 'AdminController#deleteUser');
-        const result = await this.adminService.deleteUser(id);
+        const result = await this.userService.remove(id);
         this.logger.debug(`Admin user deletion result: ${JSON.stringify(result)}`, 'AdminController#deleteUser');
         return result;
     }
