@@ -62,6 +62,13 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Allow users to delete their own account (consider implications and data retention policies).
   - [X] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
 
+#### Subscription Management (Basic MVP)
+- [ ] **Core Functionality**:
+  - [ ] Define basic subscription tier structure (e.g., MVP tier).
+  - [ ] Implement linking of an organization to a subscription.
+- [ ] **API Endpoints**:
+  - [ ] Develop basic Subscription management endpoints (e.g., view current subscription).
+
 #### Organization Management
 - [ ] **Core Functionality**:
   - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
@@ -75,25 +82,18 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] **API Endpoints**:
   - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
 
-#### Subscription Management (Basic MVP)
-- [ ] **Core Functionality**:
-  - [ ] Define basic subscription tier structure (e.g., MVP tier).
-  - [ ] Implement linking of an organization to a subscription.
-- [ ] **API Endpoints**:
-  - [ ] Develop basic Subscription management endpoints (e.g., view current subscription).
-
-#### Product Management
-- [ ] **Core Functionality**:
-  - [ ] Implement CRUD operations for Products (name, category, unit, par level).
-- [ ] **API Endpoints**:
-  - [ ] Develop Product management endpoints.
-
 #### Category Management
 - [ ] **Core Functionality**:
   - [ ] Implement CRUD operations for Product Categories.
   - [ ] Implement functionality to link Products to Categories.
 - [ ] **API Endpoints**:
   - [ ] Develop Category management endpoints.
+
+#### Product Management
+- [ ] **Core Functionality**:
+  - [ ] Implement CRUD operations for Products (name, category, unit, par level).
+- [ ] **API Endpoints**:
+  - [ ] Develop Product management endpoints.
 
 #### Inventory Management
 - [ ] **Stock Tracking**:
