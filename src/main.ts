@@ -8,6 +8,7 @@ async function bootstrap()
         logger: new ConsoleLogger("", {
             timestamp: true,
         }),
+        rawBody: true, // Enable raw body for webhook processing
     });
 
     // Enable global validation pipe

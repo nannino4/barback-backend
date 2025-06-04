@@ -2,6 +2,18 @@
 
 This document outlines the development tasks for the Minimum Viable Product (MVP) of the Barback application.
 
+## 🎯 Current Status Summary
+
+**✅ Completed Modules:**
+- **User Management**: Full CRUD, authentication, profile management
+- **Admin Management**: User administration, role management 
+- **Subscription Management**: Stripe integration, automatic trial-to-paid conversion, payment methods, webhooks
+
+**🔄 Next Priority:**
+- **Organization Management**: Ready for implementation (depends on completed subscription system)
+
+**📊 Overall Progress**: ~40% of MVP features completed
+
 ## MVP Stage
 
 ### Workspace Setup
@@ -21,7 +33,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Define schema (e.g., name, owner, associated inventories).
   - [X] Define org related user roles: Owner, Manager, Staff.
 - [X] **Subscription Model**:
-  - [X] Define schema with embedded plan object (eliminates need for separate SubscriptionPlan model).
+  - [X] Define schema.
 - [X] **Product Model**:
   - [X] Define schema (e.g., name, category link, unit of measure, par level).
 - [X] **Category Model**:
@@ -62,33 +74,57 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Allow users to delete their own account (consider implications and data retention policies).
   - [X] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
 
-#### Billing Management
-- [ ] **Stripe Setup**:
-  - [ ] Set up Stripe account and configure API keys.
-  - [ ] Install Stripe SDK and implement webhook handling.
-- [ ] **Core Billing Models**:
-  - [ ] Implement CRUD operations for Subscription model.
-  - [ ] Define Trial (3 months) and Basic plan configurations.
-- [ ] **Subscription Lifecycle**:
-  - [ ] Create trial subscriptions for new owners.
-  - [ ] Implement automatic Trial → Basic conversion at trial end.
-  - [ ] Sync billing status with Stripe webhooks (active, past_due, canceled).
-  - [ ] Implement subscription cancellation.
-- [ ] **Payment Methods**:
-  - [ ] Allow users to add/update/remove payment methods via Stripe.
-  - [ ] Implement default payment method selection.
-- [ ] **Access Control**:
-  - [ ] Implement subscription-based access control.
-  - [ ] Restrict organization creation to active subscribers.
-- [ ] **API Endpoints**:
-  - [ ] `/subscription` - Get user's subscription.
-  - [ ] `/webhooks/stripe` - Handle Stripe events.
-- [ ] **Email Notifications**:
+#### Subscription Management
+- [X] **Stripe Setup**:
+  - [X] Set up Stripe account and configure API keys.
+  - [X] Install Stripe SDK and implement webhook handling.
+- [X] **Core Subscription Models**:
+  - [X] Implement CRUD operations for Subscription model.
+  - [X] Define Trial (3 months) and Basic plan configurations.
+- [X] **Subscription Lifecycle**:
+  - [X] Create trial subscriptions for organization owners only (not automatic for all users).
+  - [X] Implement automatic Trial → Basic conversion at trial end.
+  - [X] Sync billing status with Stripe webhooks (active, past_due, canceled).
+  - [X] Implement subscription cancellation.
+- [X] **Payment Methods**:
+  - [X] Allow users to add/update/remove payment methods via Stripe.
+  - [X] Implement default payment method selection.
+- [X] **Access Control**:
+  - [X] Implement subscription-based access control (`ActiveSubscriptionGuard`).
+  - [X] Restrict organization creation to active subscribers.
+- [X] **API Endpoints**:
+  - [X] `/subscription` - Get user's subscription.
+  - [X] `/subscription/start-owner-trial` - Start trial for organization owners.
+  - [X] `/subscription/cancel` - Cancel subscription.
+  - [X] `/subscription/plans` - Get available plans.
+  - [X] `/subscription/trial-eligibility` - Check trial eligibility.
+  - [X] `/payment/methods` - Manage payment methods.
+  - [X] `/webhooks/stripe` - Handle Stripe events.
+- [ ] **Email Notifications** (Excluded per user request):
   - [ ] Trial expiration warnings (7-day, 3-day, 1-day reminders).
   - [ ] Automatic billing activation notification when trial ends.
   - [ ] Payment failure notifications.
 
+**✅ Subscription Management Status: COMPLETED**
+- Full Stripe integration with automatic trial-to-paid conversion
+- Trial subscriptions only created when users want to become organization owners
+- Comprehensive payment method management
+- Webhook handling for subscription status synchronization
+- Access control guards for subscription-based features
+- Complete API endpoints for subscription and payment management
+- Documentation: `/src/subscription/SubscriptionDocumentation.md`
+
+**📋 Deployment Checklist:**
+- [ ] Set up actual Stripe account and get production API keys
+- [ ] Create Stripe products and pricing plans
+- [ ] Configure webhook endpoints in Stripe dashboard
+- [ ] Test subscription flow end-to-end
+- [ ] Deploy to production environment
+
 #### Organization Management
+**🔄 Next Priority: Ready for Implementation**
+- Depends on: Subscription Management (✅ Completed)
+- Integration: Use `ActiveSubscriptionGuard` to restrict organization creation
 - [ ] **Core Functionality**:
   - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
   - [ ] Implement functionality for an Owner to manage their organization details.

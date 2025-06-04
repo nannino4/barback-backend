@@ -186,4 +186,24 @@ export class UserService
         this.logger.debug(`Password changed successfully for user: ${user.email}`, 'UserService#changePassword');
         return { message: 'Password changed successfully' };
     }
+
+    async updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User>
+    {
+        this.logger.debug(`Updating Stripe customer ID for user: ${userId}`, 'UserService#updateStripeCustomerId');
+        
+        const user = await this.userModel.findByIdAndUpdate(
+            userId,
+            { $set: { stripeCustomerId } },
+            { new: true, runValidators: true }
+        ).exec();
+
+        if (!user)
+        {
+            this.logger.warn(`User with ID "${userId}" not found for Stripe customer ID update`, 'UserService#updateStripeCustomerId');
+            throw new NotFoundException(`User with ID "${userId}" not found`);
+        }
+
+        this.logger.debug(`Stripe customer ID updated successfully for user: ${user.email}`, 'UserService#updateStripeCustomerId');
+        return user;
+    }
 }

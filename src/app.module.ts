@@ -4,6 +4,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
     imports: [
@@ -21,6 +23,8 @@ import { AdminModule } from './admin/admin.module';
         UserModule,
         AuthModule,
         AdminModule,
+        SubscriptionModule,
+        WebhookModule,
     ],
     controllers: [],
     providers: [],
