@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from './schemas/user.schema';
+import { User, UserRole } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
@@ -32,7 +32,11 @@ export class UserService
     async findAll(limit: number, offset: number): Promise<User[]>
     {
         this.logger.debug(`Fetching all users with limit: ${limit}, offset: ${offset}`, 'UserService#findAll');
-        const users = await this.userModel.find().skip(offset).limit(limit).exec();
+        const users = await this.userModel
+            .find()
+            .skip(offset)
+            .limit(limit)
+            .exec();
         this.logger.debug(`Found ${users.length} users`, 'UserService#findAll');
         return users;
     }
@@ -73,6 +77,63 @@ export class UserService
             return null;
         }
         this.logger.debug(`User found with Google ID: ${googleId}`, 'UserService#findByGoogleId');
+        return user;
+    }
+
+    async updateProfile(id: string, updateData: Partial<Pick<User, 'firstName' | 'lastName' | 'phoneNumber'>>): Promise<User>
+    {
+        this.logger.debug(`Attempting to update profile for user ID: ${id}`, 'UserService#updateProfile');
+        const user = await this.userModel.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).exec();
+
+        if (!user)
+        {
+            this.logger.warn(`User with ID "${id}" not found for profile update`, 'UserService#updateProfile');
+            throw new NotFoundException(`User with ID "${id}" not found`);
+        }
+
+        this.logger.debug(`Profile updated successfully for user: ${user.email}`, 'UserService#updateProfile');
+        return user;
+    }
+
+    async updateRole(id: string, role: UserRole): Promise<User>
+    {
+        this.logger.debug(`Attempting to update role for user ID: ${id} to role: ${role}`, 'UserService#updateRole');
+        const user = await this.userModel.findByIdAndUpdate(
+            id,
+            { $set: { role } },
+            { new: true, runValidators: true }
+        ).exec();
+
+        if (!user)
+        {
+            this.logger.warn(`User with ID "${id}" not found for role update`, 'UserService#updateRole');
+            throw new NotFoundException(`User with ID "${id}" not found`);
+        }
+
+        this.logger.debug(`Role updated successfully for user: ${user.email} to role: ${role}`, 'UserService#updateRole');
+        return user;
+    }
+
+    async updateStatus(id: string, isActive: boolean): Promise<User>
+    {
+        this.logger.debug(`Attempting to update status for user ID: ${id} to active: ${isActive}`, 'UserService#updateStatus');
+        const user = await this.userModel.findByIdAndUpdate(
+            id,
+            { $set: { isActive } },
+            { new: true, runValidators: true }
+        ).exec();
+
+        if (!user)
+        {
+            this.logger.warn(`User with ID "${id}" not found for status update`, 'UserService#updateStatus');
+            throw new NotFoundException(`User with ID "${id}" not found`);
+        }
+
+        this.logger.debug(`Status updated successfully for user: ${user.email} to active: ${isActive}`, 'UserService#updateStatus');
         return user;
     }
 

@@ -47,14 +47,14 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Implement User Login with Google.
 - [X] **UserRole-Based Access Control (RBAC)**:
   - [X] Implement guards for UserRoles.
-- [ ] **User Account Management (Admin)**:
-  - [ ] Implement Admin functionality to list all users.
-  - [ ] Implement Admin functionality to view individual user details.
-  - [ ] Implement Admin functionality to update user profile information.
-  - [ ] Implement Admin functionality to manage user roles (e.g., assign/revoke Admin role).
-  - [ ] Implement Admin functionality to manage user account status (e.g., activate/deactivate).
-  - [ ] Implement Admin functionality to delete user accounts (consider soft delete).
-  - [ ] Develop API endpoints for these admin user management operations (e.g., under `/admin/users`).
+- [X] **User Account Management (Admin)**:
+  - [X] Implement Admin functionality to list all users.
+  - [X] Implement Admin functionality to view individual user details.
+  - [X] Implement Admin functionality to update user profile information.
+  - [X] Implement Admin functionality to manage user roles (e.g., assign/revoke Admin role).
+  - [X] Implement Admin functionality to manage user account status (e.g., activate/deactivate).
+  - [X] Implement Admin functionality to delete user accounts (consider soft delete).
+  - [X] Develop API endpoints for these admin user management operations (e.g., under `/admin/users`).
 - [ ] **User Profile Management (User-Self)**:
   - [ ] Allow users to view their own profile information.
   - [ ] Allow users to update their own profile information (e.g., name, contact details - excluding email/password which are handled separately).
