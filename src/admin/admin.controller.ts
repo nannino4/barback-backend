@@ -16,7 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserRolesGuard } from '../auth/guards/user-roles.guard';
 import { UserRoles } from '../auth/decorators/user-roles.decorator';
 import { UserRole } from '../user/schemas/user.schema';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { UpdateUserProfileDto } from '../user/dto/update-user-profile.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 

@@ -55,12 +55,12 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Implement Admin functionality to manage user account status (e.g., activate/deactivate).
   - [X] Implement Admin functionality to delete user accounts (consider soft delete).
   - [X] Develop API endpoints for these admin user management operations (e.g., under `/admin/users`).
-- [ ] **User Profile Management (User-Self)**:
-  - [ ] Allow users to view their own profile information.
-  - [ ] Allow users to update their own profile information (e.g., name, contact details - excluding email/password which are handled separately).
-  - [ ] Allow users to change their password (after verifying current password).
-  - [ ] Allow users to delete their own account (consider implications and data retention policies).
-  - [ ] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
+- [X] **User Profile Management (User-Self)**:
+  - [X] Allow users to view their own profile information.
+  - [X] Allow users to update their own profile information (e.g., name, contact details - excluding email/password which are handled separately).
+  - [X] Allow users to change their password (after verifying current password).
+  - [X] Allow users to delete their own account (consider implications and data retention policies).
+  - [X] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
 
 #### Organization Management
 - [ ] **Core Functionality**:

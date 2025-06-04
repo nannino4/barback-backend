@@ -1,9 +1,10 @@
-import { Controller, Get, Logger, UseGuards, Param, Query, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Logger, UseGuards, Delete, HttpCode, HttpStatus, Put, Body } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UserRolesGuard } from '../auth/guards/user-roles.guard';
-import { UserRoles } from '../auth/decorators/user-roles.decorator';
-import { UserRole } from './schemas/user.schema';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { User } from './schemas/user.schema';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -11,48 +12,53 @@ export class UserController
 {
     private readonly logger = new Logger(UserController.name);
 
-    constructor(private readonly userService: UserService)
-    {
-        this.logger.debug('UserController initialized', 'UserController#constructor');
-    }
+    constructor(private readonly userService: UserService) { }
 
-    @Get()
-    @UseGuards(UserRolesGuard)
-    @UserRoles(UserRole.ADMIN)
-    async findAll(
-        @Query('limit') limit: string = '10',
-        @Query('offset') offset: string = '0',
-    )
+    // User Self-Profile Management Endpoints
+    
+    @Get('me')
+    async getCurrentUser(@CurrentUser() user: User)
     {
-        this.logger.debug(`Fetching all users with limit: ${limit}, offset: ${offset}`, 'UserController#findAll');
-        const limitNum = parseInt(limit, 10);
-        const offsetNum = parseInt(offset, 10);
-        
-        const users = await this.userService.findAll(limitNum, offsetNum);
-        this.logger.debug(`Found ${users.length} users`, 'UserController#findAll');
-        return users;
-    }
-
-    @Get(':id')
-    @UseGuards(UserRolesGuard)
-    @UserRoles(UserRole.ADMIN)
-    async findById(@Param('id') id: string)
-    {
-        this.logger.debug(`Fetching user by ID: ${id}`, 'UserController#findById');
-        const user = await this.userService.findById(id);
-        this.logger.debug(`User found: ${user.email}`, 'UserController#findById');
+        this.logger.debug(`User fetching own profile: ${user.email}`, 'UserController#getCurrentUser');
         return user;
     }
 
-    @Delete(':id')
-    @UseGuards(UserRolesGuard)
-    @UserRoles(UserRole.ADMIN)
-    @HttpCode(HttpStatus.OK)
-    async remove(@Param('id') id: string)
+    @Put('me')
+    async updateCurrentUserProfile(
+        @CurrentUser() user: User,
+        @Body() updateData: UpdateUserProfileDto
+    )
     {
-        this.logger.debug(`Attempting to delete user with ID: ${id}`, 'UserController#remove');
-        const result = await this.userService.remove(id);
-        this.logger.debug(`User deletion result: ${JSON.stringify(result)}`, 'UserController#remove');
+        this.logger.debug(`User updating own profile: ${user.email}`, 'UserController#updateCurrentUserProfile');
+        const updatedUser = await this.userService.updateProfile(user.id, updateData);
+        this.logger.debug(`User profile updated successfully: ${updatedUser.email}`, 'UserController#updateCurrentUserProfile');
+        return updatedUser;
+    }
+
+    @Put('me/password')
+    @HttpCode(HttpStatus.OK)
+    async changeCurrentUserPassword(
+        @CurrentUser() user: User,
+        @Body() changePasswordDto: ChangePasswordDto
+    )
+    {
+        this.logger.debug(`User attempting to change password: ${user.email}`, 'UserController#changeCurrentUserPassword');
+        const result = await this.userService.changePassword(
+            user.id,
+            changePasswordDto.currentPassword,
+            changePasswordDto.newPassword
+        );
+        this.logger.debug(`Password changed successfully for user: ${user.email}`, 'UserController#changeCurrentUserPassword');
+        return result;
+    }
+
+    @Delete('me')
+    @HttpCode(HttpStatus.OK)
+    async deleteCurrentUser(@CurrentUser() user: User)
+    {
+        this.logger.debug(`User attempting to delete own account: ${user.email}`, 'UserController#deleteCurrentUser');
+        const result = await this.userService.remove(user.id);
+        this.logger.debug(`User account deletion result: ${JSON.stringify(result)}`, 'UserController#deleteCurrentUser');
         return result;
     }
 }

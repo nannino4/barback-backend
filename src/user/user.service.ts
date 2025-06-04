@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserRole } from './schemas/user.schema';
+import { User, UserRole, AuthProvider } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService
@@ -148,5 +149,41 @@ export class UserService
         }
         this.logger.debug(`User with ID "${id}" successfully deleted`, 'UserService#remove');
         return { message: `User with ID "${id}" successfully deleted` };
+    }
+
+    async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ message: string }>
+    {
+        this.logger.debug(`Attempting to change password for user ID: ${userId}`, 'UserService#changePassword');
+        
+        const user = await this.userModel.findById(userId).exec();
+        if (!user)
+        {
+            this.logger.warn(`User with ID "${userId}" not found for password change`, 'UserService#changePassword');
+            throw new NotFoundException(`User with ID "${userId}" not found`);
+        }
+
+        if (user.authProvider !== AuthProvider.EMAIL)
+        {
+            this.logger.warn(`User ${user.email} is not using EMAIL authentication`, 'UserService#changePassword');
+            throw new UnauthorizedException('Password change is only available for email-authenticated users');
+        }
+
+        if (!user.hashedPassword || !(await bcrypt.compare(currentPassword, user.hashedPassword)))
+        {
+            this.logger.warn(`Invalid current password for user: ${user.email}`, 'UserService#changePassword');
+            throw new UnauthorizedException('Current password is incorrect');
+        }
+
+        const saltOrRounds = 10;
+        const hashedNewPassword = await bcrypt.hash(newPassword, saltOrRounds);
+
+        await this.userModel.findByIdAndUpdate(
+            userId,
+            { $set: { hashedPassword: hashedNewPassword } },
+            { new: true, runValidators: true }
+        ).exec();
+
+        this.logger.debug(`Password changed successfully for user: ${user.email}`, 'UserService#changePassword');
+        return { message: 'Password changed successfully' };
     }
 }
