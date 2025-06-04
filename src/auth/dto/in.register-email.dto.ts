@@ -1,6 +1,6 @@
 import { IsEmail, IsNotEmpty, IsOptional, IsPhoneNumber, IsStrongPassword, MaxLength } from "class-validator";
 
-export class EmailRegisterDto
+export class RegisterEmailDto
 {
     @IsNotEmpty()
     @IsEmail(undefined, { message: 'Email is not valid.' })
@@ -28,5 +28,5 @@ export class EmailRegisterDto
 
     @IsOptional()
     @IsPhoneNumber(undefined, { message: 'Phone number is not valid.' })
-    phoneNumber?: string | null;
+    phoneNumber?: string;
 }

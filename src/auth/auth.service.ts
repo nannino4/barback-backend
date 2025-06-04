@@ -6,8 +6,9 @@ import { ConfigService } from '@nestjs/config';
 import { User, AuthProvider } from '../user/schemas/user.schema';
 import { AccessTokenPayloadDto } from './dto/access-token-payload.dto';
 import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
-import { EmailRegisterDto } from './dto/email-register.dto';
+import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { TokensDto } from './dto/out.tokens.dto';
 
 @Injectable()
 export class AuthService
@@ -20,33 +21,33 @@ export class AuthService
         private readonly configService: ConfigService,
     ) {}
 
-    async emailLogin(email: string, pass: string): Promise<User>
+    async generateTokens(user: User): Promise<TokensDto>
     {
-        this.logger.debug(`Authenticating user: ${email}`, 'AuthService#emailLogin');
-        const user = await this.userService.findByEmail(email);
+        this.logger.debug(`Generating tokens for user: ${user.email}`, 'AuthService#generateTokens');
 
-        if (!user)
-        {
-            this.logger.warn(`User not found: ${email}`, 'AuthService#emailLogin');
-            throw new UnauthorizedException('Email or password is incorrect');
-        }
+        const accessTokenPayload: AccessTokenPayloadDto = {
+            sub: user.id,
+            type: 'access',
+        };
+        const refreshTokenPayload: RefreshTokenPayloadDto = {
+            sub: user.id,
+            type: 'refresh',
+        };
 
-        if (user.authProvider !== AuthProvider.EMAIL)
-        {
-            this.logger.warn(`User ${email} is not using EMAIL authentication`, 'AuthService#emailLogin');
-            throw new UnauthorizedException(`The user did not emailRegister with EMAIL authentication, but with ${user.authProvider}`);
-        }
-        if (!pass || !user.hashedPassword || !(await bcrypt.compare(pass, user.hashedPassword)))
-        {
-            this.logger.warn(`Invalid password for user: ${email}`, 'AuthService#emailLogin');
-            throw new UnauthorizedException('Email or password is incorrect');
-        }
+        const accessToken = this.jwtService.sign(accessTokenPayload, {
+            secret: this.configService.get<string>('JWT_SECRET'),
+            expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME'),
+        });
 
-        this.logger.debug(`User ${email} authenticated successfully`, 'AuthService#emailLogin');
-        return user;
+        const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+            secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+            expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
+        });
+        this.logger.debug(`Tokens generated successfully for user: ${user.email}`, 'AuthService#generateTokens');
+        return { access_token: accessToken, refresh_token: refreshToken };
     }
 
-    async refreshToken(refreshTokenString: string) : Promise<{ access_token: string, refresh_token: string }>
+    async refreshToken(refreshTokenString: string) : Promise<TokensDto>
     {
         this.logger.debug('Refresh token process started', 'AuthService#refreshToken');
         try
@@ -90,13 +91,39 @@ export class AuthService
         }
     }
 
-    async emailRegister(registerUserDto: EmailRegisterDto): Promise<{ access_token: string, refresh_token: string }>
+    async loginEmail(email: string, pass: string): Promise<User>
     {
-        this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#emailRegister');
+        this.logger.debug(`Authenticating user: ${email}`, 'AuthService#loginEmail');
+        const user = await this.userService.findByEmail(email);
+
+        if (!user)
+        {
+            this.logger.warn(`User not found: ${email}`, 'AuthService#loginEmail');
+            throw new UnauthorizedException('Email or password is incorrect');
+        }
+
+        if (user.authProvider !== AuthProvider.EMAIL)
+        {
+            this.logger.warn(`User ${email} is not using EMAIL authentication`, 'AuthService#loginEmail');
+            throw new UnauthorizedException(`The user did not emailRegister with EMAIL authentication, but with ${user.authProvider}`);
+        }
+        if (!pass || !user.hashedPassword || !(await bcrypt.compare(pass, user.hashedPassword)))
+        {
+            this.logger.warn(`Invalid password for user: ${email}`, 'AuthService#loginEmail');
+            throw new UnauthorizedException('Email or password is incorrect');
+        }
+
+        this.logger.debug(`User ${email} authenticated successfully`, 'AuthService#loginEmail');
+        return user;
+    }
+
+    async registerEmail(registerUserDto: RegisterEmailDto): Promise<TokensDto>
+    {
+        this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#registerEmail');
         const existingUserByEmail = await this.userService.findByEmail(registerUserDto.email);
         if (existingUserByEmail)
         {
-            this.logger.warn(`User with email ${registerUserDto.email} already exists.`, 'AuthService#emailRegister');
+            this.logger.warn(`User with email ${registerUserDto.email} already exists.`, 'AuthService#registerEmail');
             throw new ConflictException('Another user with this email already exists.');
         }
         const userData: CreateUserDto = new CreateUserDto();
@@ -110,35 +137,9 @@ export class AuthService
             userData.phoneNumber = registerUserDto.phoneNumber;
         }
         const newUser = await this.userService.create(userData);
-        this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#emailRegister');
+        this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#registerEmail');
         const tokens = await this.generateTokens(newUser);
-        this.logger.debug(`Tokens generated for new user: ${newUser.email}`, 'AuthService#emailRegister');
+        this.logger.debug(`Tokens generated for new user: ${newUser.email}`, 'AuthService#registerEmail');
         return tokens;
-    }
-
-    async generateTokens(user: User): Promise<{ access_token: string, refresh_token: string }>
-    {
-        this.logger.debug(`Generating tokens for user: ${user.email}`, 'AuthService#generateTokens');
-
-        const accessTokenPayload: AccessTokenPayloadDto = {
-            sub: user.id,
-            type: 'access',
-        };
-        const refreshTokenPayload: RefreshTokenPayloadDto = {
-            sub: user.id,
-            type: 'refresh',
-        };
-
-        const accessToken = this.jwtService.sign(accessTokenPayload, {
-            secret: this.configService.get<string>('JWT_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME'),
-        });
-
-        const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-            secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
-        });
-        this.logger.debug(`Tokens generated successfully for user: ${user.email}`, 'AuthService#generateTokens');
-        return { access_token: accessToken, refresh_token: refreshToken };
     }
 }

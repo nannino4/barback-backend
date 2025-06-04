@@ -50,19 +50,6 @@ export class UserService
         return user;
     }
 
-    async remove(id: string): Promise<any>
-    {
-        this.logger.debug(`Attempting to remove user with ID: ${id}`, 'UserService#remove');
-        const result = await this.userModel.deleteOne({ _id: id }).exec();
-        if (result.deletedCount === 0)
-        {
-            this.logger.warn(`User with ID "${id}" not found for removal`, 'UserService#remove');
-            throw new NotFoundException(`User with ID "${id}" not found`);
-        }
-        this.logger.debug(`User with ID "${id}" successfully deleted`, 'UserService#remove');
-        return { message: `User with ID "${id}" successfully deleted` };
-    }
-
     async findByEmail(email: string): Promise<User | null>
     {
         this.logger.debug(`Attempting to find user by email: ${email}`, 'UserService#findByEmail');
@@ -87,5 +74,18 @@ export class UserService
         }
         this.logger.debug(`User found with Google ID: ${googleId}`, 'UserService#findByGoogleId');
         return user;
+    }
+
+    async remove(id: string): Promise<any>
+    {
+        this.logger.debug(`Attempting to remove user with ID: ${id}`, 'UserService#remove');
+        const result = await this.userModel.deleteOne({ _id: id }).exec();
+        if (result.deletedCount === 0)
+        {
+            this.logger.warn(`User with ID "${id}" not found for removal`, 'UserService#remove');
+            throw new NotFoundException(`User with ID "${id}" not found`);
+        }
+        this.logger.debug(`User with ID "${id}" successfully deleted`, 'UserService#remove');
+        return { message: `User with ID "${id}" successfully deleted` };
     }
 }

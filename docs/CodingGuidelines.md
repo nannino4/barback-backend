@@ -1,12 +1,12 @@
 # Coding Guidelines
 
-This document outlines the coding standards and practices to follow when working on this project. Please review these guidelines before making any code changes.
+This document outlines the coding standards and practices to follow when working on this project. Strictly follow these guidelines when making any code changes.
 
 ## Core Principles
 
 - **Readability & Maintainability**: Code should be easy to understand, navigate, and modify. Prioritize clarity over cleverness.
 - **Code Economy**: Write the least amount of code possible to achieve the objective. Avoid unnecessary abstractions and boilerplate.
-- **SOLID Principles**: Follow SOLID principles where they add value, but don't over-engineer.
+- **SOLID Principles**: Follow SOLID principles where they add value.
 
 ## General Guidelines
 
@@ -59,20 +59,6 @@ This document outlines the coding standards and practices to follow when working
     -   Raw confidential data.
 -   **Masking**: If there's a legitimate need to log an object that *might* contain sensitive data (e.g., a request DTO), ensure that sensitive fields are masked or omitted *before* logging. Create utility functions for this if necessary.
     -   *Example*: `this.logger.debug(\`Login attempt for user: ${payload.username}\`, 'AuthService#login'); // DO NOT log payload.password`
-
-### Performance Considerations
-
--   Avoid excessive logging in performance-critical code paths, especially at `log` level or higher in production.
--   Be cautious with logging large objects or complex computations within log statements, as it can impact performance.
--   Debug and verbose logs should be disabled in production environments to minimize overhead.
-
-## Architecture Guidelines
-
-### Project Structure
-
-- Organize by feature rather than technical layers
-- Keep related files close to each other
-- Follow NestJS module patterns
 
 ## Code Formatting Style
 
@@ -138,7 +124,7 @@ See [TestingGuidelines.md](./TestingGuidelines.md).
 
 - Be mindful of N+1 query problems
 - Consider pagination for endpoints returning lists
-- Use appropriate caching strategies where beneficial
+- Propose and use appropriate caching strategies where beneficial
 - Optimize assets and API responses
 
 ## Security Guidelines

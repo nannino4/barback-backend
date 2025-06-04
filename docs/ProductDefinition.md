@@ -19,6 +19,10 @@
     - Email verification
 - Role-based access (Owner, Manager, Staff)
 
+#### Organizations
+- Multi-inventory management
+- Each owner has one organization per subscription
+
 #### Inventory
 - Create/edit/remove products with name, category, unit, par level
 - Manual stock adjustments with reason codes via inventory logs
@@ -27,17 +31,13 @@
 
 #### Alerts
 - Low stock alerts with user-defined thresholds
+
+#### Notifications
+- Email/Push notifications
 - Time based reminders
 
 #### Analytics
 - Consumption by time period, category, product
-
-#### Notifications
-- Email/Push notifications
-
-#### Organizations
-- Multi-inventory management
-- Each owner has one organization per subscription
 
 ## Growth Stage
 

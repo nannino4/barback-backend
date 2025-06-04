@@ -61,26 +61,24 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Allow users to change their password (after verifying current password).
   - [ ] Allow users to delete their own account (consider implications and data retention policies).
   - [ ] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
-- [ ] **API Endpoints**:
-  - [ ] Develop all necessary authentication endpoints (`/auth/register`, `/auth/login`, `/auth/google`, `/auth/reset-password`, etc.).
 
 #### Organization Management
-- [X] **Core Functionality**:
-  - [X] Implement Organization creation (ensuring one active organization per owner/subscription).
-  - [X] Implement functionality for an Owner to manage their organization details.
+- [ ] **Core Functionality**:
+  - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
+  - [ ] Implement functionality for an Owner to manage their organization details.
   - [ ] Implement multi-inventory support within an organization (conceptual setup, linking inventories to an org).
-- [X] **User Management within Organization**:
-  - [X] Allow Owners/Managers to invite users to their organization.
-  - [X] Allow Owners/Managers to assign/update roles for users within their organization.
-- [X] **API Endpoints**:
-  - [X] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
+- [ ] **User Management within Organization**:
+  - [ ] Allow Owners/Managers to invite users to their organization.
+  - [ ] Allow Owners/Managers to assign/update roles for users within their organization.
+- [ ] **API Endpoints**:
+  - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
 
 #### Subscription Management (Basic MVP)
-- [X] **Core Functionality**:
-  - [X] Define basic subscription tier structure (e.g., MVP tier).
-  - [X] Implement linking of an organization to a subscription.
-- [X] **API Endpoints**:
-  - [X] Develop basic Subscription management endpoints (e.g., view current subscription).
+- [ ] **Core Functionality**:
+  - [ ] Define basic subscription tier structure (e.g., MVP tier).
+  - [ ] Implement linking of an organization to a subscription.
+- [ ] **API Endpoints**:
+  - [ ] Develop basic Subscription management endpoints (e.g., view current subscription).
 
 #### Product Management
 - [ ] **Core Functionality**:

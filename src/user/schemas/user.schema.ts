@@ -20,7 +20,7 @@ export class User extends Document
     email!: string;
 
     @Prop({ type: String, required: false }) 
-    hashedPassword?: string | null;
+    hashedPassword?: string;
 
     @Prop({ type: String, required: true })
     firstName!: string;
@@ -28,8 +28,8 @@ export class User extends Document
     @Prop({ type: String, required: true })
     lastName!: string;
 
-    @Prop({ type: String, required: false, default: null })
-    phoneNumber?: string | null;
+    @Prop({ type: String, required: false })
+    phoneNumber?: string;
 
     @Prop({ type: String, enum: UserRole, default: UserRole.USER })
     role!: UserRole;
@@ -37,29 +37,36 @@ export class User extends Document
     @Prop({ type: Boolean, default: true })
     isActive!: boolean;
 
-    @Prop({ type: Date, required: false, default: null })
-    lastLogin?: Date | null;
+    @Prop({ type: Date, required: false })
+    lastLogin?: Date;
 
     @Prop({ type: String, enum: AuthProvider, default: AuthProvider.EMAIL })
     authProvider!: AuthProvider;
 
-    @Prop({ type: String, required: false, unique: true, sparse: true, default: null })
-    googleId?: string | null;
+    @Prop(
+        { 
+            type: String, 
+            required: false, 
+            unique: true, 
+            sparse: true, 
+        }
+    )
+    googleId?: string;
 
-    @Prop({ type: String, required: false, default: null })
-    profilePictureUrl?: string | null;
+    @Prop({ type: String, required: false })
+    profilePictureUrl?: string;
 
     @Prop({ type: Boolean, default: false })
     isEmailVerified!: boolean;
 
-    @Prop({ type: String, required: false, default: null })
-    emailVerificationToken?: string | null;
+    @Prop({ type: String, required: false })
+    emailVerificationToken?: string;
 
-    @Prop({ type: String, required: false, default: null })
-    passwordResetToken?: string | null;
+    @Prop({ type: String, required: false })
+    passwordResetToken?: string;
 
-    @Prop({ type: Date, required: false, default: null })
-    passwordResetExpires?: Date | null;
+    @Prop({ type: Date, required: false })
+    passwordResetExpires?: Date;
 
     // createdAt and updatedAt are handled by timestamps: true
 }
