@@ -22,12 +22,35 @@
         "emailVerificationToken": { "type": ["string", "null"], "description": "Token for email verification (optional)" },
         "passwordResetToken": { "type": ["string", "null"], "description": "Token for password reset (optional)" },
         "passwordResetExpires": { "type": ["Date", "null"], "description": "Expiration date for password reset token (optional)" },
+        "stripeCustomerId": { "type": ["string", "null"], "description": "Stripe customer ID for this user" },
         "createdAt": { "type": "Date", "description": "Timestamp of when the user was created" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the user was last updated" }
       },
       "indexes": [
         { "fields": { "email": 1 }, "options": { "unique": true } },
-        { "fields": { "googleId": 1 }, "options": { "unique": true, "sparse": true } }
+        { "fields": { "googleId": 1 }, "options": { "unique": true, "sparse": true } },
+        { "fields": { "stripeCustomerId": 1 }, "options": { "unique": true, "sparse": true } }
+      ]
+    },
+    "Subscription": {
+      "collection": "subscriptions",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the subscription" },
+        "userId": { "type": "ObjectId", "description": "Reference to the user who owns this subscription" },
+        "stripeSubscriptionId": { "type": "string", "description": "Stripe subscription ID (required even for trial)" },
+        "status": {
+          "type": "string",
+          "description": "Current status of the subscription (synced with Stripe)",
+          "enum": ["trialing", "active", "past_due", "canceled", "unpaid", "incomplete", "incomplete_expired", "paused"]
+        },
+        "autoRenew": { "type": "boolean", "description": "Whether the subscription auto-renews", "default": true },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the subscription was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the subscription was last updated" }
+      },
+      "indexes": [
+        { "fields": { "userId": 1 } },
+        { "fields": { "status": 1 } },
+        { "fields": { "stripeSubscriptionId": 1 }, "options": { "unique": true } }
       ]
     },
     "Organization": {
@@ -69,69 +92,6 @@
         { "fields": { "role": 1 } }
       ]
     },
-    "Subscription": {
-      "collection": "subscriptions",
-      "fields": {
-        "_id": { "type": "ObjectId", "description": "Unique identifier for the subscription" },
-        "userId": { "type": "ObjectId", "description": "Reference to the user who owns this subscription" },
-        "price": { "type": "number", "description": "Price per billing period" },
-        "currency": { "type": "string", "description": "Currency code (e.g., EUR, USD)", "default": "EUR" },
-        "billingPeriod": { "type": "string", "description": "Billing frequency", "enum": ["monthly", "quarterly", "annual"], "default": "monthly" },
-        "startDate": { "type": "Date", "description": "Start date of the subscription" },
-        "lastRenewDate": { "type": "Date", "description": "Date when the subscription was last renewed" },
-        "nextRenewDate": { "type": "Date", "description": "Date when the subscription will renew next" },
-        "autoRenew": { "type": "boolean", "description": "Whether the subscription auto-renews", "default": true },
-        "status": {
-          "type": "string",
-          "description": "Current status of the subscription",
-          "enum": ["pending", "trial", "active", "inactive"]
-        },
-        "paymentMethod": {
-          "type": ["object", "null"],
-          "description": "Payment method information (optional, could be managed externally)",
-          "properties": {
-            "paymentMethodId": { "type": "string", "description": "Unique identifier for the payment method (e.g., from Stripe)" },
-            "type": { "type": "string", "enum": ["credit_card", "bank_transfer", "paypal", "other"] },
-            "lastFour": { "type": ["string", "null"], "description": "Last four digits of credit card (if applicable)" },
-            "expiryDate": { "type": ["string", "null"], "description": "Expiry date of payment method (MM/YYYY, if applicable)" }
-          }
-        },
-        "payments": {
-          "type": "array",
-          "description": "History of payments for this subscription",
-          "items": {
-            "type": "object",
-            "properties": {
-              "paymentId": { "type": "string", "description": "Unique identifier for the payment (e.g., from Stripe)" },
-              "amount": { "type": "number", "description": "Payment amount" },
-              "date": { "type": "Date", "description": "Date of payment" },
-              "status": { "type": "string", "enum": ["succeeded", "failed", "refunded", "pending"] }
-            }
-          },
-          "default": []
-        },
-        "createdAt": { "type": "Date", "description": "Timestamp of when the subscription was created" },
-        "updatedAt": { "type": "Date", "description": "Timestamp of when the subscription was last updated" }
-      },
-      "indexes": [
-        { "fields": { "userId": 1 } },
-        { "fields": { "status": 1 } }
-      ]
-    },
-    "Inventory": {
-      "collection": "inventories",
-      "fields": {
-        "_id": { "type": "ObjectId", "description": "Unique identifier for the inventory" },
-        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
-        "name": { "type": "string", "description": "Inventory name" },
-        "description": { "type": "string", "description": "Inventory description" },
-        "createdAt": { "type": "Date", "description": "Timestamp of when the inventory was created" },
-        "updatedAt": { "type": "Date", "description": "Timestamp of when the inventory was last updated" }
-      },
-      "indexes": [
-        { "fields": { "organizationId": 1 } }
-      ]
-    },
     "Category": {
       "collection": "categories",
       "fields": {
@@ -166,6 +126,20 @@
       "indexes": [
         { "fields": { "organizationId": 1, "name": 1 }, "options": { "unique": true } },
         { "fields": { "categoryIds": 1 } }
+      ]
+    },
+    "Inventory": {
+      "collection": "inventories",
+      "fields": {
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the inventory" },
+        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
+        "name": { "type": "string", "description": "Inventory name" },
+        "description": { "type": "string", "description": "Inventory description" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the inventory was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the inventory was last updated" }
+      },
+      "indexes": [
+        { "fields": { "organizationId": 1 } }
       ]
     },
     "InventoryItem": {

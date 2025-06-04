@@ -68,6 +68,14 @@ export class User extends Document
     @Prop({ type: Date, required: false })
     passwordResetExpires?: Date;
 
+    @Prop({ 
+        type: String, 
+        required: false,
+        unique: true,
+        sparse: true,
+    })
+    stripeCustomerId?: string;
+
     // createdAt and updatedAt are handled by timestamps: true
 }
 
@@ -75,3 +83,4 @@ export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.index({ email: 1 }, { unique: true });
 UserSchema.index({ googleId: 1 }, { unique: true, sparse: true });
+UserSchema.index({ stripeCustomerId: 1 }, { unique: true, sparse: true });

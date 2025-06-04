@@ -19,6 +19,12 @@
     - Email verification
 - Role-based access (Owner, Manager, Staff)
 
+#### Subscriptions
+- Each user can activate a subscription
+- For each active subscription a user can create an organization of which is owner
+- Subscriptions can be paid or free (with a trial period)
+- Subscriptions renew automatically
+
 #### Organizations
 - Multi-inventory management
 - Each owner has one organization per subscription

@@ -21,7 +21,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Define schema (e.g., name, owner, associated inventories).
   - [X] Define org related user roles: Owner, Manager, Staff.
 - [X] **Subscription Model**:
-  - [X] Define schema (e.g., tier, status, organization link).
+  - [X] Define schema with embedded plan object (eliminates need for separate SubscriptionPlan model).
 - [X] **Product Model**:
   - [X] Define schema (e.g., name, category link, unit of measure, par level).
 - [X] **Category Model**:
@@ -62,12 +62,31 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Allow users to delete their own account (consider implications and data retention policies).
   - [X] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
 
-#### Subscription Management (Basic MVP)
-- [ ] **Core Functionality**:
-  - [ ] Define basic subscription tier structure (e.g., MVP tier).
-  - [ ] Implement linking of an organization to a subscription.
+#### Billing Management
+- [ ] **Stripe Setup**:
+  - [ ] Set up Stripe account and configure API keys.
+  - [ ] Install Stripe SDK and implement webhook handling.
+- [ ] **Core Billing Models**:
+  - [ ] Implement CRUD operations for Subscription model.
+  - [ ] Define Trial (3 months) and Basic plan configurations.
+- [ ] **Subscription Lifecycle**:
+  - [ ] Create trial subscriptions for new owners.
+  - [ ] Implement automatic Trial → Basic conversion at trial end.
+  - [ ] Sync billing status with Stripe webhooks (active, past_due, canceled).
+  - [ ] Implement subscription cancellation.
+- [ ] **Payment Methods**:
+  - [ ] Allow users to add/update/remove payment methods via Stripe.
+  - [ ] Implement default payment method selection.
+- [ ] **Access Control**:
+  - [ ] Implement subscription-based access control.
+  - [ ] Restrict organization creation to active subscribers.
 - [ ] **API Endpoints**:
-  - [ ] Develop basic Subscription management endpoints (e.g., view current subscription).
+  - [ ] `/subscription` - Get user's subscription.
+  - [ ] `/webhooks/stripe` - Handle Stripe events.
+- [ ] **Email Notifications**:
+  - [ ] Trial expiration warnings (7-day, 3-day, 1-day reminders).
+  - [ ] Automatic billing activation notification when trial ends.
+  - [ ] Payment failure notifications.
 
 #### Organization Management
 - [ ] **Core Functionality**:
