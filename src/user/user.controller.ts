@@ -3,9 +3,9 @@ import { plainToInstance } from 'class-transformer';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { UserResponseDto } from './dto/user-response.dto';
+import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
+import { ChangePasswordDto } from './dto/in.change-password.dto';
+import { UserResponseDto } from './dto/out.user-response.dto';
 import { User } from './schemas/user.schema';
 
 @Controller('users')

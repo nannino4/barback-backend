@@ -5,7 +5,7 @@ import { ConflictException, NotFoundException, UnauthorizedException } from '@ne
 import { UserService } from './user.service';
 import { User, UserSchema, UserRole, AuthProvider } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import * as bcrypt from 'bcrypt';
 

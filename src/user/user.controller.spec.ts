@@ -9,8 +9,8 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
+import { ChangePasswordDto } from './dto/in.change-password.dto';
 
 describe('UserController (Integration)', () =>
 {

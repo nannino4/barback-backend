@@ -1,5 +1,5 @@
 import { Expose } from 'class-transformer';
-import { UserResponseDto } from '../../user/dto/user-response.dto';
+import { UserResponseDto } from '../../user/dto/out.user-response.dto';
 
 export class AuthResponseDto 
 {

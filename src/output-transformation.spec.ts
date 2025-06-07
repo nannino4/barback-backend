@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { UserResponseDto } from './user/dto/user-response.dto';
+import { UserResponseDto } from './user/dto/out.user-response.dto';
 import { User, UserRole, AuthProvider } from './user/schemas/user.schema';
 
 describe('Output Transformation', () => 

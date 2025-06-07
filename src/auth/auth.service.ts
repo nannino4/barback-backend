@@ -37,13 +37,13 @@ export class AuthService
         };
 
         const accessToken = this.jwtService.sign(accessTokenPayload, {
-            secret: this.configService.get<string>('JWT_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_EXPIRATION_TIME'),
+            secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
+            expiresIn: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME'),
         });
 
         const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-            secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_REFRESH_EXPIRATION_TIME'),
+            secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+            expiresIn: this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION_TIME'),
         });
         this.logger.debug(`Tokens generated successfully for user: ${user.email}`, 'AuthService#generateTokens');
         return { access_token: accessToken, refresh_token: refreshToken };
@@ -57,7 +57,7 @@ export class AuthService
             const payload = await this.jwtService.verifyAsync<RefreshTokenPayloadDto>(
                 refreshTokenString,
                 {
-                    secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+                    secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
                 },
             );
 

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsOptional, IsEnum, IsBoolean, IsUrl, IsNotEmpty, IsPhoneNumber } from 'class-validator';
+import { IsEmail, IsString, IsEnum, IsBoolean, IsUrl, IsNotEmpty, IsPhoneNumber, ValidateIf } from 'class-validator';
 import { AuthProvider, UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto
@@ -7,8 +7,9 @@ export class CreateUserDto
     @IsEmail()
     email!: string;
 
-    @IsOptional()
-    hashedPassword?: string | null;
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
+    hashedPassword?: string;
 
     @IsNotEmpty()
     @IsString()
@@ -18,31 +19,38 @@ export class CreateUserDto
     @IsString()
     lastName!: string;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsPhoneNumber()
-    phoneNumber?: string | null;
+    phoneNumber?: string;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsEnum(UserRole)
-    role?: UserRole | null;
+    role?: UserRole;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsBoolean()
-    isActive?: boolean | null;
+    isActive?: boolean;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsEnum(AuthProvider)
-    authProvider?: AuthProvider | null;
+    authProvider?: AuthProvider;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsString()
-    googleId?: string | null;
+    googleId?: string;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsUrl()
-    profilePictureUrl?: string | null;
+    profilePictureUrl?: string;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsBoolean()
-    isEmailVerified?: boolean | null;
+    isEmailVerified?: boolean;
 }

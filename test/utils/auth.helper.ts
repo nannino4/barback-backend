@@ -1,7 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { plainToInstance } from 'class-transformer';
 import { User, UserRole, AuthProvider } from '../../src/user/schemas/user.schema';
-import { UserResponseDto } from '../../src/user/dto/user-response.dto';
+import { UserResponseDto } from '../../src/user/dto/out.user-response.dto';
 
 export class AuthTestHelper
 {
