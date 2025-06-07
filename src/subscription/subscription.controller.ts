@@ -4,7 +4,7 @@ import { SubscriptionService } from './subscription.service';
 import { OutSubscriptionDto } from './dto/out.subscription.dto';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { plainToClass } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('subscription')
 export class SubscriptionController 
@@ -37,7 +37,7 @@ export class SubscriptionController
         {
             return null;
         }
-        return plainToClass(OutSubscriptionDto, subscription.toObject());
+        return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 
     @UseGuards(JwtAuthGuard)
@@ -46,7 +46,7 @@ export class SubscriptionController
     {
         this.logger.debug(`Starting owner trial subscription for user: ${req.user.id}`, 'SubscriptionController#startOwnerTrialSubscription');
         const subscription = await this.subscriptionService.createTrialSubscription(req.user.id);
-        return plainToClass(OutSubscriptionDto, subscription.toObject());
+        return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 
     @UseGuards(JwtAuthGuard)
@@ -55,7 +55,7 @@ export class SubscriptionController
     {
         this.logger.debug(`Canceling subscription for user: ${req.user.id}`, 'SubscriptionController#cancelSubscription');
         const subscription = await this.subscriptionService.cancelSubscription(req.user.id);
-        return plainToClass(OutSubscriptionDto, subscription.toObject());
+        return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 
     @Get('plans')

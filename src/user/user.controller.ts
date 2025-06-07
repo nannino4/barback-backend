@@ -6,7 +6,7 @@ import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { ChangePasswordDto } from './dto/in.change-password.dto';
 import { User } from './schemas/user.schema';
 import { OutUserDto } from './dto/out.user.dto';
-import { plainToClass } from 'class-transformer';
+import { plainToInstance } from 'class-transformer';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -22,7 +22,7 @@ export class UserController
     async getCurrentUser(@CurrentUser() user: User): Promise<OutUserDto>
     {
         this.logger.debug(`User fetching own profile: ${user.email}`, 'UserController#getCurrentUser');
-        return plainToClass(OutUserDto, user, { excludeExtraneousValues: true });
+        return plainToInstance(OutUserDto, user.toObject(), { excludeExtraneousValues: true });
     }
 
     @Put('me')
@@ -34,7 +34,7 @@ export class UserController
         this.logger.debug(`User updating own profile: ${user.email}`, 'UserController#updateCurrentUserProfile');
         const updatedUser = await this.userService.updateProfile(user.id, updateData);
         this.logger.debug(`User profile updated successfully: ${updatedUser.email}`, 'UserController#updateCurrentUserProfile');
-        return plainToClass(OutUserDto, updatedUser, { excludeExtraneousValues: true });
+        return plainToInstance(OutUserDto, updatedUser.toObject(), { excludeExtraneousValues: true });
     }
 
     @Put('me/password')

@@ -8,7 +8,7 @@ import { AccessTokenPayloadDto } from './dto/access-token-payload.dto';
 import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { TokensDto } from './dto/out.tokens.dto';
+import { OutTokensDto } from './dto/out.tokens.dto';
 
 @Injectable()
 export class AuthService
@@ -21,7 +21,7 @@ export class AuthService
         private readonly configService: ConfigService,
     ) {}
 
-    async generateTokens(user: User): Promise<TokensDto>
+    async generateTokens(user: User): Promise<OutTokensDto>
     {
         this.logger.debug(`Generating tokens for user: ${user.email}`, 'AuthService#generateTokens');
         const accessTokenPayload: AccessTokenPayloadDto = {
@@ -44,7 +44,7 @@ export class AuthService
         return { access_token: accessToken, refresh_token: refreshToken };
     }
 
-    async validateRefreshToken(refreshTokenString: string) : Promise<TokensDto>
+    async validateRefreshToken(refreshTokenString: string) : Promise<OutTokensDto>
     {
         this.logger.debug('Refresh token process started', 'AuthService#validateRefreshToken');
         try
@@ -85,7 +85,7 @@ export class AuthService
         }
     }
 
-    async loginEmail(email: string, pass: string): Promise<TokensDto>
+    async loginEmail(email: string, pass: string): Promise<OutTokensDto>
     {
         this.logger.debug(`Authenticating user: ${email}`, 'AuthService#loginEmail');
         const user = await this.userService.findByEmail(email);
@@ -109,7 +109,7 @@ export class AuthService
         return tokens;
     }
 
-    async registerEmail(registerUserDto: RegisterEmailDto): Promise<TokensDto>
+    async registerEmail(registerUserDto: RegisterEmailDto): Promise<OutTokensDto>
     {
         this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#registerEmail');
         const existingUserByEmail = await this.userService.findByEmail(registerUserDto.email);

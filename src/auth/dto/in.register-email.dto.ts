@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsPhoneNumber, IsStrongPassword, MaxLength, ValidateIf } from "class-validator";
+import { IsEmail, IsMobilePhone, IsNotEmpty, IsStrongPassword, MaxLength, ValidateIf } from "class-validator";
 
 export class RegisterEmailDto
 {
@@ -28,6 +28,6 @@ export class RegisterEmailDto
 
     @ValidateIf((o, value) => value !== undefined)
     @IsNotEmpty()
-    @IsPhoneNumber()
+    @IsMobilePhone('it-IT', { strictMode: true })
     phoneNumber?: string;
 }

@@ -1,7 +1,6 @@
-import { Module, ClassSerializerInterceptor } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { APP_INTERCEPTOR } from '@nestjs/core';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
@@ -29,10 +28,7 @@ import { WebhookModule } from './webhook/webhook.module';
     ],
     controllers: [],
     providers: [
-        {
-            provide: APP_INTERCEPTOR,
-            useClass: ClassSerializerInterceptor,
-        },
+        // No global interceptors needed - using manual plainToInstance transformation in controllers
     ],
 })
 export class AppModule {}

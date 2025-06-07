@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
-import { TokensDto } from './dto/out.tokens.dto';
+import { OutTokensDto } from './dto/out.tokens.dto';
 
 @Controller('auth')
 export class AuthController
@@ -14,7 +14,7 @@ export class AuthController
 
     @Post('register/email')
     @HttpCode(HttpStatus.CREATED)
-    async register(@Body() registerUserDto: RegisterEmailDto): Promise<TokensDto>
+    async register(@Body() registerUserDto: RegisterEmailDto): Promise<OutTokensDto>
     {
         this.logger.debug(`Registration attempt for user: ${registerUserDto.email}`, 'AuthController#register');
         const tokens = await this.authService.registerEmail(registerUserDto);
@@ -24,7 +24,7 @@ export class AuthController
 
     @Post('login/email')
     @HttpCode(HttpStatus.OK)
-    async emailLogin(@Body() loginDto: LoginEmailDto): Promise<TokensDto>
+    async emailLogin(@Body() loginDto: LoginEmailDto): Promise<OutTokensDto>
     {
         this.logger.debug(`Login attempt for user: ${loginDto.email}`, 'AuthController#emailLogin');
         const tokens = await this.authService.loginEmail(loginDto.email, loginDto.password);
@@ -34,7 +34,7 @@ export class AuthController
 
     @Post('refresh-token')
     @HttpCode(HttpStatus.OK)
-    async validateRefreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<TokensDto>
+    async validateRefreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<OutTokensDto>
     {
         this.logger.debug('Refresh token attempt', 'AuthController#refreshToken');
         if (!refreshTokenDto.refresh_token)
