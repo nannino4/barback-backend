@@ -281,11 +281,10 @@ describe('UserService - Service Tests (Unit-style)', () =>
             const createdUser = await service.create(mockCreateUserDto);
 
             // Act
-            const result = await service.remove(createdUser.id);
+            await service.remove(createdUser.id);
 
-            // Assert
-            expect(result).toBeDefined();
-            expect(result.message).toContain('successfully deleted');
+            // Assert - verify user was actually deleted
+            await expect(service.findById(createdUser.id)).rejects.toThrow('not found');
         });
 
         it('should throw NotFoundException when user not found for removal', async () => 
@@ -312,11 +311,12 @@ describe('UserService - Service Tests (Unit-style)', () =>
             const newPassword = 'newPassword456';
 
             // Act
-            const result = await service.changePassword(userWithPassword.id, plainPassword, newPassword);
+            await service.changePassword(userWithPassword.id, plainPassword, newPassword);
 
-            // Assert
-            expect(result).toBeDefined();
-            expect(result.message).toBe('Password changed successfully');
+            // Assert - verify password was actually changed
+            const updatedUser = await service.findById(userWithPassword.id);
+            const isNewPasswordValid = await bcrypt.compare(newPassword, updatedUser.hashedPassword!);
+            expect(isNewPasswordValid).toBe(true);
         });
 
         it('should throw NotFoundException when user not found for password update', async () => 

@@ -2,6 +2,7 @@ import { Controller, Get, Post, Delete, UseGuards, Request, Logger } from '@nest
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SubscriptionService } from './subscription.service';
 import { OutSubscriptionDto } from './dto/out.subscription.dto';
+import { OutSubscriptionPlanDto } from './dto/out.subscription-plan.dto';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { plainToInstance } from 'class-transformer';
@@ -59,10 +60,11 @@ export class SubscriptionController
     }
 
     @Get('plans')
-    async getSubscriptionPlans() 
+    async getSubscriptionPlans(): Promise<OutSubscriptionPlanDto[]> 
     {
         this.logger.debug('Getting subscription plans', 'SubscriptionController#getSubscriptionPlans');
-        return this.subscriptionService.getSubscriptionPlans();
+        const plans = await this.subscriptionService.getSubscriptionPlans();
+        return plainToInstance(OutSubscriptionPlanDto, plans, { excludeExtraneousValues: true });
     }
 
     @UseGuards(JwtAuthGuard)

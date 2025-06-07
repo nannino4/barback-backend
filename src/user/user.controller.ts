@@ -42,7 +42,7 @@ export class UserController
     async changeCurrentUserPassword(
         @CurrentUser() user: User,
         @Body() changePasswordDto: ChangePasswordDto
-    )
+    ): Promise<void>
     {
         this.logger.debug(`User attempting to change password: ${user.email}`, 'UserController#changeCurrentUserPassword');
         await this.userService.changePassword(
@@ -51,16 +51,14 @@ export class UserController
             changePasswordDto.newPassword
         );
         this.logger.debug(`Password changed successfully for user: ${user.email}`, 'UserController#changeCurrentUserPassword');
-        return;
     }
 
     @Delete('me')
     @HttpCode(HttpStatus.OK)
-    async deleteCurrentUser(@CurrentUser() user: User)
+    async deleteCurrentUser(@CurrentUser() user: User): Promise<void>
     {
         this.logger.debug(`User attempting to delete own account: ${user.email}`, 'UserController#deleteCurrentUser');
         const result = await this.userService.remove(user.id);
         this.logger.debug(`User account deletion result: ${JSON.stringify(result)}`, 'UserController#deleteCurrentUser');
-        return ;
     }
 }

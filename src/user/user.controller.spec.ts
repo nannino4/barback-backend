@@ -113,7 +113,7 @@ describe('UserController (Integration)', () =>
             const updateData: UpdateUserProfileDto = {
                 firstName: 'Jane',
                 lastName: 'Smith',
-                phoneNumber: '+1234567890',
+                phoneNumber: '+393123456789', // Valid Italian phone number
             };
 
             const response = await request(app.getHttpServer())
@@ -170,7 +170,15 @@ describe('UserController (Integration)', () =>
                 .send(changePasswordDto)
                 .expect(200);
 
-            expect(response.body.message).toBe('Password changed successfully');
+            // Should return empty response body for void method
+            expect(response.body).toEqual({});
+
+            // Verify password was actually changed by attempting to authenticate with new password
+            const updatedUser = await userService.findById(testUser.id);
+            expect(updatedUser).toBeDefined();
+            expect(updatedUser!.hashedPassword).toBeDefined();
+            const isNewPasswordValid = await bcrypt.compare('NewPassword123!', updatedUser!.hashedPassword!);
+            expect(isNewPasswordValid).toBe(true);
         });
 
         it('should reject weak passwords', async () =>
@@ -228,11 +236,27 @@ describe('UserController (Integration)', () =>
     {
         it('should delete user account successfully', async () =>
         {
+            const userIdToDelete = testUser.id;
+            
             const response = await request(app.getHttpServer())
                 .delete('/users/me')
                 .expect(200);
 
-            expect(response.body.message).toContain('successfully deleted');
+            // Should return empty response body for void method
+            expect(response.body).toEqual({});
+
+            // Verify user was actually deleted from database
+            try 
+            {
+                await userService.findById(userIdToDelete);
+                // If no error is thrown, the test should fail
+                fail('Expected user to be deleted but was still found');
+            } 
+            catch (error: any) 
+            {
+                // Expect a NotFoundException to be thrown
+                expect(error.message).toContain('not found');
+            }
         });
 
         it('should return 404 when trying to delete non-existent user', async () =>
@@ -374,9 +398,9 @@ describe('UserController (Integration)', () =>
         it('should accept valid phone number formats', async () =>
         {
             const validPhoneNumbers = [
-                '+1234567890',
-                '+12 345 678 9012',
-                '+44 20 7946 0958',
+                '+393123456789',    // Italian mobile format
+                '+393987654321',    // Italian mobile format  
+                '+393331234567',    // Italian mobile format
             ];
 
             for (const phoneNumber of validPhoneNumbers)
@@ -434,7 +458,7 @@ describe('UserController (Integration)', () =>
             const partialUpdates: Array<Record<string, string>> = [
                 { firstName: 'NewFirstName' },
                 { lastName: 'NewLastName' },
-                { phoneNumber: '+9876543210' },
+                { phoneNumber: '+393987654321' }, // Valid Italian phone number
                 { firstName: 'Both', lastName: 'Updated' },
             ];
 
@@ -457,7 +481,7 @@ describe('UserController (Integration)', () =>
             const updates = {
                 firstName: 'UpdatedFirst',
                 lastName: 'UpdatedLast',
-                phoneNumber: '+1987654321',
+                phoneNumber: '+393456789012', // Valid Italian phone number
             };
 
             await request(app.getHttpServer())

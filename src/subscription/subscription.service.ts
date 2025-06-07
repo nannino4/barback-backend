@@ -246,7 +246,13 @@ export class SubscriptionService
         }
     }
 
-    async getSubscriptionPlans(): Promise<any[]> 
+    async getSubscriptionPlans(): Promise<{
+        id: string;
+        name: string;
+        duration: string;
+        price: number;
+        features: string[];
+    }[]> 
     {
         // Return predefined plan configurations
         return [

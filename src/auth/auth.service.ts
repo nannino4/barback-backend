@@ -7,7 +7,7 @@ import { User, AuthProvider } from '../user/schemas/user.schema';
 import { AccessTokenPayloadDto } from './dto/access-token-payload.dto';
 import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
-import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import { CreateUserDto } from '../user/dto/create-user.dto';
 import { OutTokensDto } from './dto/out.tokens.dto';
 
 @Injectable()
