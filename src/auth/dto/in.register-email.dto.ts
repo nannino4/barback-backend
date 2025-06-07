@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsPhoneNumber, IsStrongPassword, MaxLength } from "class-validator";
+import { IsEmail, IsNotEmpty, IsPhoneNumber, IsStrongPassword, MaxLength, ValidateIf } from "class-validator";
 
 export class RegisterEmailDto
 {
@@ -26,7 +26,8 @@ export class RegisterEmailDto
     @MaxLength(50, { message: 'Last name cannot exceed 50 characters.' })
     lastName!: string;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsPhoneNumber(undefined, { message: 'Phone number is not valid.' })
     phoneNumber?: string;
 }

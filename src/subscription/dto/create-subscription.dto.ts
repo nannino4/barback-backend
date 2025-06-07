@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsBoolean } from 'class-validator';
+import { IsEnum, IsBoolean, ValidateIf, IsNotEmpty } from 'class-validator';
 import { SubscriptionStatus } from '../schemas/subscription.schema';
 
 export class CreateSubscriptionDto 
@@ -6,7 +6,8 @@ export class CreateSubscriptionDto
     @IsEnum(SubscriptionStatus)
     status!: SubscriptionStatus;
 
-    @IsOptional()
+    @ValidateIf((o, value) => value !== undefined)
+    @IsNotEmpty()
     @IsBoolean()
     autoRenew?: boolean;
 }

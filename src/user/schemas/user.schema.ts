@@ -16,7 +16,7 @@ export enum AuthProvider
 @Schema({ timestamps: true, collection: 'users' })
 export class User extends Document 
 {
-    @Prop({ type: String, required: true, unique: true })
+    @Prop({ type: String, required: true })
     email!: string;
 
     @Prop({ type: String, required: false }) 
@@ -43,14 +43,7 @@ export class User extends Document
     @Prop({ type: String, enum: AuthProvider, default: AuthProvider.EMAIL })
     authProvider!: AuthProvider;
 
-    @Prop(
-        { 
-            type: String, 
-            required: false, 
-            unique: true, 
-            sparse: true, 
-        }
-    )
+    @Prop({ type: String, required: false })
     googleId?: string;
 
     @Prop({ type: String, required: false })
@@ -68,12 +61,7 @@ export class User extends Document
     @Prop({ type: Date, required: false })
     passwordResetExpires?: Date;
 
-    @Prop({ 
-        type: String, 
-        required: false,
-        unique: true,
-        sparse: true,
-    })
+    @Prop({ type: String, required: false })
     stripeCustomerId?: string;
 
     // createdAt and updatedAt are handled by timestamps: true
