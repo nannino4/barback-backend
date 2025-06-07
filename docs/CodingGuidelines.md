@@ -96,6 +96,15 @@ See [TestingGuidelines.md](./TestingGuidelines.md).
 - Keep controllers thin, with business logic in services
 - Use DTOs to validate input and document API contracts
 
+### DTO Naming Conventions
+
+DTOs (Data Transfer Objects) should follow a clear naming convention to indicate their purpose:
+
+- **Input DTOs**: Prefix with `in.` for DTOs that define input data structure
+  - Example: `in.login-email.dto.ts`, `in.create-user.dto.ts`, `in.update-subscription.dto.ts`
+- **Output DTOs**: Prefix with `out.` for DTOs that define output data structure  
+  - Example: `out.user-response.dto.ts`, `out.tokens.dto.ts`
+
 ## Documentation
 
 - Add JSDoc comments for public APIs

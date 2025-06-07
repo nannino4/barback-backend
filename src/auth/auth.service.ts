@@ -9,8 +9,6 @@ import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { TokensDto } from './dto/out.tokens.dto';
-import { RegisterResponseDto } from './dto/register-response.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
 
 @Injectable()
 export class AuthService
@@ -26,7 +24,6 @@ export class AuthService
     async generateTokens(user: User): Promise<TokensDto>
     {
         this.logger.debug(`Generating tokens for user: ${user.email}`, 'AuthService#generateTokens');
-
         const accessTokenPayload: AccessTokenPayloadDto = {
             sub: user.id,
             type: 'access',
@@ -35,12 +32,10 @@ export class AuthService
             sub: user.id,
             type: 'refresh',
         };
-
         const accessToken = this.jwtService.sign(accessTokenPayload, {
             secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
             expiresIn: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME'),
         });
-
         const refreshToken = this.jwtService.sign(refreshTokenPayload, {
             secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
             expiresIn: this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION_TIME'),
@@ -49,9 +44,9 @@ export class AuthService
         return { access_token: accessToken, refresh_token: refreshToken };
     }
 
-    async refreshToken(refreshTokenString: string) : Promise<TokensDto>
+    async validateRefreshToken(refreshTokenString: string) : Promise<TokensDto>
     {
-        this.logger.debug('Refresh token process started', 'AuthService#refreshToken');
+        this.logger.debug('Refresh token process started', 'AuthService#validateRefreshToken');
         try
         {
             const payload = await this.jwtService.verifyAsync<RefreshTokenPayloadDto>(
@@ -60,50 +55,45 @@ export class AuthService
                     secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
                 },
             );
-
             if (payload.type !== 'refresh')
             {
-                this.logger.warn('Invalid token type for refresh', 'AuthService#refreshToken');
+                this.logger.warn('Invalid token type for refresh', 'AuthService#validateRefreshToken');
                 throw new UnauthorizedException('Invalid token type for refresh');
             }
-
             const user = await this.userService.findById(payload.sub);
             if (!user)
             {
-                this.logger.warn(`User not found for refresh token. User ID: ${payload.sub}`, 'AuthService#refreshToken');
+                this.logger.warn(`User not found for refresh token. User ID: ${payload.sub}`, 'AuthService#validateRefreshToken');
                 throw new UnauthorizedException('User not found for refresh token');
             }
-
-            this.logger.debug(`User ${user.email} validated for token refresh`, 'AuthService#refreshToken');
+            this.logger.debug(`User ${user.email} validated for token refresh`, 'AuthService#validateRefreshToken');
             const tokens = await this.generateTokens(user);
-            this.logger.debug(`Tokens refreshed for user: ${user.email}`, 'AuthService#refreshToken');
+            this.logger.debug(`Tokens refreshed for user: ${user.email}`, 'AuthService#validateRefreshToken');
             return tokens;
         }
         catch (error)
         {
             if (error instanceof Error)
             {
-                this.logger.error(`Refresh Token Error: ${error.message}`, error.stack, 'AuthService#refreshToken');
+                this.logger.error(`Refresh Token Error: ${error.message}`, error.stack, 'AuthService#validateRefreshToken');
             }
             else
             {
-                this.logger.error('Refresh Token Error: An unknown error occurred', 'AuthService#refreshToken');
+                this.logger.error('Refresh Token Error: An unknown error occurred', 'AuthService#validateRefreshToken');
             }
             throw new UnauthorizedException('Invalid or expired refresh token');
         }
     }
 
-    async loginEmail(email: string, pass: string): Promise<User>
+    async loginEmail(email: string, pass: string): Promise<TokensDto>
     {
         this.logger.debug(`Authenticating user: ${email}`, 'AuthService#loginEmail');
         const user = await this.userService.findByEmail(email);
-
         if (!user)
         {
             this.logger.warn(`User not found: ${email}`, 'AuthService#loginEmail');
             throw new UnauthorizedException('Email or password is incorrect');
         }
-
         if (user.authProvider !== AuthProvider.EMAIL)
         {
             this.logger.warn(`User ${email} is not using EMAIL authentication`, 'AuthService#loginEmail');
@@ -114,12 +104,12 @@ export class AuthService
             this.logger.warn(`Invalid password for user: ${email}`, 'AuthService#loginEmail');
             throw new UnauthorizedException('Email or password is incorrect');
         }
-
+        const tokens = await this.generateTokens(user);
         this.logger.debug(`User ${email} authenticated successfully`, 'AuthService#loginEmail');
-        return user;
+        return tokens;
     }
 
-    async registerEmail(registerUserDto: RegisterEmailDto): Promise<RegisterResponseDto>
+    async registerEmail(registerUserDto: RegisterEmailDto): Promise<TokensDto>
     {
         this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#registerEmail');
         const existingUserByEmail = await this.userService.findByEmail(registerUserDto.email);
@@ -142,24 +132,6 @@ export class AuthService
         this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#registerEmail');
         const tokens = await this.generateTokens(newUser);
         this.logger.debug(`Tokens generated for new user: ${newUser.email}`, 'AuthService#registerEmail');
-        return {
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            user: newUser as any, // Will be transformed by ClassSerializerInterceptor
-        };
-    }
-
-    async loginEmailWithUser(email: string, pass: string): Promise<LoginResponseDto>
-    {
-        this.logger.debug(`Authenticating user with user data: ${email}`, 'AuthService#loginEmailWithUser');
-        const user = await this.loginEmail(email, pass);
-        const tokens = await this.generateTokens(user);
-        this.logger.debug(`Login successful with user data for: ${email}`, 'AuthService#loginEmailWithUser');
-        
-        return {
-            access_token: tokens.access_token,
-            refresh_token: tokens.refresh_token,
-            user: user as any, // Will be transformed by ClassSerializerInterceptor
-        };
+        return tokens;
     }
 }

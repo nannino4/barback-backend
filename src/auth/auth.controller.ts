@@ -4,8 +4,6 @@ import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { TokensDto } from './dto/out.tokens.dto';
-import { RegisterResponseDto } from './dto/register-response.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
 
 @Controller('auth')
 export class AuthController
@@ -16,27 +14,27 @@ export class AuthController
 
     @Post('register/email')
     @HttpCode(HttpStatus.CREATED)
-    async register(@Body() registerUserDto: RegisterEmailDto): Promise<RegisterResponseDto>
+    async register(@Body() registerUserDto: RegisterEmailDto): Promise<TokensDto>
     {
         this.logger.debug(`Registration attempt for user: ${registerUserDto.email}`, 'AuthController#register');
-        const result = await this.authService.registerEmail(registerUserDto);
+        const tokens = await this.authService.registerEmail(registerUserDto);
         this.logger.debug(`User ${registerUserDto.email} registered successfully`, 'AuthController#register');
-        return result;
+        return tokens;
     }
 
     @Post('login/email')
     @HttpCode(HttpStatus.OK)
-    async emailLogin(@Body() loginDto: LoginEmailDto): Promise<LoginResponseDto>
+    async emailLogin(@Body() loginDto: LoginEmailDto): Promise<TokensDto>
     {
         this.logger.debug(`Login attempt for user: ${loginDto.email}`, 'AuthController#emailLogin');
-        const result = await this.authService.loginEmailWithUser(loginDto.email, loginDto.password);
+        const tokens = await this.authService.loginEmail(loginDto.email, loginDto.password);
         this.logger.debug(`User ${loginDto.email} authenticated successfully`, 'AuthController#emailLogin');
-        return result;
+        return tokens;
     }
 
     @Post('refresh-token')
     @HttpCode(HttpStatus.OK)
-    async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<TokensDto>
+    async validateRefreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<TokensDto>
     {
         this.logger.debug('Refresh token attempt', 'AuthController#refreshToken');
         if (!refreshTokenDto.refresh_token)
@@ -44,7 +42,7 @@ export class AuthController
             this.logger.warn('Refresh token is missing', 'AuthController#refreshToken');
             throw new UnauthorizedException('Refresh token is missing');
         }
-        const tokens = await this.authService.refreshToken(refreshTokenDto.refresh_token);
+        const tokens = await this.authService.validateRefreshToken(refreshTokenDto.refresh_token);
         this.logger.debug('Token refreshed successfully', 'AuthController#refreshToken');
         return tokens;
     }

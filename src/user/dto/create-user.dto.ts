@@ -1,4 +1,4 @@
-import { IsEmail, IsString, IsEnum, IsBoolean, IsUrl, IsNotEmpty, IsPhoneNumber, ValidateIf } from 'class-validator';
+import { IsEmail, IsString, IsEnum, IsBoolean, IsUrl, IsNotEmpty, ValidateIf, IsMobilePhone } from 'class-validator';
 import { AuthProvider, UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto
@@ -21,7 +21,7 @@ export class CreateUserDto
 
     @ValidateIf((o, value) => value !== undefined)
     @IsNotEmpty()
-    @IsPhoneNumber()
+    @IsMobilePhone('it-IT', { strictMode: true })
     phoneNumber?: string;
 
     @ValidateIf((o, value) => value !== undefined)

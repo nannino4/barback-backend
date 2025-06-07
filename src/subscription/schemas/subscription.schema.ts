@@ -28,9 +28,7 @@ export class Subscription extends Document
     @Prop({ type: Boolean, default: true })
     autoRenew!: boolean;
 
-    // Timestamp fields
-    createdAt!: Date;
-    updatedAt!: Date;
+    // createdAt and updatedAt are handled by timestamps: true
 }
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);

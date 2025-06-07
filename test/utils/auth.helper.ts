@@ -1,7 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
-import { plainToInstance } from 'class-transformer';
 import { User, UserRole, AuthProvider } from '../../src/user/schemas/user.schema';
-import { UserResponseDto } from '../../src/user/dto/out.user-response.dto';
 
 export class AuthTestHelper
 {
@@ -18,13 +16,10 @@ export class AuthTestHelper
             hashedPassword: 'hashedPassword123',
             phoneNumber: '+1234567890',
             isEmailVerified: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
             ...overrides,
         };
-    }
-
-    static createSafeUserResponse(user: Partial<User>): UserResponseDto
-    {
-        return plainToInstance(UserResponseDto, user, { excludeExtraneousValues: true });
     }
 
     static createJwtToken(jwtService: JwtService, user: Partial<User>): string
@@ -37,10 +32,10 @@ export class AuthTestHelper
         return jwtService.sign(payload);
     }
 
-    static createMockAuthGuard(user: Partial<User> | null = null)
+    static createMockAuthGuard(user: Partial<User> = null)
     {
         return {
-            canActivate: (context: any) =>
+            canActivate: (context) =>
             {
                 if (!user)
                 {

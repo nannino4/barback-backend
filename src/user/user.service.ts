@@ -85,19 +85,16 @@ export class UserService
     async updateProfile(id: string, updateData: UpdateUserProfileDto): Promise<User>
     {
         this.logger.debug(`Attempting to update profile for user ID: ${id}`, 'UserService#updateProfile');
-
         const user = await this.userModel.findByIdAndUpdate(
             id,
             { $set: updateData },
             { new: true, runValidators: true }
         ).exec();
-
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found for profile update`, 'UserService#updateProfile');
             throw new NotFoundException(`User with ID "${id}" not found`);
         }
-
         this.logger.debug(`Profile updated successfully for user: ${user.email}`, 'UserService#updateProfile');
         return user;
     }
@@ -110,7 +107,6 @@ export class UserService
             { $set: { role } },
             { new: true, runValidators: true }
         ).exec();
-
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found for role update`, 'UserService#updateRole');
@@ -129,7 +125,6 @@ export class UserService
             { $set: { isActive } },
             { new: true, runValidators: true }
         ).exec();
-
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found for status update`, 'UserService#updateStatus');
@@ -140,7 +135,7 @@ export class UserService
         return user;
     }
 
-    async remove(id: string): Promise<any>
+    async remove(id: string): Promise<void>
     {
         this.logger.debug(`Attempting to remove user with ID: ${id}`, 'UserService#remove');
         const result = await this.userModel.deleteOne({ _id: id }).exec();
@@ -150,61 +145,52 @@ export class UserService
             throw new NotFoundException(`User with ID "${id}" not found`);
         }
         this.logger.debug(`User with ID "${id}" successfully deleted`, 'UserService#remove');
-        return { message: `User with ID "${id}" successfully deleted` };
+        return ;
     }
 
-    async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<{ message: string }>
+    async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>
     {
         this.logger.debug(`Attempting to change password for user ID: ${userId}`, 'UserService#changePassword');
-        
         const user = await this.userModel.findById(userId).exec();
         if (!user)
         {
             this.logger.warn(`User with ID "${userId}" not found for password change`, 'UserService#changePassword');
             throw new NotFoundException(`User with ID "${userId}" not found`);
         }
-
         if (user.authProvider !== AuthProvider.EMAIL)
         {
             this.logger.warn(`User ${user.email} is not using EMAIL authentication`, 'UserService#changePassword');
             throw new UnauthorizedException('Password change is only available for email-authenticated users');
         }
-
         if (!user.hashedPassword || !(await bcrypt.compare(currentPassword, user.hashedPassword)))
         {
             this.logger.warn(`Invalid current password for user: ${user.email}`, 'UserService#changePassword');
             throw new UnauthorizedException('Current password is incorrect');
         }
-
         const saltOrRounds = 10;
         const hashedNewPassword = await bcrypt.hash(newPassword, saltOrRounds);
-
         await this.userModel.findByIdAndUpdate(
             userId,
             { $set: { hashedPassword: hashedNewPassword } },
             { new: true, runValidators: true }
         ).exec();
-
         this.logger.debug(`Password changed successfully for user: ${user.email}`, 'UserService#changePassword');
-        return { message: 'Password changed successfully' };
+        return;
     }
 
     async updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User>
     {
         this.logger.debug(`Updating Stripe customer ID for user: ${userId}`, 'UserService#updateStripeCustomerId');
-        
         const user = await this.userModel.findByIdAndUpdate(
             userId,
             { $set: { stripeCustomerId } },
             { new: true, runValidators: true }
         ).exec();
-
         if (!user)
         {
             this.logger.warn(`User with ID "${userId}" not found for Stripe customer ID update`, 'UserService#updateStripeCustomerId');
             throw new NotFoundException(`User with ID "${userId}" not found`);
         }
-
         this.logger.debug(`Stripe customer ID updated successfully for user: ${user.email}`, 'UserService#updateStripeCustomerId');
         return user;
     }
