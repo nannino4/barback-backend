@@ -1,198 +1,198 @@
 import { plainToInstance } from 'class-transformer';
 import { OutTokensDto } from './out.tokens.dto';
 
-describe('Auth DTOs', () => 
+describe('OutTokensDto - Output-Focused Tests', () => 
 {
-    describe('OutTokensDto', () => 
+    describe('Token Response Format Validation', () => 
     {
-        describe('Token Exposure and Security', () => 
+        it('should expose only access and refresh tokens in API response', () => 
         {
-            it('should only expose access and refresh tokens', () => 
-            {
-                const tokenData = {
-                    access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-                    refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-                    // Internal fields that should be excluded
-                    userId: 'user_123',
-                    sessionId: 'session_456',
-                    deviceInfo: 'Chrome on macOS',
-                    ipAddress: '192.168.1.1',
-                    userAgent: 'Mozilla/5.0...',
-                    issuedAt: new Date(),
-                    expiresAt: new Date(),
-                    refreshExpiresAt: new Date(),
-                    jwtPayload: {
-                        sub: 'user_123',
-                        iat: 1234567890,
-                        exp: 1234567890,
-                    },
-                };
+            // Arrange - Simulate service response with extra internal data
+            const serviceTokenData = {
+                access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+                // Internal fields that should NOT appear in API response
+                userId: 'user_123',
+                sessionId: 'session_456',
+                deviceInfo: 'Chrome on macOS',
+                ipAddress: '192.168.1.1',
+                userAgent: 'Mozilla/5.0...',
+                issuedAt: new Date(),
+                expiresAt: new Date(),
+                refreshExpiresAt: new Date(),
+                jwtPayload: { sub: 'user_123', iat: 1234567890, exp: 1234567890 },
+            };
 
-                const transformed = plainToInstance(OutTokensDto, tokenData, {
-                    excludeExtraneousValues: true,
-                }) as OutTokensDto;
+            // Act - Transform to API response format
+            const apiResponse = plainToInstance(OutTokensDto, serviceTokenData, {
+                excludeExtraneousValues: true,
+            }) as OutTokensDto;
 
-                // Should include only token fields
-                expect(transformed.access_token).toBe(tokenData.access_token);
-                expect(transformed.refresh_token).toBe(tokenData.refresh_token);
+            // Assert - Only token fields should be in API response
+            expect(apiResponse.access_token).toBe(serviceTokenData.access_token);
+            expect(apiResponse.refresh_token).toBe(serviceTokenData.refresh_token);
 
-                // Should exclude all internal authentication data
-                expect((transformed as any).userId).toBeUndefined();
-                expect((transformed as any).sessionId).toBeUndefined();
-                expect((transformed as any).deviceInfo).toBeUndefined();
-                expect((transformed as any).ipAddress).toBeUndefined();
-                expect((transformed as any).userAgent).toBeUndefined();
-                expect((transformed as any).issuedAt).toBeUndefined();
-                expect((transformed as any).expiresAt).toBeUndefined();
-                expect((transformed as any).refreshExpiresAt).toBeUndefined();
-                expect((transformed as any).jwtPayload).toBeUndefined();
-            });
-
-            it('should handle empty or invalid token data', () => 
-            {
-                const emptyTokenData = {
-                    access_token: '',
-                    refresh_token: '',
-                };
-
-                const transformed = plainToInstance(OutTokensDto, emptyTokenData, {
-                    excludeExtraneousValues: true,
-                }) as OutTokensDto;
-
-                expect(transformed.access_token).toBe('');
-                expect(transformed.refresh_token).toBe('');
-            });
-
-            it('should maintain token format integrity', () => 
-            {
-                const validTokens = {
-                    access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
-                    refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.different_signature_here',
-                };
-
-                const transformed = plainToInstance(OutTokensDto, validTokens, {
-                    excludeExtraneousValues: true,
-                }) as OutTokensDto;
-
-                // Tokens should be preserved exactly as provided
-                expect(transformed.access_token).toBe(validTokens.access_token);
-                expect(transformed.refresh_token).toBe(validTokens.refresh_token);
-                
-                // Verify JWT format is maintained (basic format check)
-                expect(transformed.access_token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
-                expect(transformed.refresh_token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
-            });
+            // Verify no internal data leaks into API response
+            expect((apiResponse as any).userId).toBeUndefined();
+            expect((apiResponse as any).sessionId).toBeUndefined();
+            expect((apiResponse as any).deviceInfo).toBeUndefined();
+            expect((apiResponse as any).ipAddress).toBeUndefined();
+            expect((apiResponse as any).userAgent).toBeUndefined();
+            expect((apiResponse as any).issuedAt).toBeUndefined();
+            expect((apiResponse as any).expiresAt).toBeUndefined();
+            expect((apiResponse as any).refreshExpiresAt).toBeUndefined();
+            expect((apiResponse as any).jwtPayload).toBeUndefined();
         });
 
-        describe('Authentication Flow Integration', () => 
+        it('should preserve token integrity through transformation', () => 
         {
-            it('should handle login response format', () => 
-            {
-                const loginResponse = {
-                    access_token: 'access_jwt_token_here',
-                    refresh_token: 'refresh_jwt_token_here',
-                    token_type: 'Bearer', // Should be excluded
-                    expires_in: 3600, // Should be excluded
-                    scope: 'read write', // Should be excluded
-                };
+            // Arrange - Valid JWT tokens
+            const validTokens = {
+                access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+                refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.different_signature_here',
+            };
 
-                const transformed = plainToInstance(OutTokensDto, loginResponse, {
-                    excludeExtraneousValues: true,
-                }) as OutTokensDto;
+            // Act - Transform tokens
+            const apiResponse = plainToInstance(OutTokensDto, validTokens, {
+                excludeExtraneousValues: true,
+            }) as OutTokensDto;
 
-                expect(transformed.access_token).toBe(loginResponse.access_token);
-                expect(transformed.refresh_token).toBe(loginResponse.refresh_token);
-                expect((transformed as any).token_type).toBeUndefined();
-                expect((transformed as any).expires_in).toBeUndefined();
-                expect((transformed as any).scope).toBeUndefined();
-            });
+            // Assert - Tokens should be unchanged and maintain JWT format
+            expect(apiResponse.access_token).toBe(validTokens.access_token);
+            expect(apiResponse.refresh_token).toBe(validTokens.refresh_token);
+            
+            // Verify JWT format is preserved (3 base64 parts separated by dots)
+            expect(apiResponse.access_token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+            expect(apiResponse.refresh_token).toMatch(/^[\w-]+\.[\w-]+\.[\w-]+$/);
+        });
+    });
 
-            it('should handle refresh token response format', () => 
-            {
-                const refreshResponse = {
-                    access_token: 'new_access_token',
-                    refresh_token: 'new_refresh_token',
-                    previous_token: 'old_access_token', // Should be excluded
-                    revoked_tokens: ['token1', 'token2'], // Should be excluded
-                };
+    describe('Authentication Flow API Responses', () => 
+    {
+        it('should format login endpoint response correctly', () => 
+        {
+            // Arrange - Login service response with metadata
+            const loginServiceResponse = {
+                access_token: 'login_access_token_here',
+                refresh_token: 'login_refresh_token_here',
+                token_type: 'Bearer', // OAuth metadata - should be excluded
+                expires_in: 3600, // Token expiry info - should be excluded
+                scope: 'read write', // OAuth scope - should be excluded
+            };
 
-                const transformed = plainToInstance(OutTokensDto, refreshResponse, {
-                    excludeExtraneousValues: true,
-                }) as OutTokensDto;
+            // Act - Transform to API response
+            const apiResponse = plainToInstance(OutTokensDto, loginServiceResponse, {
+                excludeExtraneousValues: true,
+            }) as OutTokensDto;
 
-                expect(transformed.access_token).toBe(refreshResponse.access_token);
-                expect(transformed.refresh_token).toBe(refreshResponse.refresh_token);
-                expect((transformed as any).previous_token).toBeUndefined();
-                expect((transformed as any).revoked_tokens).toBeUndefined();
-            });
-
-            it('should handle registration response format', () => 
-            {
-                const registrationResponse = {
-                    access_token: 'new_user_access_token',
-                    refresh_token: 'new_user_refresh_token',
-                    user: { // Should be excluded - handled separately
-                        id: 'user_123',
-                        email: 'newuser@example.com',
-                    },
-                    welcome_email_sent: true, // Should be excluded
-                };
-
-                const transformed = plainToInstance(OutTokensDto, registrationResponse, {
-                    excludeExtraneousValues: true,
-                }) as OutTokensDto;
-
-                expect(transformed.access_token).toBe(registrationResponse.access_token);
-                expect(transformed.refresh_token).toBe(registrationResponse.refresh_token);
-                expect((transformed as any).user).toBeUndefined();
-                expect((transformed as any).welcome_email_sent).toBeUndefined();
-            });
+            // Assert - Only tokens in API response
+            expect(apiResponse.access_token).toBe(loginServiceResponse.access_token);
+            expect(apiResponse.refresh_token).toBe(loginServiceResponse.refresh_token);
+            expect((apiResponse as any).token_type).toBeUndefined();
+            expect((apiResponse as any).expires_in).toBeUndefined();
+            expect((apiResponse as any).scope).toBeUndefined();
         });
 
-        describe('Security Considerations', () => 
+        it('should format registration endpoint response correctly', () => 
         {
-            it('should not log or expose sensitive internal data', () => 
-            {
-                const tokenDataWithSecrets = {
-                    access_token: 'public_access_token',
-                    refresh_token: 'public_refresh_token',
-                    // Highly sensitive data that must be excluded
-                    signing_key: 'super_secret_key',
-                    database_connection: 'mongodb://...',
-                    user_password_hash: 'bcrypt_hash_here',
-                    internal_user_data: {
-                        role: 'admin',
-                        permissions: ['all'],
-                    },
-                };
+            // Arrange - Registration service response with user data
+            const registrationServiceResponse = {
+                access_token: 'new_user_access_token',
+                refresh_token: 'new_user_refresh_token',
+                user: { // User data should be handled separately, not in token response
+                    id: 'user_123',
+                    email: 'newuser@example.com',
+                },
+                welcome_email_sent: true, // Internal operation status - should be excluded
+            };
 
-                const transformed = plainToInstance(OutTokensDto, tokenDataWithSecrets, {
+            // Act - Transform to API response
+            const apiResponse = plainToInstance(OutTokensDto, registrationServiceResponse, {
+                excludeExtraneousValues: true,
+            }) as OutTokensDto;
+
+            // Assert - Only tokens in API response
+            expect(apiResponse.access_token).toBe(registrationServiceResponse.access_token);
+            expect(apiResponse.refresh_token).toBe(registrationServiceResponse.refresh_token);
+            expect((apiResponse as any).user).toBeUndefined();
+            expect((apiResponse as any).welcome_email_sent).toBeUndefined();
+        });
+
+        it('should format refresh token endpoint response correctly', () => 
+        {
+            // Arrange - Token refresh service response with tracking data
+            const refreshServiceResponse = {
+                access_token: 'new_access_token',
+                refresh_token: 'new_refresh_token',
+                previous_token: 'old_access_token', // Token rotation tracking - should be excluded
+                revoked_tokens: ['token1', 'token2'], // Security tracking - should be excluded
+            };
+
+            // Act - Transform to API response
+            const apiResponse = plainToInstance(OutTokensDto, refreshServiceResponse, {
+                excludeExtraneousValues: true,
+            }) as OutTokensDto;
+
+            // Assert - Only new tokens in API response
+            expect(apiResponse.access_token).toBe(refreshServiceResponse.access_token);
+            expect(apiResponse.refresh_token).toBe(refreshServiceResponse.refresh_token);
+            expect((apiResponse as any).previous_token).toBeUndefined();
+            expect((apiResponse as any).revoked_tokens).toBeUndefined();
+        });
+    });
+
+    describe('Security and Data Protection', () => 
+    {
+        it('should prevent sensitive data exposure in API response', () => 
+        {
+            // Arrange - Service response with highly sensitive internal data
+            const serviceResponseWithSecrets = {
+                access_token: 'public_access_token',
+                refresh_token: 'public_refresh_token',
+                // Critical internal data that must NEVER be exposed
+                signing_key: 'super_secret_jwt_key',
+                database_connection: 'mongodb://user:pass@localhost:27017/db',
+                user_password_hash: '$2b$10$hashedPassword',
+                internal_user_data: {
+                    role: 'admin',
+                    permissions: ['all'],
+                },
+            };
+
+            // Act - Transform to API response
+            const apiResponse = plainToInstance(OutTokensDto, serviceResponseWithSecrets, {
+                excludeExtraneousValues: true,
+            }) as OutTokensDto;
+
+            // Assert - Only safe token fields are exposed
+            expect(Object.keys(apiResponse)).toEqual(['access_token', 'refresh_token']);
+            
+            // Verify no sensitive data leaks
+            expect((apiResponse as any).signing_key).toBeUndefined();
+            expect((apiResponse as any).database_connection).toBeUndefined();
+            expect((apiResponse as any).user_password_hash).toBeUndefined();
+            expect((apiResponse as any).internal_user_data).toBeUndefined();
+        });
+
+        it('should handle edge cases safely', () => 
+        {
+            // Arrange - Various edge case inputs
+            const edgeCaseInputs = [
+                { access_token: '', refresh_token: '' }, // Empty strings
+                { access_token: null, refresh_token: undefined }, // Null/undefined
+                { access_token: 'valid_token', refresh_token: null }, // Mixed values
+            ];
+
+            edgeCaseInputs.forEach(input => 
+            {
+                // Act - Transform edge case input
+                const apiResponse = plainToInstance(OutTokensDto, input, {
                     excludeExtraneousValues: true,
                 }) as OutTokensDto;
 
-                // Only tokens should be present
-                expect(Object.keys(transformed)).toEqual(['access_token', 'refresh_token']);
-                
-                // Verify no secret data is exposed
-                expect((transformed as any).signing_key).toBeUndefined();
-                expect((transformed as any).database_connection).toBeUndefined();
-                expect((transformed as any).user_password_hash).toBeUndefined();
-                expect((transformed as any).internal_user_data).toBeUndefined();
-            });
-
-            it('should handle null or undefined tokens safely', () => 
-            {
-                const nullTokenData = {
-                    access_token: null,
-                    refresh_token: undefined,
-                };
-
-                const transformed = plainToInstance(OutTokensDto, nullTokenData, {
-                    excludeExtraneousValues: true,
-                }) as OutTokensDto;
-
-                expect(transformed.access_token).toBeNull();
-                expect(transformed.refresh_token).toBeUndefined();
+                // Assert - API response should handle edge cases gracefully
+                expect(apiResponse.access_token).toBe(input.access_token);
+                expect(apiResponse.refresh_token).toBe(input.refresh_token);
             });
         });
     });
