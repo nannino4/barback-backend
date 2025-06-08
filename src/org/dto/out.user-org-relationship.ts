@@ -6,20 +6,11 @@ import { OrgRole } from '../schemas/user-org-relationship.schema';
 export class OutUserOrgRelationshipDto 
 {
     @Expose()
-    @Transform(({ obj }) => ({
-        id: obj.userId?._id?.toString() || obj.userId?.toString() || '',
-        email: obj.userId?.email || '',
-        firstName: obj.userId?.firstName || '',
-        lastName: obj.userId?.lastName || '',
-        profilePictureUrl: obj.userId?.profilePictureUrl,
-    }))
+    @Transform(({ obj }) => obj.userId)
     user!: OutUserPublicDto;
 
     @Expose()
-    @Transform(({ obj }) => ({
-        id: obj.organizationId?._id?.toString() || obj.organizationId?.toString() || '',
-        name: obj.organizationId?.name || '',
-    }))
+    @Transform(({ obj }) => obj.orgId)
     org!: OutOrgDto;
 
     @Expose()

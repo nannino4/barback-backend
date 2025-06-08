@@ -14,7 +14,7 @@ export class UserOrgRelationship extends Document
     userId?: Types.ObjectId;
 
     @Prop({ type: Types.ObjectId, ref: 'Org', required: true })
-    organizationId!: Types.ObjectId;
+    orgId!: Types.ObjectId;
 
     @Prop({ type: String, enum: OrgRole, required: true })
     role!: OrgRole;
@@ -25,6 +25,6 @@ export class UserOrgRelationship extends Document
 export const UserOrgRelationshipSchema = SchemaFactory.createForClass(UserOrgRelationship);
 
 // Define indexes as required by coding guidelines
-UserOrgRelationshipSchema.index({ userId: 1, organizationId: 1 }, { unique: true });
+UserOrgRelationshipSchema.index({ userId: 1, orgId: 1 }, { unique: true });
 UserOrgRelationshipSchema.index({ userId: 1 });
-UserOrgRelationshipSchema.index({ organizationId: 1 });
+UserOrgRelationshipSchema.index({ orgId: 1 });

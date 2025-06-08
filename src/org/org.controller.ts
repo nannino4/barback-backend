@@ -22,7 +22,7 @@ export class OrgController
     constructor(private readonly organizationService: OrgService) { }
 
     @Get()
-    async getUserOrganizations(
+    async getUserOrgs(
         @CurrentUser() user: User,
         @Query('orgRole') orgRole?: OrgRole
     ): Promise<OutUserOrgRelationshipDto[]>

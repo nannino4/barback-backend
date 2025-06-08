@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { OrgService } from '../org.service';
+import { UserOrgService } from '../user-org.service';
 import { OrgRole } from '../schemas/user-org-relationship.schema';
 import { ORG_ROLES_KEY } from '../decorators/org-roles.decorator';
 
@@ -12,7 +12,7 @@ export class OrgRolesGuard implements CanActivate
 
     constructor(
         private readonly reflector: Reflector,
-        private readonly organizationService: OrgService,
+        private readonly userOrgService: UserOrgService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> 
@@ -30,7 +30,7 @@ export class OrgRolesGuard implements CanActivate
 
         const request = context.switchToHttp().getRequest<Request>();
         const user = request.user;
-        const organizationId = request.params?.organizationId || request.params?.id;
+        const orgId = request.params?.orgId || request.params?.id;
 
         if (!user) 
         {
@@ -38,7 +38,7 @@ export class OrgRolesGuard implements CanActivate
             throw new ForbiddenException('User information not available');
         }
 
-        if (!organizationId) 
+        if (!orgId) 
         {
             this.logger.warn('Organization ID not found in request parameters', 'OrganizationRolesGuard#canActivate');
             throw new ForbiddenException('Organization ID is required');
@@ -46,11 +46,11 @@ export class OrgRolesGuard implements CanActivate
 
         try 
         {
-            const userRole = await this.organizationService.getUserOrgRel(user.id, organizationId);
+            const userRole = (await this.userOrgService.findOne(user.id, orgId))?.role;
             
             if (!userRole) 
             {
-                this.logger.warn(`User ${user.email} is not a member of organization ${organizationId}`, 'OrganizationRolesGuard#canActivate');
+                this.logger.warn(`User ${user.email} is not a member of organization ${orgId}`, 'OrganizationRolesGuard#canActivate');
                 throw new ForbiddenException('You are not a member of this organization');
             }
 
