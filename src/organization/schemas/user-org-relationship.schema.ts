@@ -13,7 +13,7 @@ export class UserOrgRelationship extends Document
     @Prop({ type: Types.ObjectId, ref: 'User', required: false })
     userId?: Types.ObjectId;
 
-    @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
+    @Prop({ type: Types.ObjectId, ref: 'Org', required: true })
     organizationId!: Types.ObjectId;
 
     @Prop({ type: String, enum: OrgRole, required: true })

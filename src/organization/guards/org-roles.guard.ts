@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { OrganizationService } from '../organization.service';
+import { OrgService } from '../org.service';
 import { OrgRole } from '../schemas/user-org-relationship.schema';
 import { ORG_ROLES_KEY } from '../decorators/org-roles.decorator';
 
@@ -12,7 +12,7 @@ export class OrgRolesGuard implements CanActivate
 
     constructor(
         private readonly reflector: Reflector,
-        private readonly organizationService: OrganizationService,
+        private readonly organizationService: OrgService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> 

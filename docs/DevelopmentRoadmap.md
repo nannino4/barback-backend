@@ -137,10 +137,9 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] `PUT /organizations/{id}` - Update organization name/settings (owner only)
   - [ ] `PUT /organizations/{id}/members/{userId}/role` - Update member role (owners/managers only)
 - [ ] **Role-Based Access Control**:
-  - [ ] Implement `OrgRolesGuard` for organization-level permissions
-  - [ ] Support for Owner, Manager, Staff roles within organizations
+  - [X] Implement `OrgRolesGuard` for organization-level permissions
   - [ ] Prevent owner role assignment through role updates
-- [ ] **Data Models & Schemas**:
+- [X] **Data Models & Schemas**:
   - [X] Organization schema with proper indexing
   - [X] UserOrgRelationship schema
   - [X] OrgInvite schema
@@ -161,17 +160,12 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Allow invitation revocation by inviter (Owner/Manager).
   - [ ] Prevent duplicate invitations to same email for same organization.
   - [ ] Handle expired invitations cleanup.
-- [ ] **OrgRole-Based Access Control (RBAC)**:
-  - [ ] Implement guards for OrgRoles.
 - [ ] **API Endpoints**:
   - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
   - [ ] `/organizations/{id}/invitations` - Send user invitations.
   - [ ] `/organizations/{id}/invitations/{invitationId}/revoke` - Revoke pending invitation.
-  - [ ] `/organizations/{id}/members` - Manage organization members.
   - [ ] `/invitations/accept/{token}` - Accept organization invitation.
   - [ ] `/invitations/decline/{token}` - Decline organization invitation.
-  - [ ] `/users/me/organizations` - Get user's organizations and pending invitations.
-  - [ ] `/users/me/invitations/pending-registration` - Get invitations accepted but awaiting registration completion.
 
 #### Category Management
 - [ ] **Core Functionality**:

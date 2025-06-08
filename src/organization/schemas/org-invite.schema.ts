@@ -13,8 +13,8 @@ export enum InviteStatus {
 @Schema({ timestamps: true, collection: 'org_invites' })
 export class OrgInvite extends Document 
 {
-    @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
-    organizationId!: Types.ObjectId;
+    @Prop({ type: Types.ObjectId, ref: 'Org', required: true })
+    orgId!: Types.ObjectId;
 
     @Prop({ type: String, required: false })
     invitedEmail?: string;
@@ -40,8 +40,8 @@ export class OrgInvite extends Document
 export const OrgInviteSchema = SchemaFactory.createForClass(OrgInvite);
 
 // Define indexes as required by coding guidelines
-OrgInviteSchema.index({ invitedEmail: 1, organizationId: 1 }, { unique: true });
-OrgInviteSchema.index({ organizationId: 1 });
+OrgInviteSchema.index({ invitedEmail: 1, orgId: 1 }, { unique: true });
+OrgInviteSchema.index({ orgId: 1 });
 OrgInviteSchema.index({ status: 1 });
 OrgInviteSchema.index({ invitedEmail: 1 });
 OrgInviteSchema.index({ invitationExpires: 1 });

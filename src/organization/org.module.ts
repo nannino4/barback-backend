@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { OrganizationController } from './organization.controller';
-import { OrganizationService } from './organization.service';
+import { OrgController } from './org.controller';
+import { OrgService } from './org.service';
 import { Org, OrgSchema } from './schemas/org.schema';
 import { 
     UserOrgRelationship, 
@@ -15,8 +15,8 @@ import {
             { name: UserOrgRelationship.name, schema: UserOrgRelationshipSchema },
         ]),
     ],
-    controllers: [OrganizationController],
-    providers: [OrganizationService],
-    exports: [OrganizationService],
+    controllers: [OrgController],
+    providers: [OrgService],
+    exports: [OrgService],
 })
-export class OrganizationModule { }
+export class OrgModule { }
