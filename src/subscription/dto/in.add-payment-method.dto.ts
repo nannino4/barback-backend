@@ -1,6 +1,6 @@
 import { IsString } from 'class-validator';
 
-export class AddPaymentMethodDto 
+export class InAddPaymentMethodDto 
 {
     @IsString()
     paymentMethodId!: string;

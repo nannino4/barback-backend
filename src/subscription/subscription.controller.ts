@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Delete, UseGuards, Request, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Delete, UseGuards, Logger } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../user/schemas/user.schema';
 import { SubscriptionService } from './subscription.service';
 import { OutSubscriptionDto } from './dto/out.subscription.dto';
 import { OutSubscriptionPlanDto } from './dto/out.subscription-plan.dto';
@@ -30,10 +32,10 @@ export class SubscriptionController
 
     @UseGuards(JwtAuthGuard)
     @Get()
-    async getSubscription(@Request() req: any): Promise<OutSubscriptionDto | null> 
+    async getSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto | null> 
     {
-        this.logger.debug(`Getting subscription for user: ${req.user.id}`, 'SubscriptionController#getSubscription');
-        const subscription = await this.subscriptionService.findByUserId(req.user.id);
+        this.logger.debug(`Getting subscription for user: ${user.id}`, 'SubscriptionController#getSubscription');
+        const subscription = await this.subscriptionService.findByUserId(user.id);
         if (!subscription) 
         {
             return null;
@@ -43,19 +45,19 @@ export class SubscriptionController
 
     @UseGuards(JwtAuthGuard)
     @Post('start-owner-trial')
-    async startOwnerTrialSubscription(@Request() req: any): Promise<OutSubscriptionDto> 
+    async startOwnerTrialSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto> 
     {
-        this.logger.debug(`Starting owner trial subscription for user: ${req.user.id}`, 'SubscriptionController#startOwnerTrialSubscription');
-        const subscription = await this.subscriptionService.createTrialSubscription(req.user.id);
+        this.logger.debug(`Starting owner trial subscription for user: ${user.id}`, 'SubscriptionController#startOwnerTrialSubscription');
+        const subscription = await this.subscriptionService.createTrialSubscription(user.id);
         return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 
     @UseGuards(JwtAuthGuard)
     @Delete('cancel')
-    async cancelSubscription(@Request() req: any): Promise<OutSubscriptionDto> 
+    async cancelSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto> 
     {
-        this.logger.debug(`Canceling subscription for user: ${req.user.id}`, 'SubscriptionController#cancelSubscription');
-        const subscription = await this.subscriptionService.cancelSubscription(req.user.id);
+        this.logger.debug(`Canceling subscription for user: ${user.id}`, 'SubscriptionController#cancelSubscription');
+        const subscription = await this.subscriptionService.cancelSubscription(user.id);
         return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 
@@ -69,10 +71,10 @@ export class SubscriptionController
 
     @UseGuards(JwtAuthGuard)
     @Get('trial-eligibility')
-    async checkTrialEligibility(@Request() req: any): Promise<{ eligible: boolean }> 
+    async checkTrialEligibility(@CurrentUser() user: User): Promise<{ eligible: boolean }> 
     {
-        this.logger.debug(`Checking trial eligibility for user: ${req.user.id}`, 'SubscriptionController#checkTrialEligibility');
-        const eligible = await this.subscriptionService.isEligibleForTrial(req.user.id);
+        this.logger.debug(`Checking trial eligibility for user: ${user.id}`, 'SubscriptionController#checkTrialEligibility');
+        const eligible = await this.subscriptionService.isEligibleForTrial(user.id);
         return { eligible };
     }
 }

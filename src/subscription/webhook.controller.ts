@@ -1,5 +1,5 @@
 import { Controller, Post, RawBodyRequest, Req, Headers, Logger, BadRequestException } from '@nestjs/common';
-import { SubscriptionService } from '../subscription/subscription.service';
+import { SubscriptionService } from './subscription.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 
@@ -8,6 +8,7 @@ export class WebhookController
 {
     private readonly logger = new Logger(WebhookController.name);
     private readonly stripe: Stripe;
+    private readonly webhookSecret: string;
 
     constructor(
         private readonly subscriptionService: SubscriptionService,
@@ -23,6 +24,13 @@ export class WebhookController
         this.stripe = new Stripe(stripeSecretKey, {
             apiVersion: '2025-05-28.basil',
         });
+
+        const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+        if (!webhookSecret) 
+        {
+            throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
+        }
+        this.webhookSecret = webhookSecret;
     }
 
     @Post('stripe')
@@ -38,17 +46,11 @@ export class WebhookController
             throw new BadRequestException('Missing stripe-signature header');
         }
 
-        const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
-        if (!webhookSecret) 
-        {
-            throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
-        }
-
         let event: Stripe.Event;
 
         try 
         {
-            event = this.stripe.webhooks.constructEvent(req.rawBody!, signature, webhookSecret);
+            event = this.stripe.webhooks.constructEvent(req.rawBody!, signature, this.webhookSecret);
         } 
         catch (err) 
         {

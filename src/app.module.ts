@@ -5,7 +5,6 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { WebhookModule } from './webhook/webhook.module';
 
 @Module({
     imports: [
@@ -24,7 +23,6 @@ import { WebhookModule } from './webhook/webhook.module';
         AuthModule,
         AdminModule,
         SubscriptionModule,
-        WebhookModule,
     ],
     controllers: [],
     providers: [
