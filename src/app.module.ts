@@ -5,7 +5,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { SubscriptionModule } from './subscription/subscription.module';
-import { OrgModule } from './organization/org.module';
+import { OrgModule } from './org/org.module';
 
 @Module({
     imports: [

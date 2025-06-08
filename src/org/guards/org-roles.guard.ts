@@ -46,7 +46,7 @@ export class OrgRolesGuard implements CanActivate
 
         try 
         {
-            const userRole = await this.organizationService.getUserRoleInOrganization(user.id, organizationId);
+            const userRole = await this.organizationService.getUserOrgRel(user.id, organizationId);
             
             if (!userRole) 
             {

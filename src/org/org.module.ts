@@ -7,6 +7,7 @@ import {
     UserOrgRelationship, 
     UserOrgRelationshipSchema,
 } from './schemas/user-org-relationship.schema';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
     imports: [
@@ -14,6 +15,7 @@ import {
             { name: Org.name, schema: OrgSchema },
             { name: UserOrgRelationship.name, schema: UserOrgRelationshipSchema },
         ]),
+        AuthModule,
     ],
     controllers: [OrgController],
     providers: [OrgService],

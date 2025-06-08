@@ -130,12 +130,12 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - Depends on: Subscription Management (✅ Completed)
 - Integration: Uses `ActiveSubscriptionGuard` to restrict organization creation
 - [ ] **Basic Organization API Endpoints**:
-  - [ ] `GET /organizations` - List all organizations user is in (optional filter by orgRole)
-  - [ ] `GET /organizations/{id}/members` - List organization members
+  - [ ] `GET /orgs` - List all organizations user is in (optional filter by orgRole)
+  - [ ] `GET /orgs/{id}/members` - List organization members
   - [ ] `GET /invitations` - List user's invitations
-  - [ ] `POST /organizations` - Create organization (with ActiveSubscriptionGuard)
-  - [ ] `PUT /organizations/{id}` - Update organization name/settings (owner only)
-  - [ ] `PUT /organizations/{id}/members/{userId}/role` - Update member role (owners/managers only)
+  - [ ] `POST /orgs` - Create organization (with ActiveSubscriptionGuard)
+  - [ ] `PUT /orgs/{id}` - Update organization name/settings (owner only)
+  - [ ] `PUT /orgs/{id}/members/{userId}/role` - Update member role (owners/managers only)
 - [ ] **Role-Based Access Control**:
   - [X] Implement `OrgRolesGuard` for organization-level permissions
   - [ ] Prevent owner role assignment through role updates
@@ -162,10 +162,10 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Handle expired invitations cleanup.
 - [ ] **API Endpoints**:
   - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
-  - [ ] `/organizations/{id}/invitations` - Send user invitations.
-  - [ ] `/organizations/{id}/invitations/{invitationId}/revoke` - Revoke pending invitation.
-  - [ ] `/invitations/accept/{token}` - Accept organization invitation.
-  - [ ] `/invitations/decline/{token}` - Decline organization invitation.
+  - [ ] `/orgs/{id}/invites` - Send user invites.
+  - [ ] `/orgs/{id}/invites/{invitationId}/revoke` - Revoke pending invitation.
+  - [ ] `/invites/accept/{token}` - Accept organization invitation.
+  - [ ] `/invites/decline/{token}` - Decline organization invitation.
 
 #### Category Management
 - [ ] **Core Functionality**:
