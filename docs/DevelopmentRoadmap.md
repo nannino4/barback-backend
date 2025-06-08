@@ -30,7 +30,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Define schema (e.g., email, password hash, Google ID, roles).
   - [X] Define roles: Admin, User.
 - [X] **Organization Model**:
-  - [X] Define schema (e.g., name, owner, associated inventories).
+  - [X] Define schema (e.g., name, owner, single inventory per organization).
   - [X] Define org related user roles: Owner, Manager, Staff.
 - [X] **Subscription Model**:
   - [X] Define schema.
@@ -39,7 +39,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [X] **Category Model**:
   - [X] Define schema (e.g., name, description) for product categorization.
 - [X] **Inventory Model**:
-  - [X] Define schema for current stock levels (product link, quantity).
+  - [X] Define schema for current stock levels integrated into Product model.
   - [X] Define schema for inventory logs (stock adjustments, reason codes, timestamp, user).
 - [X] **Alerts Model**:
   - [X] Define schema (e.g., type - low stock/reminder, target - product/task, threshold, status).
@@ -128,7 +128,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] **Core Functionality**:
   - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
   - [ ] Implement functionality for an Owner to manage their organization details.
-  - [ ] Implement multi-inventory support within an organization (conceptual setup, linking inventories to an org).
+  - [ ] Implement single inventory management within an organization.
 - [ ] **User Management within Organization**:
   - [ ] Allow Owners/Managers to invite users to their organization.
   - [ ] Allow Owners/Managers to assign/update roles for users within their organization.
@@ -146,14 +146,14 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 
 #### Product Management
 - [ ] **Core Functionality**:
-  - [ ] Implement CRUD operations for Products (name, category, unit, par level).
+  - [ ] Implement CRUD operations for Products (name, category, unit, par level, current quantity).
 - [ ] **API Endpoints**:
   - [ ] Develop Product management endpoints.
 
 #### Inventory Management
 - [ ] **Stock Tracking**:
   - [ ] Implement manual stock adjustments with reason codes (creating inventory log entries).
-  - [ ] Implement real-time stock level display (calculating from logs or a snapshot).
+  - [ ] Implement real-time stock level display (from Product.currentQuantity).
 - [ ] **Reporting**:
   - [ ] Implement generation of inventory reports by date range.
   - [ ] Implement generation of inventory reports for a specific date (snapshot).

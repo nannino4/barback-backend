@@ -26,11 +26,11 @@
 - Subscriptions renew automatically
 
 #### Organizations
-- Multi-inventory management
+- Single inventory management per organization
 - Each owner has one organization per subscription
 
 #### Inventory
-- Create/edit/remove products with name, category, unit, par level
+- Create/edit/remove products with name, category, unit, par level, current quantity
 - Manual stock adjustments with reason codes via inventory logs
 - Real-time stock level display
 - Generate inventory reports by date range or by specific date

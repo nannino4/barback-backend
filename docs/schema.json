@@ -119,44 +119,16 @@
         "brand": { "type": "string", "description": "Product brand or manufacturer (optional)" },
         "defaultUnit": { "type": "string", "description": "Default unit of measure (e.g., 'bottle', 'can', 'kg', 'liter')" },
         "defaultPurchasePrice": { "type": ["number", "null"], "description": "Default purchase price for this product (optional)" },
+        "currentQuantity": { "type": "number", "description": "Current quantity on hand for this product (in defaultUnit)", "default": 0 },
+        "parLevel": { "type": ["number", "null"], "description": "Par level for low stock alerts (optional)" },
         "imageUrl": { "type": "string", "description": "URL to an image of the product" },
         "createdAt": { "type": "Date", "description": "Timestamp of when the product was created" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the product was last updated" }
       },
       "indexes": [
         { "fields": { "organizationId": 1, "name": 1 }, "options": { "unique": true } },
-        { "fields": { "categoryIds": 1 } }
-      ]
-    },
-    "Inventory": {
-      "collection": "inventories",
-      "fields": {
-        "_id": { "type": "ObjectId", "description": "Unique identifier for the inventory" },
-        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
-        "name": { "type": "string", "description": "Inventory name" },
-        "description": { "type": "string", "description": "Inventory description" },
-        "createdAt": { "type": "Date", "description": "Timestamp of when the inventory was created" },
-        "updatedAt": { "type": "Date", "description": "Timestamp of when the inventory was last updated" }
-      },
-      "indexes": [
-        { "fields": { "organizationId": 1 } }
-      ]
-    },
-    "InventoryItem": {
-      "collection": "inventory_items",
-      "fields": {
-        "_id": { "type": "ObjectId", "description": "Unique identifier for the inventory item" },
-        "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
-        "inventoryId": { "type": "ObjectId", "description": "Reference to the specific Inventory (location/stockroom)" },
-        "productId": { "type": "ObjectId", "description": "Reference to the abstract Product" },
-        "quantity": { "type": "number", "description": "Current quantity on hand for this item in this inventory (in Product.defaultUnit)" },
-        "createdAt": { "type": "Date", "description": "Timestamp of when the inventory item record was created" },
-        "updatedAt": { "type": "Date", "description": "Timestamp of when the inventory item record was last updated" }
-      },
-      "indexes": [
-        { "fields": { "organizationId": 1, "inventoryId": 1, "productId": 1 }, "options": { "unique": true } },
-        { "fields": { "organizationId": 1, "productId": 1 } },
-        { "fields": { "organizationId": 1, "inventoryId": 1 } }
+        { "fields": { "categoryIds": 1 } },
+        { "fields": { "organizationId": 1, "currentQuantity": 1 } }
       ]
     },
     "InventoryLog": {
@@ -164,12 +136,12 @@
       "fields": {
         "_id": { "type": "ObjectId", "description": "Unique identifier for the log entry" },
         "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
-        "inventoryItemId": { "type": "ObjectId", "description": "Reference to the specific inventory item affected" },
+        "productId": { "type": "ObjectId", "description": "Reference to the product affected" },
         "userId": { "type": "ObjectId", "description": "Reference to the user who made the change" },
         "type": { 
           "type": "string", 
           "description": "Type of transaction",
-          "enum": ["purchase", "consumption", "adjustment", "transfer", "stocktake"]
+          "enum": ["purchase", "consumption", "adjustment", "stocktake"]
         },
         "quantity": { "type": "number", "description": "Quantity change (positive or negative, in Product.defaultUnit)" },
         "previousQuantity": { "type": "number", "description": "Quantity before the transaction (in Product.defaultUnit)" },
@@ -179,7 +151,7 @@
       },
       "indexes": [
         { "fields": { "organizationId": 1 } },
-        { "fields": { "inventoryItemId": 1 } },
+        { "fields": { "productId": 1 } },
         { "fields": { "userId": 1 } },
         { "fields": { "type": 1 } },
         { "fields": { "createdAt": 1 } }
@@ -206,7 +178,6 @@
               "description": "Low stock condition",
               "properties": {
                 "productId": { "type": "ObjectId", "description": "Reference to the product" },
-                "inventoryItemId": { "type": "ObjectId", "description": "Reference to the inventory item" },
                 "threshold": { "type": "number", "description": "Threshold for low stock alert" }
               }
             },
