@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { OrganizationController } from './organization.controller';
 import { OrganizationService } from './organization.service';
-import { Organization, OrganizationSchema } from './schemas/organization.schema';
+import { Org, OrgSchema } from './schemas/org.schema';
 import { 
     UserOrgRelationship, 
     UserOrgRelationshipSchema,
@@ -11,7 +11,7 @@ import {
 @Module({
     imports: [
         MongooseModule.forFeature([
-            { name: Organization.name, schema: OrganizationSchema },
+            { name: Org.name, schema: OrgSchema },
             { name: UserOrgRelationship.name, schema: UserOrgRelationshipSchema },
         ]),
     ],

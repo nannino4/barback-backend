@@ -1,5 +1,5 @@
 import { IsString, IsNotEmpty, IsObject, ValidateIf } from 'class-validator';
-import { OrganizationSettings } from '../schemas/organization.schema';
+import { OrgSettings } from '../schemas/org.schema';
 
 export class UpdateOrganizationDto 
 {
@@ -11,5 +11,5 @@ export class UpdateOrganizationDto
     @ValidateIf(o => o.settings !== undefined)
     @IsNotEmpty()
     @IsObject()
-    settings?: OrganizationSettings;
+    settings?: OrgSettings;
 }

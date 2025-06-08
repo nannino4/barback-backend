@@ -6,9 +6,9 @@ import { OrgRole } from '../schemas/user-org-relationship.schema';
 import { ORG_ROLES_KEY } from '../decorators/org-roles.decorator';
 
 @Injectable()
-export class OrganizationRolesGuard implements CanActivate 
+export class OrgRolesGuard implements CanActivate 
 {
-    private readonly logger = new Logger(OrganizationRolesGuard.name);
+    private readonly logger = new Logger(OrgRolesGuard.name);
 
     constructor(
         private readonly reflector: Reflector,

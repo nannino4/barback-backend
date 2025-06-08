@@ -1,12 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export interface OrganizationSettings {
+export interface OrgSettings {
     defaultCurrency: string;
 }
 
-@Schema({ timestamps: true, collection: 'organizations' })
-export class Organization extends Document 
+@Schema({ timestamps: true, collection: 'orgs' })
+export class Org extends Document 
 {
     @Prop({ type: String, required: true })
     name!: string;
@@ -21,13 +21,13 @@ export class Organization extends Document
         type: Object,
         default: () => ({ defaultCurrency: 'EUR' }),
     })
-    settings!: OrganizationSettings;
+    settings!: OrgSettings;
 
     // createdAt and updatedAt are handled by timestamps: true
 }
 
-export const OrganizationSchema = SchemaFactory.createForClass(Organization);
+export const OrgSchema = SchemaFactory.createForClass(Org);
 
 // Define indexes as required by coding guidelines
-OrganizationSchema.index({ ownerId: 1 });
-OrganizationSchema.index({ subscriptionId: 1 }, { unique: true });
+OrgSchema.index({ ownerId: 1 });
+OrgSchema.index({ subscriptionId: 1 }, { unique: true });

@@ -129,27 +129,23 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 **✅ Basic Organization Management COMPLETED**
 - Depends on: Subscription Management (✅ Completed)
 - Integration: Uses `ActiveSubscriptionGuard` to restrict organization creation
-- [X] **Core Functionality**:
-  - [X] Implement Organization creation (with subscription guard).
-  - [X] Implement functionality for an Owner to manage their organization details.
-  - [X] Implement organization member role management.
-- [X] **Basic Organization API Endpoints**:
-  - [X] `GET /organizations/owned` - List all owned organizations
-  - [X] `GET /organizations/member` - List all organizations user is in
-  - [X] `GET /organizations/{id}/members` - List organization members
-  - [X] `GET /invitations` - List user's invitations
-  - [X] `POST /organizations` - Create organization (with ActiveSubscriptionGuard)
-  - [X] `PUT /organizations/{id}` - Update organization name/settings (owner only)
-  - [X] `PUT /organizations/{id}/members/{userId}/role` - Update member role (owners/managers only)
-- [X] **Role-Based Access Control**:
-  - [X] Implement `OrganizationRolesGuard` for organization-level permissions
-  - [X] Support for Owner, Manager, Staff roles within organizations
-  - [X] Prevent owner role assignment through role updates
-- [X] **Data Models & Schemas**:
+- [ ] **Basic Organization API Endpoints**:
+  - [ ] `GET /organizations` - List all organizations user is in (optional filter by orgRole)
+  - [ ] `GET /organizations/{id}/members` - List organization members
+  - [ ] `GET /invitations` - List user's invitations
+  - [ ] `POST /organizations` - Create organization (with ActiveSubscriptionGuard)
+  - [ ] `PUT /organizations/{id}` - Update organization name/settings (owner only)
+  - [ ] `PUT /organizations/{id}/members/{userId}/role` - Update member role (owners/managers only)
+- [ ] **Role-Based Access Control**:
+  - [ ] Implement `OrgRolesGuard` for organization-level permissions
+  - [ ] Support for Owner, Manager, Staff roles within organizations
+  - [ ] Prevent owner role assignment through role updates
+- [ ] **Data Models & Schemas**:
   - [X] Organization schema with proper indexing
-  - [X] UserOrgRelationship schema with invitation support
+  - [X] UserOrgRelationship schema
+  - [X] OrgInvite schema
   - [X] Input/Output DTOs with proper validation and transformation
-- [ ] **User Management within Organization** (Future Enhancement):
+- [ ] **User Management within Organization**:
   - [ ] Allow Owners/Managers to invite users to their organization via email.
   - [ ] Implement email invitation system with accept/decline functionality.
   - [ ] Allow users to view organizations they're invited to and organizations they're part of.
