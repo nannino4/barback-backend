@@ -120,7 +120,6 @@
         "defaultUnit": { "type": "string", "description": "Default unit of measure (e.g., 'bottle', 'can', 'kg', 'liter')" },
         "defaultPurchasePrice": { "type": ["number", "null"], "description": "Default purchase price for this product (optional)" },
         "currentQuantity": { "type": "number", "description": "Current quantity on hand for this product (in defaultUnit)", "default": 0 },
-        "parLevel": { "type": ["number", "null"], "description": "Par level for low stock alerts (optional)" },
         "imageUrl": { "type": "string", "description": "URL to an image of the product" },
         "createdAt": { "type": "Date", "description": "Timestamp of when the product was created" },
         "updatedAt": { "type": "Date", "description": "Timestamp of when the product was last updated" }
