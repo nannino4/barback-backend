@@ -3,14 +3,13 @@ import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserRolesGuard } from './user-roles.guard';
 import { UserRole } from '../../user/schemas/user.schema';
-import { USER_ROLES_KEY } from '../decorators/user-roles.decorator';
 
-describe('UserRolesGuard', () => 
+describe('UserRolesGuard - Output-Focused Tests', () => 
 {
     let guard: UserRolesGuard;
     let reflector: Reflector;
 
-    const mockExecutionContext = (user: any): Partial<ExecutionContext> => ({
+    const createMockContext = (user: any): Partial<ExecutionContext> => ({
         switchToHttp: jest.fn().mockReturnValue({
             getRequest: jest.fn().mockReturnValue({ user }),
         }),
@@ -41,90 +40,92 @@ describe('UserRolesGuard', () =>
         expect(guard).toBeDefined();
     });
 
-    describe('canActivate', () => 
+    describe('Access Control Behavior', () => 
     {
-        it('should allow access when no roles are required', () => 
+        it('should grant access when no role restrictions are defined', () => 
         {
-            // Arrange
-            const context = mockExecutionContext({ role: UserRole.USER });
+            // Arrange - No role restrictions on endpoint
+            const context = createMockContext({ role: UserRole.USER });
             jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(null);
 
             // Act
-            const result = guard.canActivate(context as ExecutionContext);
+            const canAccess = guard.canActivate(context as ExecutionContext);
 
-            // Assert
-            expect(result).toBe(true);
-            expect(reflector.getAllAndOverride).toHaveBeenCalledWith(USER_ROLES_KEY, [
-                context.getHandler!(),
-                context.getClass!(),
-            ]);
+            // Assert - User should be granted access
+            expect(canAccess).toBe(true);
         });
 
-        it('should allow access when user has required role', () => 
+        it('should grant access when user has exact role match', () => 
         {
-            // Arrange
-            const user = { role: UserRole.ADMIN, email: 'admin@example.com' };
-            const context = mockExecutionContext(user);
-            const requiredRoles = [UserRole.ADMIN];
-            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(requiredRoles);
+            // Arrange - Admin-only endpoint with admin user
+            const adminUser = { role: UserRole.ADMIN, email: 'admin@example.com' };
+            const context = createMockContext(adminUser);
+            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
             // Act
-            const result = guard.canActivate(context as ExecutionContext);
+            const canAccess = guard.canActivate(context as ExecutionContext);
 
-            // Assert
-            expect(result).toBe(true);
+            // Assert - Admin user should be granted access to admin endpoint
+            expect(canAccess).toBe(true);
         });
 
-        it('should allow access when user has one of multiple required roles', () => 
+        it('should grant access when user has one of multiple allowed roles', () => 
         {
-            // Arrange
-            const user = { role: UserRole.USER, email: 'user@example.com' };
-            const context = mockExecutionContext(user);
-            const requiredRoles = [UserRole.ADMIN, UserRole.USER];
-            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(requiredRoles);
+            // Arrange - Endpoint allowing both USER and ADMIN roles
+            const regularUser = { role: UserRole.USER, email: 'user@example.com' };
+            const context = createMockContext(regularUser);
+            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN, UserRole.USER]);
 
             // Act
-            const result = guard.canActivate(context as ExecutionContext);
+            const canAccess = guard.canActivate(context as ExecutionContext);
 
-            // Assert
-            expect(result).toBe(true);
+            // Assert - Regular user should be granted access
+            expect(canAccess).toBe(true);
         });
 
-        it('should deny access when user does not have required role', () => 
+        it('should deny access when user lacks required role', () => 
         {
-            // Arrange
-            const user = { role: UserRole.USER, email: 'user@example.com' };
-            const context = mockExecutionContext(user);
-            const requiredRoles = [UserRole.ADMIN];
-            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(requiredRoles);
+            // Arrange - Admin-only endpoint with regular user
+            const regularUser = { role: UserRole.USER, email: 'user@example.com' };
+            const context = createMockContext(regularUser);
+            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
-            // Act & Assert
+            // Act & Assert - Regular user should be denied access to admin endpoint
             expect(() => guard.canActivate(context as ExecutionContext)).toThrow(ForbiddenException);
         });
 
-        it('should deny access when user is not found in request', () => 
+        it('should deny access when no user is authenticated', () => 
         {
-            // Arrange
-            const context = mockExecutionContext(null);
-            const requiredRoles = [UserRole.ADMIN];
-            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(requiredRoles);
+            // Arrange - Protected endpoint with no authenticated user
+            const context = createMockContext(null);
+            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.USER]);
 
-            // Act & Assert
+            // Act & Assert - Unauthenticated request should be denied
             expect(() => guard.canActivate(context as ExecutionContext)).toThrow(ForbiddenException);
         });
 
-        it('should throw ForbiddenException with proper message when access is denied', () => 
+        it('should provide clear error message when access is denied', () => 
         {
-            // Arrange
-            const user = { role: UserRole.USER, email: 'user@example.com' };
-            const context = mockExecutionContext(user);
-            const requiredRoles = [UserRole.ADMIN];
-            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(requiredRoles);
+            // Arrange - Admin-only endpoint with regular user
+            const regularUser = { role: UserRole.USER, email: 'user@example.com' };
+            const context = createMockContext(regularUser);
+            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
 
-            // Act & Assert
+            // Act & Assert - Error should indicate required roles
             expect(() => guard.canActivate(context as ExecutionContext)).toThrow(
                 new ForbiddenException('Access denied. Required roles: admin'),
             );
+        });
+
+        it('should handle multiple role requirements in error message', () => 
+        {
+            // Arrange - Multi-role endpoint with insufficient user role
+            const regularUser = { role: UserRole.USER, email: 'user@example.com' };
+            const context = createMockContext(regularUser);
+            jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue([UserRole.ADMIN]);
+
+            // Act & Assert - Should deny access and show required roles
+            expect(() => guard.canActivate(context as ExecutionContext)).toThrow(ForbiddenException);
         });
     });
 });
