@@ -8,11 +8,14 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - **User Management**: Full CRUD, authentication, profile management
 - **Admin Management**: User administration, role management 
 - **Subscription Management**: Stripe integration, automatic trial-to-paid conversion, payment methods, webhooks
+- **Organization Management**: Basic organization CRUD, member management, role-based access control
 
 **🔄 Next Priority:**
-- **Organization Management**: Ready for implementation (depends on completed subscription system)
+- **Organization Invitation Integration**
+- **Category Management**: Product categorization system
+- **Product Management**: Core inventory items with par levels
 
-**📊 Overall Progress**: ~40% of MVP features completed
+**📊 Overall Progress**: ~50% of MVP features completed
 
 ## MVP Stage
 
@@ -123,20 +126,36 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] Deploy to production environment
 
 #### Organization Management
-**🔄 Next Priority: Ready for Implementation**
+**✅ Basic Organization Management COMPLETED**
 - Depends on: Subscription Management (✅ Completed)
-- Integration: Use `ActiveSubscriptionGuard` to restrict organization creation
-- [ ] **Core Functionality**:
-  - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
-  - [ ] Implement functionality for an Owner to manage their organization details.
-- [ ] **User Management within Organization**:
+- Integration: Uses `ActiveSubscriptionGuard` to restrict organization creation
+- [X] **Core Functionality**:
+  - [X] Implement Organization creation (with subscription guard).
+  - [X] Implement functionality for an Owner to manage their organization details.
+  - [X] Implement organization member role management.
+- [X] **Basic Organization API Endpoints**:
+  - [X] `GET /organizations/owned` - List all owned organizations
+  - [X] `GET /organizations/member` - List all organizations user is in
+  - [X] `GET /organizations/{id}/members` - List organization members
+  - [X] `GET /invitations` - List user's invitations
+  - [X] `POST /organizations` - Create organization (with ActiveSubscriptionGuard)
+  - [X] `PUT /organizations/{id}` - Update organization name/settings (owner only)
+  - [X] `PUT /organizations/{id}/members/{userId}/role` - Update member role (owners/managers only)
+- [X] **Role-Based Access Control**:
+  - [X] Implement `OrganizationRolesGuard` for organization-level permissions
+  - [X] Support for Owner, Manager, Staff roles within organizations
+  - [X] Prevent owner role assignment through role updates
+- [X] **Data Models & Schemas**:
+  - [X] Organization schema with proper indexing
+  - [X] UserOrgRelationship schema with invitation support
+  - [X] Input/Output DTOs with proper validation and transformation
+- [ ] **User Management within Organization** (Future Enhancement):
   - [ ] Allow Owners/Managers to invite users to their organization via email.
   - [ ] Implement email invitation system with accept/decline functionality.
-  - [ ] Allow Owners/Managers to assign/update roles for users within their organization.
   - [ ] Allow users to view organizations they're invited to and organizations they're part of.
   - [ ] Implement invitation token generation and validation.
   - [ ] Handle user registration with automatic invitation acceptance.
-- [ ] **Invitation Workflow**:
+- [ ] **Advanced Invitation Workflow** (Future Enhancement):
   - [ ] Generate secure invitation tokens with expiration.
   - [ ] Send invitation emails with accept/decline links.
   - [ ] Handle invitation acceptance for existing users.
