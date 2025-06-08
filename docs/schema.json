@@ -75,21 +75,30 @@
         { "fields": { "subscriptionId": 1 }, "options": { "unique": true } }
       ]
     },
-    "UserOrganization": {
-      "collection": "user_organizations",
+    "UserOrgRelationship": {
+      "collection": "user_org_relationships",
       "fields": {
         "_id": { "type": "ObjectId", "description": "Unique identifier for the user-organization relationship" },
-        "userId": { "type": "ObjectId", "description": "Reference to the user" },
+        "userId": { "type": ["ObjectId", "null"], "description": "Reference to the user (null for pending invitations)" },
         "organizationId": { "type": "ObjectId", "description": "Reference to the organization" },
         "role": { "type": "string", "description": "User role within this organization", "enum": ["owner", "manager", "staff"] },
-        "createdAt": { "type": "Date", "description": "Timestamp of when the user joined the organization" },
-        "updatedAt": { "type": "Date", "description": "Timestamp of when the user-organization relationship was last updated" }
+        "status": { "type": "string", "description": "Status of the relationship", "enum": ["active", "pending", "declined", "revoked", "accepted_pending_registration"], "default": "active" },
+        "invitedEmail": { "type": ["string", "null"], "description": "Email address for pending invitations (null for active relationships)" },
+        "invitationToken": { "type": ["string", "null"], "description": "Secure token for invitation acceptance (null for active relationships)" },
+        "invitationExpires": { "type": ["Date", "null"], "description": "Expiration date for the invitation (null for active relationships)" },
+        "invitedBy": { "type": ["ObjectId", "null"], "description": "Reference to the user who sent the invitation (null for owner/direct relationships)" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the relationship/invitation was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the relationship was last updated" }
       },
       "indexes": [
-        { "fields": { "userId": 1, "organizationId": 1 }, "options": { "unique": true } },
+        { "fields": { "userId": 1, "organizationId": 1 }, "options": { "unique": true, "sparse": true } },
         { "fields": { "userId": 1 } },
         { "fields": { "organizationId": 1 } },
-        { "fields": { "role": 1 } }
+        { "fields": { "role": 1 } },
+        { "fields": { "status": 1 } },
+        { "fields": { "invitedEmail": 1, "organizationId": 1 }, "options": { "unique": true, "sparse": true } },
+        { "fields": { "invitationToken": 1 }, "options": { "unique": true, "sparse": true } },
+        { "fields": { "invitationExpires": 1 } }
       ]
     },
     "Category": {

@@ -54,6 +54,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Implement Email Verification for new accounts.
   - [X] Implement User Login with email and password.
   - [ ] Implement Password Reset functionality via email.
+  - [ ] Implement Email Service for organization invitations.
 - [ ] **Google OAuth Authentication**:
   - [ ] Implement User Registration with Google.
   - [ ] Implement User Login with Google.
@@ -128,14 +129,34 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] **Core Functionality**:
   - [ ] Implement Organization creation (ensuring one active organization per owner/subscription).
   - [ ] Implement functionality for an Owner to manage their organization details.
-  - [ ] Implement single inventory management within an organization.
 - [ ] **User Management within Organization**:
-  - [ ] Allow Owners/Managers to invite users to their organization.
+  - [ ] Allow Owners/Managers to invite users to their organization via email.
+  - [ ] Implement email invitation system with accept/decline functionality.
   - [ ] Allow Owners/Managers to assign/update roles for users within their organization.
+  - [ ] Allow users to view organizations they're invited to and organizations they're part of.
+  - [ ] Implement invitation token generation and validation.
+  - [ ] Handle user registration with automatic invitation acceptance.
+- [ ] **Invitation Workflow**:
+  - [ ] Generate secure invitation tokens with expiration.
+  - [ ] Send invitation emails with accept/decline links.
+  - [ ] Handle invitation acceptance for existing users.
+  - [ ] Handle invitation acceptance during user registration.
+  - [ ] Handle partial acceptance (user accepts but hasn't completed registration).
+  - [ ] Allow invitation decline and cleanup.
+  - [ ] Allow invitation revocation by inviter (Owner/Manager).
+  - [ ] Prevent duplicate invitations to same email for same organization.
+  - [ ] Handle expired invitations cleanup.
 - [ ] **OrgRole-Based Access Control (RBAC)**:
   - [ ] Implement guards for OrgRoles.
 - [ ] **API Endpoints**:
   - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
+  - [ ] `/organizations/{id}/invitations` - Send user invitations.
+  - [ ] `/organizations/{id}/invitations/{invitationId}/revoke` - Revoke pending invitation.
+  - [ ] `/organizations/{id}/members` - Manage organization members.
+  - [ ] `/invitations/accept/{token}` - Accept organization invitation.
+  - [ ] `/invitations/decline/{token}` - Decline organization invitation.
+  - [ ] `/users/me/organizations` - Get user's organizations and pending invitations.
+  - [ ] `/users/me/invitations/pending-registration` - Get invitations accepted but awaiting registration completion.
 
 #### Category Management
 - [ ] **Core Functionality**:
@@ -168,6 +189,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Implement basic functionality for creating and triggering time-based reminders (e.g., weekly inventory count reminder).
 - [ ] **Notification Delivery**:
   - [ ] Implement Email notifications for alerts.
+  - [ ] Implement Email notifications for organization invitations.
   - [ ] (Optional MVP Stretch) Implement basic Push notification infrastructure for alerts.
 - [ ] **API Endpoints**:
   - [ ] Develop Alerts endpoints (configure alerts, view active alerts).
