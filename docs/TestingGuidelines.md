@@ -4,6 +4,9 @@
 - Test individual service methods in isolation
 - Mock external services (Stripe, email providers, external APIs)
 - Use in-memory MongoDB instance (`mongodb-memory-server`)
+- **Focus on output validation**: Test the final state/result rather than implementation details
+- **Database-driven assertions**: When a function writes to the database, verify the result by querying the database
+- **Avoid implementation coupling**: Don't test internal function calls or implementation details
 - File pattern: `*.service.spec.ts`
 
 **Controller Tests** (Integration/E2E):
@@ -11,12 +14,20 @@
 - Use Stripe test API keys for payment operations
 - Use in-memory MongoDB instance for fast, isolated tests
 - Test authentication, validation, and complete request flows
+- **Focus on HTTP contracts**: Test request/response formats, status codes, and data persistence
 - File patterns: `*.controller.spec.ts` or `test/*.e2e-spec.ts`
 
 **Database Setup**:
 - Use `mongodb-memory-server` for all tests
 - Each test gets fresh database instance automatically
 - Manage connection lifecycle in test setup utilities
+
+**Output-Focused Testing Principles**:
+- **Test the "what", not the "how"**: Verify what the function achieves, not how it does it
+- **Verify persistent state**: For functions that modify data, check the final state in the database
+- **Test business outcomes**: Focus on the business logic and data transformations
+- **Minimize mocking**: Only mock external dependencies (APIs, services), not internal logic
+- **Database assertions**: Use direct database queries to verify data changes rather than relying on service method return values
 
 ## File Structure
 
