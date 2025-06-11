@@ -1,4 +1,5 @@
 import { JwtService } from '@nestjs/jwt';
+import { ExecutionContext } from '@nestjs/common';
 import { User, UserRole, AuthProvider } from '../../src/user/schemas/user.schema';
 
 export class AuthTestHelper
@@ -16,8 +17,6 @@ export class AuthTestHelper
             hashedPassword: 'hashedPassword123',
             phoneNumber: '+1234567890',
             isEmailVerified: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
             ...overrides,
         };
     }
@@ -32,10 +31,10 @@ export class AuthTestHelper
         return jwtService.sign(payload);
     }
 
-    static createMockAuthGuard(user: Partial<User> = null)
+    static createMockAuthGuard(user: Partial<User> | null = null)
     {
         return {
-            canActivate: (context) =>
+            canActivate: (context: ExecutionContext) =>
             {
                 if (!user)
                 {

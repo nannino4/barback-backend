@@ -2,23 +2,24 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { OrgController } from './org.controller';
 import { OrgService } from './org.service';
+import { UserOrgRelationService } from './user-org-relation.service';
 import { Org, OrgSchema } from './schemas/org.schema';
 import { 
-    UserOrgRelationship, 
-    UserOrgRelationshipSchema,
-} from './schemas/user-org-relationship.schema';
+    UserOrgRelation, 
+    UserOrgRelationSchema,
+} from './schemas/user-org-relation.schema';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
     imports: [
         MongooseModule.forFeature([
             { name: Org.name, schema: OrgSchema },
-            { name: UserOrgRelationship.name, schema: UserOrgRelationshipSchema },
+            { name: UserOrgRelation.name, schema: UserOrgRelationSchema },
         ]),
         AuthModule,
     ],
     controllers: [OrgController],
-    providers: [OrgService],
-    exports: [OrgService],
+    providers: [OrgService, UserOrgRelationService],
+    exports: [OrgService, UserOrgRelationService],
 })
 export class OrgModule { }

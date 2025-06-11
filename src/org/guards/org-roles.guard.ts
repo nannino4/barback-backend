@@ -1,8 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
-import { UserOrgService } from '../user-org.service';
-import { OrgRole } from '../schemas/user-org-relationship.schema';
+import { UserOrgRelationService } from '../user-org-relation.service';
+import { OrgRole } from '../schemas/user-org-relation.schema';
 import { ORG_ROLES_KEY } from '../decorators/org-roles.decorator';
 
 @Injectable()
@@ -12,7 +12,7 @@ export class OrgRolesGuard implements CanActivate
 
     constructor(
         private readonly reflector: Reflector,
-        private readonly userOrgService: UserOrgService,
+        private readonly userOrgService: UserOrgRelationService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> 
@@ -46,7 +46,7 @@ export class OrgRolesGuard implements CanActivate
 
         try 
         {
-            const userRole = (await this.userOrgService.findOne(user.id, orgId))?.role;
+            const userRole = (await this.userOrgService.findOne(user.id, orgId))?.orgRole;
             
             if (!userRole) 
             {

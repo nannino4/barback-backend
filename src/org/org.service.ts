@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Org } from './schemas/org.schema';
-import { UserOrgRelationship } from './schemas/user-org-relationship.schema';
+import { UserOrgRelation } from './schemas/user-org-relation.schema';
 
 @Injectable()
 export class OrgService 
@@ -11,6 +11,19 @@ export class OrgService
 
     constructor(
         @InjectModel(Org.name) private readonly organizationModel: Model<Org>,
-        @InjectModel(UserOrgRelationship.name) private readonly relationshipModel: Model<UserOrgRelationship>,
+        @InjectModel(UserOrgRelation.name) private readonly relationshipModel: Model<UserOrgRelation>,
     ) {}
+
+    async findById(orgId: Types.ObjectId): Promise<Org | null> 
+    {
+        this.logger.debug(`Finding organization by ID: ${orgId}`, 'OrgService#findById');
+        const org = await this.organizationModel.findById(orgId).exec();
+        if (!org)
+        {
+            this.logger.warn(`Organization not found for ID: ${orgId}`, 'OrgService#findById');
+            return null;
+        }
+        this.logger.debug(`Found organization: ${org.name} for ID: ${orgId}`, 'OrgService#findById');
+        return org;
+    }
 }
