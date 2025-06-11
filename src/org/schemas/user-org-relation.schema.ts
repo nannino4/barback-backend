@@ -7,7 +7,7 @@ export enum OrgRole {
     STAFF = 'staff',
 }
 
-@Schema({ timestamps: true, collection: 'user_org_relationships' })
+@Schema({ timestamps: true, collection: 'user_org_relations' })
 export class UserOrgRelation extends Document 
 {
     @Prop({ type: Types.ObjectId, ref: 'User', required: true })
