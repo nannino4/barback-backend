@@ -18,18 +18,18 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
     const mockRelationData = [
         {
-            userId: mockUserId1.toString(),
-            orgId: mockOrgId1.toString(),
+            userId: mockUserId1,
+            orgId: mockOrgId1,
             orgRole: OrgRole.OWNER,
         },
         {
-            userId: mockUserId1.toString(),
-            orgId: mockOrgId2.toString(),
+            userId: mockUserId1,
+            orgId: mockOrgId2,
             orgRole: OrgRole.MANAGER,
         },
         {
-            userId: mockUserId2.toString(),
-            orgId: mockOrgId1.toString(),
+            userId: mockUserId2,
+            orgId: mockOrgId1,
             orgRole: OrgRole.STAFF,
         },
     ];
@@ -141,6 +141,67 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             // Assert
             expect(result).toHaveLength(2);
         });
+
+        it('should return all user-org relations for a specific organization', async () => 
+        {
+            // Act
+            const result = await service.findAll(undefined, undefined, mockOrgId1.toString());
+
+            // Assert
+            expect(result).toHaveLength(2); // Both mockUserId1 and mockUserId2 are related to mockOrgId1
+            expect(result[0].orgId.toString()).toBe(mockOrgId1.toString());
+            expect(result[1].orgId.toString()).toBe(mockOrgId1.toString());
+            
+            // Verify different users are included
+            const userIds = result.map(r => r.userId.toString());
+            expect(userIds).toContain(mockUserId1.toString());
+            expect(userIds).toContain(mockUserId2.toString());
+        });
+
+        it('should filter by both userId and orgId', async () => 
+        {
+            // Act
+            const result = await service.findAll(mockUserId1.toString(), undefined, mockOrgId2.toString());
+
+            // Assert
+            expect(result).toHaveLength(1);
+            expect(result[0].userId.toString()).toBe(mockUserId1.toString());
+            expect(result[0].orgId.toString()).toBe(mockOrgId2.toString());
+            expect(result[0].orgRole).toBe(OrgRole.MANAGER);
+        });
+
+        it('should filter by userId, orgRole, and orgId', async () => 
+        {
+            // Act
+            const result = await service.findAll(mockUserId1.toString(), OrgRole.OWNER, mockOrgId1.toString());
+
+            // Assert
+            expect(result).toHaveLength(1);
+            expect(result[0].userId.toString()).toBe(mockUserId1.toString());
+            expect(result[0].orgId.toString()).toBe(mockOrgId1.toString());
+            expect(result[0].orgRole).toBe(OrgRole.OWNER);
+        });
+
+        it('should return empty array when no relations match all filters', async () => 
+        {
+            // Act - mockUserId1 has OWNER role in mockOrgId1, but we're looking for STAFF
+            const result = await service.findAll(mockUserId1.toString(), OrgRole.STAFF, mockOrgId1.toString());
+
+            // Assert
+            expect(result).toHaveLength(0);
+        });
+
+        it('should return empty array when orgId has no relations', async () => 
+        {
+            // Arrange
+            const nonExistentOrgId = new Types.ObjectId();
+
+            // Act
+            const result = await service.findAll(undefined, undefined, nonExistentOrgId.toString());
+
+            // Assert
+            expect(result).toHaveLength(0);
+        });
     });
 
     describe('findOne', () => 
@@ -201,7 +262,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
             // Verify this is the expected relationship from our mock data
             const expectedRelation = mockRelationData.find(
-                r => r.userId === mockUserId1.toString() && r.orgId === mockOrgId2.toString()
+                r => r.userId.toString() === mockUserId1.toString() && r.orgId.toString() === mockOrgId2.toString()
             );
             expect(expectedRelation).toBeDefined();
             expect(result!.orgRole).toBe(expectedRelation!.orgRole);

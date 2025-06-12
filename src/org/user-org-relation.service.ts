@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery } from 'mongoose';
+import { Model, FilterQuery, Types } from 'mongoose';
 import { OrgRole, UserOrgRelation } from './schemas/user-org-relation.schema';
 
 @Injectable()
@@ -12,18 +12,30 @@ export class UserOrgRelationService
         @InjectModel(UserOrgRelation.name) private readonly userOrgRelationModel: Model<UserOrgRelation>,
     ) {}
 
-    async findAll(userId: string, orgRole?: OrgRole): Promise<UserOrgRelation[]>
+    async findAll(userId?: string, orgRole?: OrgRole, orgId?: string): Promise<UserOrgRelation[]>
     {
-        this.logger.debug(`Finding user-org relations for user: ${userId} with orgRole filter: ${orgRole}`, 'UserOrgRelationService#findAllAndPopulateOrg');
-        const query: FilterQuery<UserOrgRelation> = { userId };
+        this.logger.debug(`Finding user-org relations with userId: ${userId}, orgRole: ${orgRole}, orgId: ${orgId}`, 'UserOrgRelationService#findAll');
+        const query: FilterQuery<UserOrgRelation> = {};
+        
+        if (userId !== null && userId !== undefined)
+        {
+            query.userId = new Types.ObjectId(userId);
+        }
+        
         if (orgRole !== null && orgRole !== undefined)
         {
             query.orgRole = orgRole;
         }
+        
+        if (orgId !== null && orgId !== undefined)
+        {
+            query.orgId = new Types.ObjectId(orgId);
+        }
+        
         const userOrgRelations = await this.userOrgRelationModel
             .find(query)
             .exec();
-        this.logger.debug(`Found ${userOrgRelations.length} user-org relations for user: ${userId}`, 'UserOrgRelationService#findAllAndPopulateOrg');
+        this.logger.debug(`Found ${userOrgRelations.length} user-org relations`, 'UserOrgRelationService#findAll');
         return userOrgRelations;
     }
 
@@ -31,7 +43,10 @@ export class UserOrgRelationService
     {
         this.logger.debug(`Finding user-org relationship for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
         const relationship = await this.userOrgRelationModel
-            .findOne({ userId, orgId })
+            .findOne({ 
+                userId: new Types.ObjectId(userId), 
+                orgId: new Types.ObjectId(orgId), 
+            })
             .exec();
         if (!relationship) 
         {

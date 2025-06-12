@@ -11,8 +11,11 @@ import { Org, OrgSchema } from './schemas/org.schema';
 import { UserOrgRelation, UserOrgRelationSchema, OrgRole } from './schemas/user-org-relation.schema';
 import { User, UserSchema } from '../user/schemas/user.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OrgRolesGuard } from './guards/org-roles.guard';
 import { UserService } from '../user/user.service';
 import { Types } from 'mongoose';
+import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
+import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 
 describe('OrgController (Integration)', () => 
 {
@@ -20,7 +23,13 @@ describe('OrgController (Integration)', () =>
     let mongoServer: MongoMemoryServer;
     let userService: UserService;
     let testUser: User;
+    let testUser2: User; // Second user to own Organization 2
     let testOrgs: Org[];
+    
+    // Define models in root scope for accessibility across tests
+    let userModel: any;
+    let orgModel: any;
+    let relationModel: any;
 
     beforeAll(async () => 
     {
@@ -47,6 +56,10 @@ describe('OrgController (Integration)', () =>
             .useValue({
                 canActivate: () => true, // Will be overridden in beforeEach
             })
+            .overrideGuard(OrgRolesGuard)
+            .useValue({
+                canActivate: () => true, // Allow access to all orgs for testing
+            })
             .compile();
 
         app = moduleFixture.createNestApplication();
@@ -58,6 +71,11 @@ describe('OrgController (Integration)', () =>
 
         userService = moduleFixture.get<UserService>(UserService);
 
+        // Get model references
+        userModel = app.get('UserModel');
+        orgModel = app.get('OrgModel');
+        relationModel = app.get('UserOrgRelationModel');
+
         await app.init();
     });
 
@@ -67,94 +85,99 @@ describe('OrgController (Integration)', () =>
         await mongoServer.stop();
     });
 
-    beforeEach(async () => 
-    {
-        // Create test user
-        testUser = await userService.create({
-            email: 'test@example.com',
-            firstName: 'John',
-            lastName: 'Doe',
-            hashedPassword: 'hashedPassword123',
-            phoneNumber: '+1234567890',
-        });
-
-        // Create test organizations - using direct model access for setup
-        const orgModel = app.get('OrgModel');
-        const subscriptionId1 = new Types.ObjectId();
-        const subscriptionId2 = new Types.ObjectId();
-        const subscriptionId3 = new Types.ObjectId();
-
-        const createdOrgs = await orgModel.insertMany([
-            {
-                name: 'Organization 1',
-                ownerId: testUser.id,
-                subscriptionId: subscriptionId1,
-                settings: { defaultCurrency: 'USD' },
-            },
-            {
-                name: 'Organization 2', 
-                ownerId: testUser.id,
-                subscriptionId: subscriptionId2,
-                settings: { defaultCurrency: 'EUR' },
-            },
-            {
-                name: 'Organization 3',
-                ownerId: new Types.ObjectId(), // Different owner
-                subscriptionId: subscriptionId3,
-                settings: { defaultCurrency: 'GBP' },
-            },
-        ]);
-
-        testOrgs = createdOrgs;
-
-        // Create test user-org relations
-        const relationModel = app.get('UserOrgRelationModel');
-        await relationModel.insertMany([
-            {
-                userId: testUser.id,
-                orgId: testOrgs[0]._id,
-                orgRole: OrgRole.OWNER,
-            },
-            {
-                userId: testUser.id,
-                orgId: testOrgs[1]._id,
-                orgRole: OrgRole.MANAGER,
-            },
-            {
-                userId: testUser.id,
-                orgId: testOrgs[2]._id,
-                orgRole: OrgRole.STAFF,
-            },
-        ]);
-
-        // Override guard to use the created test user
-        const moduleRef = app.get(JwtAuthGuard);
-        jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
-        {
-            const request = context.switchToHttp().getRequest();
-            // Get fresh user data from database to ensure updates are reflected
-            const freshUser = await userService.findById(testUser.id);
-            request.user = freshUser;
-            return true;
-        });
-    });
-
-    afterEach(async () => 
-    {
-        // Clean up database after each test
-        const userModel = app.get('UserModel');
-        const orgModel = app.get('OrgModel');
-        const relationModel = app.get('UserOrgRelationModel');
-        
-        await Promise.all([
-            userModel.deleteMany({}).exec(),
-            orgModel.deleteMany({}).exec(),
-            relationModel.deleteMany({}).exec(),
-        ]);
-    });
-
     describe('GET /orgs', () => 
     {
+        beforeEach(async () => 
+        {
+            // Create test users
+            testUser = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword123',
+                phoneNumber: '+1234567890',
+            });
+
+            testUser2 = await userService.create({
+                email: 'test2@example.com',
+                firstName: 'Jane',
+                lastName: 'Smith', 
+                hashedPassword: 'hashedPassword456',
+                phoneNumber: '+0987654321',
+            });
+
+            // Create test organizations with proper ownership
+            const subscriptionId1 = new Types.ObjectId();
+            const subscriptionId2 = new Types.ObjectId();
+            const subscriptionId3 = new Types.ObjectId();
+
+            testOrgs = await orgModel.insertMany([
+                {
+                    name: 'Organization 1',
+                    ownerId: testUser._id,
+                    subscriptionId: subscriptionId1,
+                    settings: { defaultCurrency: 'USD' },
+                },
+                {
+                    name: 'Organization 2', 
+                    ownerId: testUser2._id, // Different owner
+                    subscriptionId: subscriptionId2,
+                    settings: { defaultCurrency: 'EUR' },
+                },
+                {
+                    name: 'Organization 3',
+                    ownerId: new Types.ObjectId(), // Third different owner
+                    subscriptionId: subscriptionId3,
+                    settings: { defaultCurrency: 'GBP' },
+                },
+            ]);
+
+            // Create test user-org relations with proper ownership structure
+            await relationModel.insertMany([
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[0]._id,
+                    orgRole: OrgRole.OWNER, // testUser owns Organization 1
+                },
+                {
+                    userId: testUser2._id,
+                    orgId: testOrgs[1]._id,
+                    orgRole: OrgRole.OWNER, // testUser2 owns Organization 2
+                },
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[1]._id,
+                    orgRole: OrgRole.MANAGER, // testUser is manager in Organization 2
+                },
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[2]._id,
+                    orgRole: OrgRole.STAFF, // testUser is staff in Organization 3
+                },
+            ]);
+
+            // Override guard to use the created test user
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                // Get fresh user data from database to ensure updates are reflected
+                const freshUser = await userService.findById(testUser.id);
+                request.user = freshUser;
+                return true;
+            });
+        });
+
+        afterEach(async () => 
+        {
+            // Clean up database after each test using model references
+            await Promise.all([
+                userModel.deleteMany({}).exec(),
+                orgModel.deleteMany({}).exec(),
+                relationModel.deleteMany({}).exec(),
+            ]);
+        });
+
         it('should return all user organizations without role filter', async () => 
         {
             const response = await request(app.getHttpServer())
@@ -164,14 +187,14 @@ describe('OrgController (Integration)', () =>
             expect(response.body).toHaveLength(3);
             
             // Verify each organization relation has basic structure
-            response.body.forEach((orgRelation: any) => 
+            response.body.forEach((orgRelation: OutUserOrgRelationDto) => 
             {
                 expect(orgRelation).toHaveProperty('role');
                 expect(Object.values(OrgRole)).toContain(orgRelation.role);
             });
 
             // Verify all roles are included
-            const roles = response.body.map((rel: any) => rel.role);
+            const roles = response.body.map((rel: OutUserOrgRelationDto) => rel.role);
             expect(roles).toContain(OrgRole.OWNER);
             expect(roles).toContain(OrgRole.MANAGER);
             expect(roles).toContain(OrgRole.STAFF);
@@ -265,10 +288,10 @@ describe('OrgController (Integration)', () =>
 
             expect(response.body).toHaveLength(3);
 
-            response.body.forEach((orgRelation: any) => 
+            response.body.forEach((orgRelation: OutUserOrgRelationDto) => 
             {
                 // Verify DTO structure matches OutUserOrgRelationDto exactly
-                const expectedUser: any = {
+                const expectedUser: OutUserPublicDto = {
                     id: expect.any(String),
                     email: expect.any(String),
                     firstName: expect.any(String),
@@ -309,7 +332,7 @@ describe('OrgController (Integration)', () =>
 
             expect(response.body).toHaveLength(3);
 
-            response.body.forEach((orgRelation: any) => 
+            response.body.forEach((orgRelation: OutUserOrgRelationDto) => 
             {
                 // Test that ONLY the exposed fields are present in the response
                 const expectedTopLevelKeys = ['user', 'org', 'role'];
@@ -380,7 +403,7 @@ describe('OrgController (Integration)', () =>
             expect(response.body).toHaveLength(3);
 
             // Verify user data matches expected values
-            response.body.forEach((orgRelation: any) => 
+            response.body.forEach((orgRelation: OutUserOrgRelationDto) => 
             {
                 expect(orgRelation.user.email).toBe(testUser.email);
                 expect(orgRelation.user.firstName).toBe(testUser.firstName);
@@ -408,7 +431,7 @@ describe('OrgController (Integration)', () =>
             // Create relation for the other user to only one org
             const relationModel = app.get('UserOrgRelationModel');
             await relationModel.create({
-                userId: anotherUser.id,
+                userId: anotherUser._id,
                 orgId: testOrgs[0]._id,
                 orgRole: OrgRole.STAFF,
             });
@@ -436,6 +459,214 @@ describe('OrgController (Integration)', () =>
             expect(response.body[0].user.firstName).toBe(anotherUser.firstName);
             expect(response.body[0].user.lastName).toBe(anotherUser.lastName);
             expect(response.body[0].user.id).toBe(anotherUser.id);
+        });
+    });
+
+    describe('GET /orgs/:id/members', () => 
+    {
+        beforeEach(async () => 
+        {
+            // Create test users
+            testUser = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword123',
+                phoneNumber: '+1234567890',
+            });
+
+            testUser2 = await userService.create({
+                email: 'test2@example.com',
+                firstName: 'Jane',
+                lastName: 'Smith', 
+                hashedPassword: 'hashedPassword456',
+                phoneNumber: '+0987654321',
+            });
+
+            // Create test organizations with proper ownership
+            const subscriptionId1 = new Types.ObjectId();
+            const subscriptionId2 = new Types.ObjectId();
+            const subscriptionId3 = new Types.ObjectId();
+
+            testOrgs = await orgModel.insertMany([
+                {
+                    name: 'Organization 1',
+                    ownerId: testUser._id,
+                    subscriptionId: subscriptionId1,
+                    settings: { defaultCurrency: 'USD' },
+                },
+                {
+                    name: 'Organization 2', 
+                    ownerId: testUser2._id, // Different owner
+                    subscriptionId: subscriptionId2,
+                    settings: { defaultCurrency: 'EUR' },
+                },
+                {
+                    name: 'Organization 3',
+                    ownerId: new Types.ObjectId(), // Third different owner
+                    subscriptionId: subscriptionId3,
+                    settings: { defaultCurrency: 'GBP' },
+                },
+            ]);
+
+            // Create test user-org relations with proper ownership structure
+            await relationModel.insertMany([
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[0]._id,
+                    orgRole: OrgRole.OWNER, // testUser owns Organization 1
+                },
+                {
+                    userId: testUser2._id,
+                    orgId: testOrgs[1]._id,
+                    orgRole: OrgRole.OWNER, // testUser2 owns Organization 2
+                },
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[1]._id,
+                    orgRole: OrgRole.MANAGER, // testUser is manager in Organization 2
+                },
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[2]._id,
+                    orgRole: OrgRole.STAFF, // testUser is staff in Organization 3
+                },
+            ]);
+
+            // Override guard to use the created test user
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                // Get fresh user data from database to ensure updates are reflected
+                const freshUser = await userService.findById(testUser.id);
+                request.user = freshUser;
+                return true;
+            });
+            // override OrgRolesGuard to allow access to all orgs for testing
+            const orgRolesGuard = app.get(OrgRolesGuard);
+            jest.spyOn(orgRolesGuard, 'canActivate').mockImplementation(async () => true);
+        });
+
+        afterEach(async () => 
+        {
+            // Clean up database after each test using model references
+            await Promise.all([
+                userModel.deleteMany({}).exec(),
+                orgModel.deleteMany({}).exec(),
+                relationModel.deleteMany({}).exec(),
+            ]);
+        });
+
+        it('should return all members of an organization', async () => 
+        {
+            // Add another user to Organization 1 to test multiple members
+            const anotherUser = await userService.create({
+                email: 'member@example.com',
+                firstName: 'Member',
+                lastName: 'User',
+                hashedPassword: 'hashedPassword789',
+                phoneNumber: '+1111111111',
+            });
+
+            await relationModel.create({
+                userId: anotherUser._id,
+                orgId: testOrgs[0]._id,
+                orgRole: OrgRole.STAFF,
+            });
+
+            const response = await request(app.getHttpServer())
+                .get(`/orgs/${testOrgs[0].id}/members`)
+                .expect(200);
+
+            expect(response.body).toHaveLength(2); // testUser (OWNER) + anotherUser (STAFF)
+            
+            // Verify response structure
+            response.body.forEach((member: OutUserOrgRelationDto) => 
+            {
+                expect(member).toHaveProperty('user');
+                expect(member).toHaveProperty('org');
+                expect(member).toHaveProperty('role');
+                expect(member.org.id).toBe(testOrgs[0].id);
+                expect(member.org.name).toBe('Organization 1');
+                expect(Object.values(OrgRole)).toContain(member.role);
+            });
+
+            // Verify both users are included
+            const userEmails = response.body.map((m: OutUserOrgRelationDto) => m.user.email);
+            expect(userEmails).toContain(testUser.email);
+            expect(userEmails).toContain(anotherUser.email);
+        });
+
+        it('should return members with different roles in the same organization', async () => 
+        {
+            // Use Organization 2 which already has testUser2 (OWNER) + testUser (MANAGER)
+            const response = await request(app.getHttpServer())
+                .get(`/orgs/${testOrgs[1].id}/members`)
+                .expect(200);
+
+            expect(response.body).toHaveLength(2);
+            
+            // Verify different roles are returned correctly
+            const roles = response.body.map((m: OutUserOrgRelationDto) => m.role);
+            expect(roles).toContain(OrgRole.OWNER);
+            expect(roles).toContain(OrgRole.MANAGER);
+        });
+
+        it('should return single member when organization has only one member', async () => 
+        {
+            // Use Organization 3 which only has testUser as STAFF
+            const response = await request(app.getHttpServer())
+                .get(`/orgs/${testOrgs[2].id}/members`)
+                .expect(200);
+
+            expect(response.body).toHaveLength(1);
+            expect(response.body[0].user.email).toBe(testUser.email);
+            expect(response.body[0].role).toBe(OrgRole.STAFF);
+            expect(response.body[0].org.name).toBe('Organization 3');
+        });
+
+        it('should return 404 when organization does not exist', async () => 
+        {
+            const nonExistentOrgId = new Types.ObjectId();
+            
+            await request(app.getHttpServer())
+                .get(`/orgs/${nonExistentOrgId}/members`)
+                .expect(404); // NotFoundException thrown when org not found
+        });
+
+        it('should exclude sensitive user data in response', async () => 
+        {
+            const response = await request(app.getHttpServer())
+                .get(`/orgs/${testOrgs[0].id}/members`)
+                .expect(200);
+
+            response.body.forEach((member: OutUserOrgRelationDto) => 
+            {
+                // Verify sensitive fields are not exposed
+                expect(member.user).not.toHaveProperty('hashedPassword');
+                expect(member.user).not.toHaveProperty('phoneNumber');
+                expect(member.user).not.toHaveProperty('role');
+                expect(member.user).not.toHaveProperty('authProvider');
+                expect(member.user).not.toHaveProperty('isActive');
+                expect(member.user).not.toHaveProperty('isEmailVerified');
+                
+                // Verify org sensitive fields are not exposed
+                expect(member.org).not.toHaveProperty('ownerId');
+                expect(member.org).not.toHaveProperty('subscriptionId');
+                expect(member.org).not.toHaveProperty('settings');
+            });
+        });
+
+        it('should require authentication', async () => 
+        {
+            // Override guard to reject authentication
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async () => false);
+
+            await request(app.getHttpServer())
+                .get(`/orgs/${testOrgs[0].id}/members`)
+                .expect(403);
         });
     });
 });

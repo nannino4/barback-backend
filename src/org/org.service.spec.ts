@@ -65,7 +65,7 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             const createdOrg = await orgModel.create(mockOrgData);
 
             // Act
-            const result = await service.findById(createdOrg._id);
+            const result = await service.findById(createdOrg._id.toString());
 
             // Assert
             expect(result).toBeDefined();
@@ -82,7 +82,7 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             const nonExistentId = new Types.ObjectId();
 
             // Act
-            const result = await service.findById(nonExistentId);
+            const result = await service.findById(nonExistentId.toString());
 
             // Assert
             expect(result).toBeNull();
@@ -109,7 +109,7 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             const createdOrg = await orgModel.create(orgWithoutSettings);
 
             // Act
-            const result = await service.findById(createdOrg._id);
+            const result = await service.findById(createdOrg._id.toString());
 
             // Assert
             expect(result).toBeDefined();
