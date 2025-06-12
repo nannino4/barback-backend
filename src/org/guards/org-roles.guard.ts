@@ -1,9 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { UserOrgRelationService } from '../user-org-relation.service';
 import { OrgRole } from '../schemas/user-org-relation.schema';
 import { ORG_ROLES_KEY } from '../decorators/org-roles.decorator';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class OrgRolesGuard implements CanActivate 
@@ -46,7 +47,14 @@ export class OrgRolesGuard implements CanActivate
 
         try 
         {
-            const userRole = (await this.userOrgService.findOne(user.id, orgId))?.orgRole;
+            // Validate ObjectId format before proceeding
+            if (!Types.ObjectId.isValid(orgId)) 
+            {
+                this.logger.warn(`Invalid ObjectId format: ${orgId}`, 'OrganizationRolesGuard#canActivate');
+                throw new BadRequestException('Invalid organization ID format');
+            }
+
+            const userRole = (await this.userOrgService.findOne(user._id as Types.ObjectId, new Types.ObjectId(orgId)))?.orgRole;
             
             if (!userRole) 
             {
@@ -67,7 +75,7 @@ export class OrgRolesGuard implements CanActivate
         } 
         catch (error: any) 
         {
-            if (error instanceof ForbiddenException) 
+            if (error instanceof ForbiddenException || error instanceof BadRequestException) 
             {
                 throw error;
             }

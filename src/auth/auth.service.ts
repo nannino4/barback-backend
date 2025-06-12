@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { User, AuthProvider } from '../user/schemas/user.schema';
+import { Types } from 'mongoose';
 import { AccessTokenPayloadDto } from './dto/access-token-payload.dto';
 import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
@@ -60,7 +61,7 @@ export class AuthService
                 this.logger.warn('Invalid token type for refresh', 'AuthService#validateRefreshToken');
                 throw new UnauthorizedException('Invalid token type for refresh');
             }
-            const user = await this.userService.findById(payload.sub);
+            const user = await this.userService.findById(new Types.ObjectId(payload.sub));
             if (!user)
             {
                 this.logger.warn(`User not found for refresh token. User ID: ${payload.sub}`, 'AuthService#validateRefreshToken');

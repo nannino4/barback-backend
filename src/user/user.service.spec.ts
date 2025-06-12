@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { Connection, Types } from 'mongoose';
 import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User, UserSchema, UserRole, AuthProvider } from './schemas/user.schema';
@@ -172,7 +172,7 @@ describe('UserService - Service Tests (Unit-style)', () =>
         it('should throw NotFoundException when user not found', async () => 
         {
             // Arrange
-            const nonExistentId = '507f1f77bcf86cd799439011';
+            const nonExistentId = new Types.ObjectId('507f1f77bcf86cd799439011');
 
             // Act & Assert
             await expect(service.findById(nonExistentId)).rejects.toThrow(NotFoundException);
@@ -181,7 +181,7 @@ describe('UserService - Service Tests (Unit-style)', () =>
         it('should throw NotFoundException for invalid ObjectId format', async () => 
         {
             // Arrange
-            const invalidId = 'invalid-id';
+            const invalidId = 'invalid-id' as any;
 
             // Act & Assert
             await expect(service.findById(invalidId)).rejects.toThrow();
@@ -251,7 +251,7 @@ describe('UserService - Service Tests (Unit-style)', () =>
         it('should throw NotFoundException when user not found for update', async () => 
         {
             // Arrange
-            const nonExistentId = '507f1f77bcf86cd799439011';
+            const nonExistentId = new Types.ObjectId('507f1f77bcf86cd799439011');
 
             // Act & Assert
             await expect(service.updateProfile(nonExistentId, mockUpdateUserProfileDto)).rejects.toThrow(NotFoundException);
@@ -290,7 +290,7 @@ describe('UserService - Service Tests (Unit-style)', () =>
         it('should throw NotFoundException when user not found for removal', async () => 
         {
             // Arrange
-            const nonExistentId = '507f1f77bcf86cd799439011';
+            const nonExistentId = new Types.ObjectId('507f1f77bcf86cd799439011');
 
             // Act & Assert
             await expect(service.remove(nonExistentId)).rejects.toThrow(NotFoundException);
@@ -322,7 +322,7 @@ describe('UserService - Service Tests (Unit-style)', () =>
         it('should throw NotFoundException when user not found for password update', async () => 
         {
             // Arrange
-            const nonExistentId = '507f1f77bcf86cd799439011';
+            const nonExistentId = new Types.ObjectId('507f1f77bcf86cd799439011');
 
             // Act & Assert
             await expect(service.changePassword(nonExistentId, 'oldPassword', 'newPassword')).rejects.toThrow(NotFoundException);

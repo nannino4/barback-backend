@@ -78,7 +78,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should return all user-org relations for a user without role filter', async () => 
         {
             // Act
-            const result = await service.findAll(mockUserId1.toString());
+            const result = await service.findAll(mockUserId1);
 
             // Assert
             expect(result).toHaveLength(2);
@@ -94,7 +94,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should filter user-org relations by specific role', async () => 
         {
             // Act
-            const result = await service.findAll(mockUserId1.toString(), OrgRole.OWNER);
+            const result = await service.findAll(mockUserId1, OrgRole.OWNER);
 
             // Assert
             expect(result).toHaveLength(1);
@@ -109,7 +109,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             const nonExistentUserId = new Types.ObjectId();
 
             // Act
-            const result = await service.findAll(nonExistentUserId.toString());
+            const result = await service.findAll(nonExistentUserId);
 
             // Assert
             expect(result).toHaveLength(0);
@@ -118,7 +118,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should return empty array when user has no relations with specified role', async () => 
         {
             // Act - mockUserId2 only has STAFF role, not OWNER
-            const result = await service.findAll(mockUserId2.toString(), OrgRole.OWNER);
+            const result = await service.findAll(mockUserId2, OrgRole.OWNER);
 
             // Assert
             expect(result).toHaveLength(0);
@@ -127,7 +127,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should return all roles when orgRole is null', async () => 
         {
             // Act
-            const result = await service.findAll(mockUserId1.toString(), null as any);
+            const result = await service.findAll(mockUserId1, null as any);
 
             // Assert
             expect(result).toHaveLength(2);
@@ -136,7 +136,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should return all roles when orgRole is undefined', async () => 
         {
             // Act
-            const result = await service.findAll(mockUserId1.toString(), undefined as any);
+            const result = await service.findAll(mockUserId1, undefined as any);
 
             // Assert
             expect(result).toHaveLength(2);
@@ -145,7 +145,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should return all user-org relations for a specific organization', async () => 
         {
             // Act
-            const result = await service.findAll(undefined, undefined, mockOrgId1.toString());
+            const result = await service.findAll(undefined, undefined, mockOrgId1);
 
             // Assert
             expect(result).toHaveLength(2); // Both mockUserId1 and mockUserId2 are related to mockOrgId1
@@ -161,7 +161,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should filter by both userId and orgId', async () => 
         {
             // Act
-            const result = await service.findAll(mockUserId1.toString(), undefined, mockOrgId2.toString());
+            const result = await service.findAll(mockUserId1, undefined, mockOrgId2);
 
             // Assert
             expect(result).toHaveLength(1);
@@ -173,7 +173,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should filter by userId, orgRole, and orgId', async () => 
         {
             // Act
-            const result = await service.findAll(mockUserId1.toString(), OrgRole.OWNER, mockOrgId1.toString());
+            const result = await service.findAll(mockUserId1, OrgRole.OWNER, mockOrgId1);
 
             // Assert
             expect(result).toHaveLength(1);
@@ -185,7 +185,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should return empty array when no relations match all filters', async () => 
         {
             // Act - mockUserId1 has OWNER role in mockOrgId1, but we're looking for STAFF
-            const result = await service.findAll(mockUserId1.toString(), OrgRole.STAFF, mockOrgId1.toString());
+            const result = await service.findAll(mockUserId1, OrgRole.STAFF, mockOrgId1);
 
             // Assert
             expect(result).toHaveLength(0);
@@ -197,7 +197,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             const nonExistentOrgId = new Types.ObjectId();
 
             // Act
-            const result = await service.findAll(undefined, undefined, nonExistentOrgId.toString());
+            const result = await service.findAll(undefined, undefined, nonExistentOrgId);
 
             // Assert
             expect(result).toHaveLength(0);
@@ -216,7 +216,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should return specific user-org relation when found', async () => 
         {
             // Act
-            const result = await service.findOne(mockUserId1.toString(), mockOrgId1.toString());
+            const result = await service.findOne(mockUserId1, mockOrgId1);
 
             // Assert
             expect(result).toBeDefined();
@@ -231,7 +231,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             const nonExistentOrgId = new Types.ObjectId();
 
             // Act
-            const result = await service.findOne(mockUserId1.toString(), nonExistentOrgId.toString());
+            const result = await service.findOne(mockUserId1, nonExistentOrgId);
 
             // Assert
             expect(result).toBeNull();
@@ -243,7 +243,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             const nonExistentUserId = new Types.ObjectId();
 
             // Act
-            const result = await service.findOne(nonExistentUserId.toString(), mockOrgId1.toString());
+            const result = await service.findOne(nonExistentUserId, mockOrgId1);
 
             // Assert
             expect(result).toBeNull();
@@ -252,7 +252,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         it('should verify database contains correct relationship data', async () => 
         {
             // Act
-            const result = await service.findOne(mockUserId1.toString(), mockOrgId2.toString());
+            const result = await service.findOne(mockUserId1, mockOrgId2);
 
             // Assert - Verify the specific relationship from our test data
             expect(result).toBeDefined();
@@ -272,8 +272,8 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
         {
             // Act - Test with ObjectId objects converted to strings
             const result = await service.findOne(
-                mockUserId2.toString(),
-                mockOrgId1.toString()
+                mockUserId2,
+                mockOrgId1
             );
 
             // Assert

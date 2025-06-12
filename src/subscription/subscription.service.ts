@@ -31,7 +31,7 @@ export class SubscriptionService
         this.logger.debug('SubscriptionService initialized', 'SubscriptionService#constructor');
     }
 
-    async createTrialSubscription(userId: string): Promise<Subscription> 
+    async createTrialSubscription(userId: Types.ObjectId): Promise<Subscription> 
     {
         this.logger.debug(`Creating trial subscription for user: ${userId}`, 'SubscriptionService#createTrialSubscription');
         
@@ -80,7 +80,7 @@ export class SubscriptionService
 
         // Create subscription record
         const subscription = new this.subscriptionModel({
-            userId: new Types.ObjectId(userId),
+            userId: userId,
             stripeSubscriptionId: stripeSubscription.id,
             status: SubscriptionStatus.TRIALING,
             autoRenew: true,
@@ -92,18 +92,18 @@ export class SubscriptionService
         return subscription;
     }
 
-    async findByUserId(userId: string): Promise<Subscription | null> 
+    async findByUserId(userId: Types.ObjectId): Promise<Subscription | null> 
     {
         this.logger.debug(`Finding subscription for user: ${userId}`, 'SubscriptionService#findByUserId');
         
         const subscription = await this.subscriptionModel
-            .findOne({ userId: new Types.ObjectId(userId) })
+            .findOne({ userId: userId })
             .exec();
 
         return subscription;
     }
 
-    async findById(id: string): Promise<Subscription> 
+    async findById(id: Types.ObjectId): Promise<Subscription> 
     {
         this.logger.debug(`Finding subscription by ID: ${id}`, 'SubscriptionService#findById');
         
@@ -139,7 +139,7 @@ export class SubscriptionService
         return subscription;
     }
 
-    async cancelSubscription(userId: string): Promise<Subscription> 
+    async cancelSubscription(userId: Types.ObjectId): Promise<Subscription> 
     {
         this.logger.debug(`Canceling subscription for user: ${userId}`, 'SubscriptionService#cancelSubscription');
         
@@ -161,7 +161,7 @@ export class SubscriptionService
         return subscription;
     }
 
-    async isSubscriptionActive(userId: string): Promise<boolean> 
+    async isSubscriptionActive(userId: Types.ObjectId): Promise<boolean> 
     {
         const subscription = await this.findByUserId(userId);
         if (!subscription) 
@@ -273,7 +273,7 @@ export class SubscriptionService
         ];
     }
 
-    async isEligibleForTrial(userId: string): Promise<boolean> 
+    async isEligibleForTrial(userId: Types.ObjectId): Promise<boolean> 
     {
         this.logger.debug(`Checking trial eligibility for user: ${userId}`, 'SubscriptionService#isEligibleForTrial');
         

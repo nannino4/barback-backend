@@ -43,10 +43,10 @@ export class UserService
         return users;
     }
 
-    async findById(id: string): Promise<User>
+    async findById(id: Types.ObjectId): Promise<User>
     {
         this.logger.debug(`Attempting to find user by ID: ${id}`, 'UserService#findById');
-        const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
+        const user = await this.userModel.findById(id).exec();
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found`, 'UserService#findById');
@@ -82,11 +82,11 @@ export class UserService
         return user;
     }
 
-    async updateProfile(id: string, updateData: UpdateUserProfileDto): Promise<User>
+    async updateProfile(id: Types.ObjectId, updateData: UpdateUserProfileDto): Promise<User>
     {
         this.logger.debug(`Attempting to update profile for user ID: ${id}`, 'UserService#updateProfile');
         const user = await this.userModel.findByIdAndUpdate(
-            new Types.ObjectId(id),
+            id,
             { $set: updateData },
             { new: true, runValidators: true }
         ).exec();
@@ -99,11 +99,11 @@ export class UserService
         return user;
     }
 
-    async updateRole(id: string, role: UserRole): Promise<User>
+    async updateRole(id: Types.ObjectId, role: UserRole): Promise<User>
     {
         this.logger.debug(`Attempting to update role for user ID: ${id} to role: ${role}`, 'UserService#updateRole');
         const user = await this.userModel.findByIdAndUpdate(
-            new Types.ObjectId(id),
+            id,
             { $set: { role } },
             { new: true, runValidators: true }
         ).exec();
@@ -117,11 +117,11 @@ export class UserService
         return user;
     }
 
-    async updateStatus(id: string, isActive: boolean): Promise<User>
+    async updateStatus(id: Types.ObjectId, isActive: boolean): Promise<User>
     {
         this.logger.debug(`Attempting to update status for user ID: ${id} to active: ${isActive}`, 'UserService#updateStatus');
         const user = await this.userModel.findByIdAndUpdate(
-            new Types.ObjectId(id),
+            id,
             { $set: { isActive } },
             { new: true, runValidators: true }
         ).exec();
@@ -135,10 +135,10 @@ export class UserService
         return user;
     }
 
-    async remove(id: string): Promise<void>
+    async remove(id: Types.ObjectId): Promise<void>
     {
         this.logger.debug(`Attempting to remove user with ID: ${id}`, 'UserService#remove');
-        const result = await this.userModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
+        const result = await this.userModel.deleteOne({ _id: id }).exec();
         if (result.deletedCount === 0)
         {
             this.logger.warn(`User with ID "${id}" not found for removal`, 'UserService#remove');
@@ -148,10 +148,10 @@ export class UserService
         return ;
     }
 
-    async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>
+    async changePassword(userId: Types.ObjectId, currentPassword: string, newPassword: string): Promise<void>
     {
         this.logger.debug(`Attempting to change password for user ID: ${userId}`, 'UserService#changePassword');
-        const user = await this.userModel.findById(new Types.ObjectId(userId)).exec();
+        const user = await this.userModel.findById(userId).exec();
         if (!user)
         {
             this.logger.warn(`User with ID "${userId}" not found for password change`, 'UserService#changePassword');
@@ -170,7 +170,7 @@ export class UserService
         const saltOrRounds = 10;
         const hashedNewPassword = await bcrypt.hash(newPassword, saltOrRounds);
         await this.userModel.findByIdAndUpdate(
-            new Types.ObjectId(userId),
+            userId,
             { $set: { hashedPassword: hashedNewPassword } },
             { new: true, runValidators: true }
         ).exec();
@@ -178,11 +178,11 @@ export class UserService
         return;
     }
 
-    async updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User>
+    async updateStripeCustomerId(userId: Types.ObjectId, stripeCustomerId: string): Promise<User>
     {
         this.logger.debug(`Updating Stripe customer ID for user: ${userId}`, 'UserService#updateStripeCustomerId');
         const user = await this.userModel.findByIdAndUpdate(
-            new Types.ObjectId(userId),
+            userId,
             { $set: { stripeCustomerId } },
             { new: true, runValidators: true }
         ).exec();

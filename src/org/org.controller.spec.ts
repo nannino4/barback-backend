@@ -50,15 +50,11 @@ describe('OrgController (Integration)', () =>
                 }),
             ],
             controllers: [OrgController],
-            providers: [OrgService, UserOrgRelationService, UserService],
+            providers: [OrgService, UserOrgRelationService, UserService, OrgRolesGuard],
         })
             .overrideGuard(JwtAuthGuard)
             .useValue({
                 canActivate: () => true, // Will be overridden in beforeEach
-            })
-            .overrideGuard(OrgRolesGuard)
-            .useValue({
-                canActivate: () => true, // Allow access to all orgs for testing
             })
             .compile();
 
@@ -162,7 +158,7 @@ describe('OrgController (Integration)', () =>
             {
                 const request = context.switchToHttp().getRequest();
                 // Get fresh user data from database to ensure updates are reflected
-                const freshUser = await userService.findById(testUser.id);
+                const freshUser = await userService.findById(testUser._id as Types.ObjectId);
                 request.user = freshUser;
                 return true;
             });
@@ -539,13 +535,10 @@ describe('OrgController (Integration)', () =>
             {
                 const request = context.switchToHttp().getRequest();
                 // Get fresh user data from database to ensure updates are reflected
-                const freshUser = await userService.findById(testUser.id);
+                const freshUser = await userService.findById(testUser._id as Types.ObjectId);
                 request.user = freshUser;
                 return true;
             });
-            // override OrgRolesGuard to allow access to all orgs for testing
-            const orgRolesGuard = app.get(OrgRolesGuard);
-            jest.spyOn(orgRolesGuard, 'canActivate').mockImplementation(async () => true);
         });
 
         afterEach(async () => 
@@ -626,13 +619,13 @@ describe('OrgController (Integration)', () =>
             expect(response.body[0].org.name).toBe('Organization 3');
         });
 
-        it('should return 404 when organization does not exist', async () => 
+        it('should return 403 when user has no access to organization', async () => 
         {
             const nonExistentOrgId = new Types.ObjectId();
             
             await request(app.getHttpServer())
                 .get(`/orgs/${nonExistentOrgId}/members`)
-                .expect(404); // NotFoundException thrown when org not found
+                .expect(403); // ForbiddenException thrown by guard when user has no relationship with org
         });
 
         it('should exclude sensitive user data in response', async () => 
@@ -730,22 +723,9 @@ describe('OrgController (Integration)', () =>
             {
                 const request = context.switchToHttp().getRequest();
                 // Get fresh user data from database to ensure updates are reflected
-                const freshUser = await userService.findById(testUser.id);
+                const freshUser = await userService.findById(testUser._id as Types.ObjectId);
                 request.user = freshUser;
                 return true;
-            });
-
-            // Override OrgRolesGuard to allow owner access
-            const orgRolesGuard = app.get(OrgRolesGuard);
-            jest.spyOn(orgRolesGuard, 'canActivate').mockImplementation(async (context) => 
-            {
-                const request = context.switchToHttp().getRequest();
-                const orgId = request.params.id;
-                const user = request.user;
-                
-                // Allow access if user owns the organization
-                const org = await orgModel.findById(orgId);
-                return org && org.ownerId.toString() === user._id.toString();
             });
         });
 
@@ -870,7 +850,7 @@ describe('OrgController (Integration)', () =>
             jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
             {
                 const request = context.switchToHttp().getRequest();
-                const freshUser = await userService.findById(testUser2.id);
+                const freshUser = await userService.findById(testUser2._id as Types.ObjectId);
                 request.user = freshUser;
                 return true;
             });
@@ -899,17 +879,17 @@ describe('OrgController (Integration)', () =>
                 .expect(403);
         });
 
-        it('should return 404 for invalid ObjectId format', async () => 
+        it('should return 400 for invalid ObjectId format', async () => 
         {
             // Arrange
             const invalidId = 'invalid-id';
             const updateData = { name: 'Updated Name' };
 
-            // Act & Assert - Should get validation error from ParseObjectIdPipe
+            // Act & Assert - Guard validation catches invalid ObjectId and throws BadRequestException
             await request(app.getHttpServer())
                 .put(`/orgs/${invalidId}`)
                 .send(updateData)
-                .expect(404);
+                .expect(400);
         });
 
         it('should preserve other organization fields when updating', async () => 

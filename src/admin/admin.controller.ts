@@ -11,6 +11,7 @@ import {
     HttpStatus,
     Logger,
 } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { UserService } from '../user/user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserRolesGuard } from '../auth/guards/user-roles.guard';
@@ -20,6 +21,7 @@ import { UpdateUserProfileDto } from '../user/dto/in.update-user-profile.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { OutAdminUserDto } from './dto/out.admin-user.dto';
+import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
 
 @Controller('admin/users')
@@ -50,7 +52,7 @@ export class AdminController
     }
 
     @Get(':id')
-    async getUserById(@Param('id') id: string): Promise<OutAdminUserDto>
+    async getUserById(@Param('id', ObjectIdValidationPipe) id: Types.ObjectId): Promise<OutAdminUserDto>
     {
         this.logger.debug(`Admin fetching user by ID: ${id}`, 'AdminController#getUserById');
         const user = await this.userService.findById(id);
@@ -60,7 +62,7 @@ export class AdminController
 
     @Put(':id/profile')
     async updateUserProfile(
-        @Param('id') id: string,
+        @Param('id', ObjectIdValidationPipe) id: Types.ObjectId,
         @Body() updateData: UpdateUserProfileDto
     ): Promise<OutAdminUserDto>
     {
@@ -72,7 +74,7 @@ export class AdminController
 
     @Put(':id/role')
     async updateUserRole(
-        @Param('id') id: string,
+        @Param('id', ObjectIdValidationPipe) id: Types.ObjectId,
         @Body() updateData: UpdateUserRoleDto
     ): Promise<OutAdminUserDto>
     {
@@ -84,7 +86,7 @@ export class AdminController
 
     @Put(':id/status')
     async updateUserStatus(
-        @Param('id') id: string,
+        @Param('id', ObjectIdValidationPipe) id: Types.ObjectId,
         @Body() updateData: UpdateUserStatusDto
     ): Promise<OutAdminUserDto>
     {
@@ -96,7 +98,7 @@ export class AdminController
 
     @Delete(':id')
     @HttpCode(HttpStatus.OK)
-    async deleteUser(@Param('id') id: string)
+    async deleteUser(@Param('id', ObjectIdValidationPipe) id: Types.ObjectId)
     {
         this.logger.debug(`Admin attempting to delete user with ID: ${id}`, 'AdminController#deleteUser');
         const result = await this.userService.remove(id);

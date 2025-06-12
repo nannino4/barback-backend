@@ -65,7 +65,7 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             const createdOrg = await orgModel.create(mockOrgData);
 
             // Act
-            const result = await service.findById(createdOrg._id.toString());
+            const result = await service.findById(createdOrg._id);
 
             // Assert
             expect(result).toBeDefined();
@@ -82,19 +82,10 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             const nonExistentId = new Types.ObjectId();
 
             // Act
-            const result = await service.findById(nonExistentId.toString());
+            const result = await service.findById(nonExistentId);
 
             // Assert
             expect(result).toBeNull();
-        });
-
-        it('should handle invalid ObjectId format gracefully', async () => 
-        {
-            // Arrange
-            const invalidId = 'invalid-id' as any;
-
-            // Act & Assert
-            await expect(service.findById(invalidId)).rejects.toThrow();
         });
 
         it('should return organization with default settings when none provided', async () => 
@@ -109,7 +100,7 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             const createdOrg = await orgModel.create(orgWithoutSettings);
 
             // Act
-            const result = await service.findById(createdOrg._id.toString());
+            const result = await service.findById(createdOrg._id);
 
             // Assert
             expect(result).toBeDefined();
@@ -198,19 +189,9 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             const updateData = { name: 'Updated Name' };
 
             // Act & Assert
-            await expect(service.update(nonExistentId.toString(), updateData))
+            await expect(service.update(nonExistentId, updateData))
                 .rejects
                 .toThrow('Organization with ID "' + nonExistentId.toString() + '" not found');
-        });
-
-        it('should handle invalid ObjectId format gracefully', async () => 
-        {
-            // Arrange
-            const invalidId = 'invalid-id';
-            const updateData = { name: 'Updated Name' };
-
-            // Act & Assert
-            await expect(service.update(invalidId, updateData)).rejects.toThrow();
         });
 
         it('should validate data when updating with invalid name', async () => 

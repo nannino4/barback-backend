@@ -10,6 +10,7 @@ import {
     Param,
     Body,
 } from '@nestjs/common';
+import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
@@ -20,6 +21,7 @@ import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
 import { OutOrgPublicDto } from './dto/out.org.public.dto';
 import { OutOrgDto } from './dto/out.org.dto';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
+import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 import { OrgRolesGuard } from './guards/org-roles.guard';
@@ -45,11 +47,11 @@ export class OrgController
     ): Promise<OutUserOrgRelationDto[]>
     {
         this.logger.debug(`Getting organizations for user: ${user.email} with role filter: ${orgRole}`, 'OrgController#getUserOrgs');
-        const userOrgRelations = await this.userOrgRelationService.findAll(user.id, orgRole, undefined);
+        const userOrgRelations = await this.userOrgRelationService.findAll(user._id as Types.ObjectId, orgRole, undefined);
         const result: OutUserOrgRelationDto[] = [];
         for (const relation of userOrgRelations) 
         {
-            const org = await this.orgService.findById(relation.orgId.toString());
+            const org = await this.orgService.findById(relation.orgId);
             if (!org) 
             {
                 this.logger.warn(`Organization not found for relation: ${relation.id}`, 'OrgController#getUserOrgs');
@@ -72,7 +74,7 @@ export class OrgController
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)
     async getOrgMembers(
         @CurrentUser() user: User,
-        @Param('id') orgId: string,
+        @Param('id', ObjectIdValidationPipe) orgId: Types.ObjectId,
     ): Promise<OutUserOrgRelationDto[]>
     {
         this.logger.debug(`Getting members for organization: ${orgId} by user: ${user.email}`, 'OrgController#getOrgMembers');
@@ -91,7 +93,7 @@ export class OrgController
         const result: OutUserOrgRelationDto[] = [];
         for (const relation of orgRelations) 
         {
-            const relationUser = await this.userService.findById(relation.userId.toString());
+            const relationUser = await this.userService.findById(relation.userId);
             if (!relationUser) 
             {
                 this.logger.warn(`User not found for relation: ${relation.id}`, 'OrgController#getOrgMembers');
@@ -116,7 +118,7 @@ export class OrgController
     @OrgRoles(OrgRole.OWNER)
     async updateOrg(
         @CurrentUser() user: User,
-        @Param('id') orgId: string,
+        @Param('id', ObjectIdValidationPipe) orgId: Types.ObjectId,
         @Body() updateData: UpdateOrganizationDto,
     ): Promise<OutOrgDto>
     {

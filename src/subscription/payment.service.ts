@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Types } from 'mongoose';
 import Stripe from 'stripe';
 import { UserService } from '../user/user.service';
 
@@ -27,7 +28,7 @@ export class PaymentService
         this.logger.debug('PaymentService initialized', 'PaymentService#constructor');
     }
 
-    async addPaymentMethod(userId: string, paymentMethodId: string): Promise<Stripe.PaymentMethod> 
+    async addPaymentMethod(userId: Types.ObjectId, paymentMethodId: string): Promise<Stripe.PaymentMethod> 
     {
         this.logger.debug(`Adding payment method for user: ${userId}`, 'PaymentService#addPaymentMethod');
         
@@ -54,7 +55,7 @@ export class PaymentService
         return paymentMethod;
     }
 
-    async getPaymentMethods(userId: string): Promise<Stripe.PaymentMethod[]> 
+    async getPaymentMethods(userId: Types.ObjectId): Promise<Stripe.PaymentMethod[]> 
     {
         this.logger.debug(`Getting payment methods for user: ${userId}`, 'PaymentService#getPaymentMethods');
         
@@ -72,7 +73,7 @@ export class PaymentService
         return paymentMethods.data;
     }
 
-    async removePaymentMethod(userId: string, paymentMethodId: string): Promise<void> 
+    async removePaymentMethod(userId: Types.ObjectId, paymentMethodId: string): Promise<void> 
     {
         this.logger.debug(`Removing payment method ${paymentMethodId} for user: ${userId}`, 'PaymentService#removePaymentMethod');
         
@@ -93,7 +94,7 @@ export class PaymentService
         this.logger.debug(`Payment method removed successfully for user: ${userId}`, 'PaymentService#removePaymentMethod');
     }
 
-    async setDefaultPaymentMethod(userId: string, paymentMethodId: string): Promise<void> 
+    async setDefaultPaymentMethod(userId: Types.ObjectId, paymentMethodId: string): Promise<void> 
     {
         this.logger.debug(`Setting default payment method ${paymentMethodId} for user: ${userId}`, 'PaymentService#setDefaultPaymentMethod');
         

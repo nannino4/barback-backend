@@ -15,10 +15,10 @@ export class OrgService
         @InjectModel(UserOrgRelation.name) private readonly relationshipModel: Model<UserOrgRelation>,
     ) {}
 
-    async findById(orgId: string): Promise<Org | null> 
+    async findById(orgId: Types.ObjectId): Promise<Org | null> 
     {
         this.logger.debug(`Finding organization by ID: ${orgId}`, 'OrgService#findById');
-        const org = await this.orgModel.findById(new Types.ObjectId(orgId)).exec();
+        const org = await this.orgModel.findById(orgId).exec();
         if (!org)
         {
             this.logger.warn(`Organization not found for ID: ${orgId}`, 'OrgService#findById');
@@ -28,11 +28,11 @@ export class OrgService
         return org;
     }
 
-    async update(orgId: string, updateData: UpdateOrganizationDto): Promise<Org>
+    async update(orgId: Types.ObjectId, updateData: UpdateOrganizationDto): Promise<Org>
     {
         this.logger.debug(`Attempting to update organization ID: ${orgId}`, 'OrgService#update');
         const org = await this.orgModel.findByIdAndUpdate(
-            new Types.ObjectId(orgId),
+            orgId,
             { $set: updateData },
             { new: true, runValidators: true }
         ).exec();

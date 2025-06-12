@@ -12,14 +12,14 @@ export class UserOrgRelationService
         @InjectModel(UserOrgRelation.name) private readonly userOrgRelationModel: Model<UserOrgRelation>,
     ) {}
 
-    async findAll(userId?: string, orgRole?: OrgRole, orgId?: string): Promise<UserOrgRelation[]>
+    async findAll(userId?: Types.ObjectId, orgRole?: OrgRole, orgId?: Types.ObjectId): Promise<UserOrgRelation[]>
     {
         this.logger.debug(`Finding user-org relations with userId: ${userId}, orgRole: ${orgRole}, orgId: ${orgId}`, 'UserOrgRelationService#findAll');
         const query: FilterQuery<UserOrgRelation> = {};
         
         if (userId !== null && userId !== undefined)
         {
-            query.userId = new Types.ObjectId(userId);
+            query.userId = userId;
         }
         
         if (orgRole !== null && orgRole !== undefined)
@@ -29,7 +29,7 @@ export class UserOrgRelationService
         
         if (orgId !== null && orgId !== undefined)
         {
-            query.orgId = new Types.ObjectId(orgId);
+            query.orgId = orgId;
         }
         
         const userOrgRelations = await this.userOrgRelationModel
@@ -39,13 +39,13 @@ export class UserOrgRelationService
         return userOrgRelations;
     }
 
-    async findOne(userId: string, orgId: string): Promise<UserOrgRelation | null>
+    async findOne(userId: Types.ObjectId, orgId: Types.ObjectId): Promise<UserOrgRelation | null>
     {
         this.logger.debug(`Finding user-org relationship for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
         const relationship = await this.userOrgRelationModel
             .findOne({ 
-                userId: new Types.ObjectId(userId), 
-                orgId: new Types.ObjectId(orgId), 
+                userId: userId, 
+                orgId: orgId, 
             })
             .exec();
         if (!relationship) 
