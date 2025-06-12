@@ -267,8 +267,22 @@ describe('OrgController (Integration)', () =>
 
             response.body.forEach((orgRelation: any) => 
             {
-                // Verify DTO structure matches OutUserOrgRelationDto
+                // Verify DTO structure matches OutUserOrgRelationDto exactly
+                const expectedUser: any = {
+                    id: expect.any(String),
+                    email: expect.any(String),
+                    firstName: expect.any(String),
+                    lastName: expect.any(String),
+                };
+
+                // Add profilePictureUrl only if it exists in the response
+                if (orgRelation.user.hasOwnProperty('profilePictureUrl')) 
+                {
+                    expectedUser.profilePictureUrl = expect.any(String);
+                }
+
                 expect(orgRelation).toEqual({
+                    user: expectedUser,
                     org: {
                         id: expect.any(String),
                         name: expect.any(String),
@@ -281,6 +295,102 @@ describe('OrgController (Integration)', () =>
 
                 // Verify org ID is a valid ObjectId string
                 expect(orgRelation.org.id).toMatch(/^[0-9a-fA-F]{24}$/);
+                
+                // Verify user ID is a valid ObjectId string
+                expect(orgRelation.user.id).toMatch(/^[0-9a-fA-F]{24}$/);
+            });
+        });
+
+        it('should only expose fields defined in DTOs and exclude sensitive data', async () => 
+        {
+            const response = await request(app.getHttpServer())
+                .get('/orgs')
+                .expect(200);
+
+            expect(response.body).toHaveLength(3);
+
+            response.body.forEach((orgRelation: any) => 
+            {
+                // Test that ONLY the exposed fields are present in the response
+                const expectedTopLevelKeys = ['user', 'org', 'role'];
+                expect(Object.keys(orgRelation)).toEqual(expect.arrayContaining(expectedTopLevelKeys));
+                expect(Object.keys(orgRelation)).toHaveLength(expectedTopLevelKeys.length);
+
+                // Test user object only contains exposed fields
+                const expectedUserKeys = ['id', 'email', 'firstName', 'lastName'];
+                const actualUserKeys = Object.keys(orgRelation.user);
+                
+                // profilePictureUrl is optional, so only include it if present
+                if (orgRelation.user.hasOwnProperty('profilePictureUrl')) 
+                {
+                    expectedUserKeys.push('profilePictureUrl');
+                }
+                
+                expect(actualUserKeys).toEqual(expect.arrayContaining(expectedUserKeys));
+                expect(actualUserKeys).toHaveLength(expectedUserKeys.length);
+
+                // Test org object only contains exposed fields  
+                const expectedOrgKeys = ['id', 'name'];
+                expect(Object.keys(orgRelation.org)).toEqual(expect.arrayContaining(expectedOrgKeys));
+                expect(Object.keys(orgRelation.org)).toHaveLength(expectedOrgKeys.length);
+
+                // Verify sensitive/internal fields are NOT exposed
+                // User sensitive fields
+                expect(orgRelation.user).not.toHaveProperty('hashedPassword');
+                expect(orgRelation.user).not.toHaveProperty('phoneNumber');
+                expect(orgRelation.user).not.toHaveProperty('role');
+                expect(orgRelation.user).not.toHaveProperty('authProvider');
+                expect(orgRelation.user).not.toHaveProperty('isActive');
+                expect(orgRelation.user).not.toHaveProperty('isEmailVerified');
+                expect(orgRelation.user).not.toHaveProperty('emailVerificationToken');
+                expect(orgRelation.user).not.toHaveProperty('passwordResetToken');
+                expect(orgRelation.user).not.toHaveProperty('createdAt');
+                expect(orgRelation.user).not.toHaveProperty('updatedAt');
+                expect(orgRelation.user).not.toHaveProperty('_id');
+                expect(orgRelation.user).not.toHaveProperty('__v');
+
+                // Org sensitive fields
+                expect(orgRelation.org).not.toHaveProperty('ownerId');
+                expect(orgRelation.org).not.toHaveProperty('subscriptionId');
+                expect(orgRelation.org).not.toHaveProperty('settings');
+                expect(orgRelation.org).not.toHaveProperty('createdAt');
+                expect(orgRelation.org).not.toHaveProperty('updatedAt');
+                expect(orgRelation.org).not.toHaveProperty('_id');
+                expect(orgRelation.org).not.toHaveProperty('__v');
+
+                // Mongoose internal fields should not be exposed
+                expect(orgRelation).not.toHaveProperty('$__');
+                expect(orgRelation).not.toHaveProperty('$isNew');
+                expect(orgRelation).not.toHaveProperty('_doc');
+                expect(orgRelation.user).not.toHaveProperty('$__');
+                expect(orgRelation.user).not.toHaveProperty('$isNew');
+                expect(orgRelation.user).not.toHaveProperty('_doc');
+                expect(orgRelation.org).not.toHaveProperty('$__');
+                expect(orgRelation.org).not.toHaveProperty('$isNew');
+                expect(orgRelation.org).not.toHaveProperty('_doc');
+            });
+        });
+
+        it('should return user data correctly in DTO format', async () => 
+        {
+            const response = await request(app.getHttpServer())
+                .get('/orgs')
+                .expect(200);
+
+            expect(response.body).toHaveLength(3);
+
+            // Verify user data matches expected values
+            response.body.forEach((orgRelation: any) => 
+            {
+                expect(orgRelation.user.email).toBe(testUser.email);
+                expect(orgRelation.user.firstName).toBe(testUser.firstName);
+                expect(orgRelation.user.lastName).toBe(testUser.lastName);
+                expect(orgRelation.user.id).toBe(testUser.id);
+                // profilePictureUrl is optional - only check if it's present in the response
+                if (orgRelation.user.hasOwnProperty('profilePictureUrl')) 
+                {
+                    expect(orgRelation.user.profilePictureUrl).toBeDefined();
+                }
             });
         });
 
@@ -320,6 +430,12 @@ describe('OrgController (Integration)', () =>
             expect(response.body).toHaveLength(1);
             expect(response.body[0].role).toBe(OrgRole.STAFF);
             expect(response.body[0].org.name).toBe('Organization 1');
+            
+            // Verify the user data is correctly populated for the different user
+            expect(response.body[0].user.email).toBe(anotherUser.email);
+            expect(response.body[0].user.firstName).toBe(anotherUser.firstName);
+            expect(response.body[0].user.lastName).toBe(anotherUser.lastName);
+            expect(response.body[0].user.id).toBe(anotherUser.id);
         });
     });
 });

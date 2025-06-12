@@ -15,6 +15,7 @@ import { UserOrgRelationService } from './user-org-relation.service';
 import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
 import { OutOrgDto } from './dto/out.org.dto';
 import { plainToInstance } from 'class-transformer';
+import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 
 @Controller('orgs')
 @UseGuards(JwtAuthGuard)
@@ -46,6 +47,7 @@ export class OrgController
             }
             result.push(
                 plainToInstance(OutUserOrgRelationDto, {
+                    user: plainToInstance(OutUserPublicDto, user.toObject()),
                     org: plainToInstance(OutOrgDto, org.toObject()),
                     role: relation.orgRole,
                 }, { excludeExtraneousValues: true })

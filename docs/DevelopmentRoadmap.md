@@ -130,7 +130,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - Depends on: Subscription Management (✅ Completed)
 - Integration: Uses `ActiveSubscriptionGuard` to restrict organization creation
 - [ ] **Basic Organization API Endpoints**:
-  - [ ] `GET /orgs` - List all organizations user is in (optional filter by orgRole)
+  - [X] `GET /orgs` - List all organizations user is in (optional filter by orgRole)
   - [ ] `GET /orgs/{id}/members` - List organization members
   - [ ] `GET /invitations` - List user's invitations
   - [ ] `POST /orgs` - Create organization (with ActiveSubscriptionGuard)
