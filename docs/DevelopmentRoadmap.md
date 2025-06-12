@@ -134,7 +134,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] `GET /orgs/{id}/members` - List organization members
   - [ ] `GET /invitations` - List user's invitations
   - [ ] `POST /orgs` - Create organization (with ActiveSubscriptionGuard)
-  - [ ] `PUT /orgs/{id}` - Update organization name/settings (owner only)
+  - [X] `PUT /orgs/{id}` - Update organization name/settings (owner only)
   - [ ] `PUT /orgs/{id}/members/{userId}/role` - Update member role (owners/managers only)
 - [ ] **Role-Based Access Control**:
   - [X] Implement `OrgRolesGuard` for organization-level permissions
