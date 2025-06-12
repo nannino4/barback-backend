@@ -1,5 +1,5 @@
 import { Expose, Type } from 'class-transformer';
-import { OutOrgDto } from './out.org.dto';
+import { OutOrgPublicDto } from './out.org.public.dto';
 import { OrgRole } from '../schemas/user-org-relation.schema';
 import { OutUserPublicDto } from '../../user/dto/out.user.public.dto';
 
@@ -10,8 +10,8 @@ export class OutUserOrgRelationDto
     user!: OutUserPublicDto;
 
     @Expose()
-    @Type(() => OutOrgDto)
-    org!: OutOrgDto;
+    @Type(() => OutOrgPublicDto)
+    org!: OutOrgPublicDto;
 
     @Expose()
     role!: OrgRole;

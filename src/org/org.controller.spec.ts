@@ -669,4 +669,266 @@ describe('OrgController (Integration)', () =>
                 .expect(403);
         });
     });
+
+    describe('PUT /orgs/:id (updateOrg)', () => 
+    {
+        beforeEach(async () => 
+        {
+            // Create test users
+            testUser = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword123',
+                phoneNumber: '+1234567890',
+            });
+
+            testUser2 = await userService.create({
+                email: 'test2@example.com',
+                firstName: 'Jane',
+                lastName: 'Smith', 
+                hashedPassword: 'hashedPassword456',
+                phoneNumber: '+0987654321',
+            });
+
+            // Create test organizations with proper ownership
+            const subscriptionId1 = new Types.ObjectId();
+            const subscriptionId2 = new Types.ObjectId();
+
+            testOrgs = await orgModel.insertMany([
+                {
+                    name: 'Test Organization 1',
+                    ownerId: testUser._id,
+                    subscriptionId: subscriptionId1,
+                    settings: { defaultCurrency: 'USD' },
+                },
+                {
+                    name: 'Test Organization 2', 
+                    ownerId: testUser2._id, // Different owner
+                    subscriptionId: subscriptionId2,
+                    settings: { defaultCurrency: 'EUR' },
+                },
+            ]);
+
+            // Create test user-org relations with proper ownership structure
+            await relationModel.insertMany([
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[0]._id,
+                    orgRole: OrgRole.OWNER, // testUser owns Organization 1
+                },
+                {
+                    userId: testUser2._id,
+                    orgId: testOrgs[1]._id,
+                    orgRole: OrgRole.OWNER, // testUser2 owns Organization 2
+                },
+            ]);
+
+            // Override guards for test setup
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                // Get fresh user data from database to ensure updates are reflected
+                const freshUser = await userService.findById(testUser.id);
+                request.user = freshUser;
+                return true;
+            });
+
+            // Override OrgRolesGuard to allow owner access
+            const orgRolesGuard = app.get(OrgRolesGuard);
+            jest.spyOn(orgRolesGuard, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                const orgId = request.params.id;
+                const user = request.user;
+                
+                // Allow access if user owns the organization
+                const org = await orgModel.findById(orgId);
+                return org && org.ownerId.toString() === user._id.toString();
+            });
+        });
+
+        afterEach(async () => 
+        {
+            // Clean up database after each test using model references
+            await Promise.all([
+                userModel.deleteMany({}).exec(),
+                orgModel.deleteMany({}).exec(),
+                relationModel.deleteMany({}).exec(),
+            ]);
+        });
+
+        it('should update organization name successfully', async () => 
+        {
+            // Arrange
+            const updateData = { name: 'Updated Organization Name' };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert response structure
+            expect(response.body).toHaveProperty('id');
+            expect(response.body).toHaveProperty('name', 'Updated Organization Name');
+            expect(response.body).toHaveProperty('settings');
+            expect(response.body.settings).toHaveProperty('defaultCurrency');
+
+            // Assert database state
+            const orgInDb = await orgModel.findById(testOrgs[0].id);
+            expect(orgInDb!.name).toBe('Updated Organization Name');
+        });
+
+        it('should update organization settings successfully', async () => 
+        {
+            // Arrange
+            const updateData = { 
+                settings: { 
+                    defaultCurrency: 'GBP', 
+                }, 
+            };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert response structure
+            expect(response.body).toHaveProperty('id');
+            expect(response.body).toHaveProperty('name', 'Test Organization 1');
+            expect(response.body).toHaveProperty('settings');
+            expect(response.body.settings.defaultCurrency).toBe('GBP');
+
+            // Assert database state
+            const orgInDb = await orgModel.findById(testOrgs[0].id);
+            expect(orgInDb!.settings.defaultCurrency).toBe('GBP');
+        });
+
+        it('should update both name and settings successfully', async () => 
+        {
+            // Arrange
+            const updateData = { 
+                name: 'Completely New Name',
+                settings: { 
+                    defaultCurrency: 'JPY', 
+                }, 
+            };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert response structure
+            expect(response.body).toHaveProperty('id');
+            expect(response.body).toHaveProperty('name', 'Completely New Name');
+            expect(response.body).toHaveProperty('settings');
+            expect(response.body.settings.defaultCurrency).toBe('JPY');
+
+            // Assert database state
+            const orgInDb = await orgModel.findById(testOrgs[0].id);
+            expect(orgInDb!.name).toBe('Completely New Name');
+            expect(orgInDb!.settings.defaultCurrency).toBe('JPY');
+        });
+
+        it('should return 400 with invalid request data (empty name)', async () => 
+        {
+            // Arrange
+            const invalidData = { name: '' }; // Empty name should fail validation
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(invalidData)
+                .expect(400);
+        });
+
+        it('should return 400 with invalid settings data', async () => 
+        {
+            // Arrange
+            const invalidData = { 
+                settings: { 
+                    defaultCurrency: 'INVALID', // Invalid currency code (too long)
+                }, 
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(invalidData)
+                .expect(400);
+        });
+
+        it('should require organization owner role', async () => 
+        {
+            // Arrange - Switch to testUser2 who doesn't own org 1
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                const freshUser = await userService.findById(testUser2.id);
+                request.user = freshUser;
+                return true;
+            });
+
+            const updateData = { name: 'Updated Name' };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(updateData)
+                .expect(403);
+        });
+
+        it('should require authentication', async () => 
+        {
+            // Arrange
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async () => false);
+
+            const updateData = { name: 'Updated Name' };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(updateData)
+                .expect(403);
+        });
+
+        it('should return 404 for invalid ObjectId format', async () => 
+        {
+            // Arrange
+            const invalidId = 'invalid-id';
+            const updateData = { name: 'Updated Name' };
+
+            // Act & Assert - Should get validation error from ParseObjectIdPipe
+            await request(app.getHttpServer())
+                .put(`/orgs/${invalidId}`)
+                .send(updateData)
+                .expect(404);
+        });
+
+        it('should preserve other organization fields when updating', async () => 
+        {
+            // Arrange
+            const updateData = { name: 'Just Name Change' };
+            const originalOrg = await orgModel.findById(testOrgs[0].id);
+
+            // Act
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert database state - other fields unchanged
+            const updatedOrg = await orgModel.findById(testOrgs[0].id);
+            expect(updatedOrg!.ownerId.toString()).toBe(originalOrg!.ownerId.toString());
+            expect(updatedOrg!.subscriptionId.toString()).toBe(originalOrg!.subscriptionId.toString());
+            expect(updatedOrg!.name).toBe('Just Name Change');
+        });
+    });
 });

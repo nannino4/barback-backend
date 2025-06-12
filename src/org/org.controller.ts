@@ -1,12 +1,14 @@
 import {
     Controller,
     Get,
+    Put,
     Query,
     UseGuards,
     Logger,
     ConflictException,
     NotFoundException,
     Param,
+    Body,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -15,7 +17,9 @@ import { OrgService } from './org.service';
 import { OrgRole } from './schemas/user-org-relation.schema';
 import { UserOrgRelationService } from './user-org-relation.service';
 import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
+import { OutOrgPublicDto } from './dto/out.org.public.dto';
 import { OutOrgDto } from './dto/out.org.dto';
+import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { plainToInstance } from 'class-transformer';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 import { OrgRolesGuard } from './guards/org-roles.guard';
@@ -54,7 +58,7 @@ export class OrgController
             result.push(
                 plainToInstance(OutUserOrgRelationDto, {
                     user: plainToInstance(OutUserPublicDto, user.toObject()),
-                    org: plainToInstance(OutOrgDto, org.toObject()),
+                    org: plainToInstance(OutOrgPublicDto, org.toObject()),
                     role: relation.orgRole,
                 }, { excludeExtraneousValues: true })
             );
@@ -97,7 +101,7 @@ export class OrgController
             result.push(
                 plainToInstance(OutUserOrgRelationDto, {
                     user: plainToInstance(OutUserPublicDto, relationUser.toObject()),
-                    org: plainToInstance(OutOrgDto, org.toObject()),
+                    org: plainToInstance(OutOrgPublicDto, org.toObject()),
                     role: relation.orgRole,
                 }, { excludeExtraneousValues: true })
             );
@@ -105,6 +109,21 @@ export class OrgController
         
         this.logger.debug(`Returning ${result.length} members for organization: ${orgId}`, 'OrgController#getOrgMembers');
         return result;
+    }
+
+    @Put(':id')
+    @UseGuards(OrgRolesGuard)
+    @OrgRoles(OrgRole.OWNER)
+    async updateOrg(
+        @CurrentUser() user: User,
+        @Param('id') orgId: string,
+        @Body() updateData: UpdateOrganizationDto,
+    ): Promise<OutOrgDto>
+    {
+        this.logger.debug(`Updating organization: ${orgId} by user: ${user.email}`, 'OrgController#updateOrganization');
+        const updatedOrg = await this.orgService.update(orgId, updateData);
+        this.logger.debug(`Organization updated successfully: ${updatedOrg.name}`, 'OrgController#updateOrganization');
+        return plainToInstance(OutOrgDto, updatedOrg.toObject(), { excludeExtraneousValues: true });
     }
 
 }

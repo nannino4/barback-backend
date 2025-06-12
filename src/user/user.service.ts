@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { User, UserRole, AuthProvider } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
@@ -46,7 +46,7 @@ export class UserService
     async findById(id: string): Promise<User>
     {
         this.logger.debug(`Attempting to find user by ID: ${id}`, 'UserService#findById');
-        const user = await this.userModel.findById(id).exec();
+        const user = await this.userModel.findById(new Types.ObjectId(id)).exec();
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found`, 'UserService#findById');
@@ -86,7 +86,7 @@ export class UserService
     {
         this.logger.debug(`Attempting to update profile for user ID: ${id}`, 'UserService#updateProfile');
         const user = await this.userModel.findByIdAndUpdate(
-            id,
+            new Types.ObjectId(id),
             { $set: updateData },
             { new: true, runValidators: true }
         ).exec();
@@ -103,7 +103,7 @@ export class UserService
     {
         this.logger.debug(`Attempting to update role for user ID: ${id} to role: ${role}`, 'UserService#updateRole');
         const user = await this.userModel.findByIdAndUpdate(
-            id,
+            new Types.ObjectId(id),
             { $set: { role } },
             { new: true, runValidators: true }
         ).exec();
@@ -121,7 +121,7 @@ export class UserService
     {
         this.logger.debug(`Attempting to update status for user ID: ${id} to active: ${isActive}`, 'UserService#updateStatus');
         const user = await this.userModel.findByIdAndUpdate(
-            id,
+            new Types.ObjectId(id),
             { $set: { isActive } },
             { new: true, runValidators: true }
         ).exec();
@@ -138,7 +138,7 @@ export class UserService
     async remove(id: string): Promise<void>
     {
         this.logger.debug(`Attempting to remove user with ID: ${id}`, 'UserService#remove');
-        const result = await this.userModel.deleteOne({ _id: id }).exec();
+        const result = await this.userModel.deleteOne({ _id: new Types.ObjectId(id) }).exec();
         if (result.deletedCount === 0)
         {
             this.logger.warn(`User with ID "${id}" not found for removal`, 'UserService#remove');
@@ -151,7 +151,7 @@ export class UserService
     async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void>
     {
         this.logger.debug(`Attempting to change password for user ID: ${userId}`, 'UserService#changePassword');
-        const user = await this.userModel.findById(userId).exec();
+        const user = await this.userModel.findById(new Types.ObjectId(userId)).exec();
         if (!user)
         {
             this.logger.warn(`User with ID "${userId}" not found for password change`, 'UserService#changePassword');
@@ -170,7 +170,7 @@ export class UserService
         const saltOrRounds = 10;
         const hashedNewPassword = await bcrypt.hash(newPassword, saltOrRounds);
         await this.userModel.findByIdAndUpdate(
-            userId,
+            new Types.ObjectId(userId),
             { $set: { hashedPassword: hashedNewPassword } },
             { new: true, runValidators: true }
         ).exec();
@@ -182,7 +182,7 @@ export class UserService
     {
         this.logger.debug(`Updating Stripe customer ID for user: ${userId}`, 'UserService#updateStripeCustomerId');
         const user = await this.userModel.findByIdAndUpdate(
-            userId,
+            new Types.ObjectId(userId),
             { $set: { stripeCustomerId } },
             { new: true, runValidators: true }
         ).exec();

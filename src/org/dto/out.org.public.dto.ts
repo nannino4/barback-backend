@@ -1,7 +1,6 @@
 import { Expose, Transform } from 'class-transformer';
-import { OrgSettings } from '../schemas/org.schema';
 
-export class OutOrgDto 
+export class OutOrgPublicDto 
 {
     @Expose()
     @Transform(({ obj }) => obj._id?.toString() || obj.id)
@@ -9,7 +8,4 @@ export class OutOrgDto
 
     @Expose()
     name!: string;
-
-    @Expose()
-    settings!: OrgSettings;
 }

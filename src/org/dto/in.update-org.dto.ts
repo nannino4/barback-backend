@@ -1,5 +1,6 @@
-import { IsString, IsNotEmpty, IsObject, ValidateIf } from 'class-validator';
-import { OrgSettings } from '../schemas/org.schema';
+import { IsString, IsNotEmpty, ValidateIf, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+import { OrgSettingsDto } from './org-settings.dto';
 
 export class UpdateOrganizationDto 
 {
@@ -9,7 +10,7 @@ export class UpdateOrganizationDto
     name?: string;
 
     @ValidateIf(o => o.settings !== undefined)
-    @IsNotEmpty()
-    @IsObject()
-    settings?: OrgSettings;
+    @ValidateNested()
+    @Type(() => OrgSettingsDto)
+    settings?: OrgSettingsDto;
 }

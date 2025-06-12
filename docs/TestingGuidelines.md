@@ -1,5 +1,10 @@
 ## Testing Guidelines
 
+**Core Testing Principle**:
+- **Tests Must Reflect Reality**: Tests should represent real-world scenarios and validate actual expected behavior. If a test fails, examine whether the underlying code or architecture needs fixing rather than modifying the test to pass artificially.
+- **Fix Code, Not Tests**: When tests fail, prioritize fixing the underlying implementation, validation, error handling, or architecture rather than adjusting test expectations to match flawed behavior.
+- **Meaningful Assertions**: Test scenarios that users will actually encounter and that matter for the application's correct functioning.
+
 **Service Tests** (Unit-style):
 - Test individual service methods in isolation
 - Mock external services (Stripe, email providers, external APIs)
