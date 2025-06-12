@@ -281,4 +281,119 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             expect(result!.orgRole).toBe(OrgRole.STAFF);
         });
     });
+
+    describe('updateRole', () => 
+    {
+        beforeEach(async () => 
+        {
+            // Create test relationships
+            const relationModel = connection.model('UserOrgRelation');
+            await relationModel.insertMany(mockRelationData);
+        });
+
+        it('should update user role successfully', async () => 
+        {
+            // Act
+            const result = await service.updateRole(mockUserId1, mockOrgId1, OrgRole.MANAGER);
+
+            // Assert - Verify return value
+            expect(result).toBeDefined();
+            expect(result.userId.toString()).toBe(mockUserId1.toString());
+            expect(result.orgId.toString()).toBe(mockOrgId1.toString());
+            expect(result.orgRole).toBe(OrgRole.MANAGER);
+
+            // Assert - Verify database state
+            const relationModel = connection.model('UserOrgRelation');
+            const updatedRelation = await relationModel.findOne({
+                userId: mockUserId1,
+                orgId: mockOrgId1,
+            });
+            expect(updatedRelation!.orgRole).toBe(OrgRole.MANAGER);
+        });
+
+        it('should update from any role to any other role', async () => 
+        {
+            // Arrange - Start with STAFF role
+            const relationModel = connection.model('UserOrgRelation');
+            await relationModel.findOneAndUpdate(
+                { userId: mockUserId1, orgId: mockOrgId1 },
+                { $set: { orgRole: OrgRole.STAFF } }
+            );
+
+            // Act - Update to MANAGER
+            const result = await service.updateRole(mockUserId1, mockOrgId1, OrgRole.MANAGER);
+
+            // Assert
+            expect(result.orgRole).toBe(OrgRole.MANAGER);
+
+            // Verify database state
+            const updatedRelation = await relationModel.findOne({
+                userId: mockUserId1,
+                orgId: mockOrgId1,
+            });
+            expect(updatedRelation!.orgRole).toBe(OrgRole.MANAGER);
+        });
+
+        it('should throw NotFoundException when relationship not found', async () => 
+        {
+            // Arrange
+            const nonExistentUserId = new Types.ObjectId();
+
+            // Act & Assert
+            await expect(service.updateRole(nonExistentUserId, mockOrgId1, OrgRole.MANAGER))
+                .rejects
+                .toThrow('User is not a member of this organization');
+        });
+
+        it('should throw NotFoundException when organization not found', async () => 
+        {
+            // Arrange
+            const nonExistentOrgId = new Types.ObjectId();
+
+            // Act & Assert
+            await expect(service.updateRole(mockUserId1, nonExistentOrgId, OrgRole.MANAGER))
+                .rejects
+                .toThrow('User is not a member of this organization');
+        });
+
+        it('should handle all valid OrgRole values', async () => 
+        {
+            const validRoles = [OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF];
+
+            for (const role of validRoles) 
+            {
+                // Act
+                const result = await service.updateRole(mockUserId1, mockOrgId1, role);
+
+                // Assert
+                expect(result.orgRole).toBe(role);
+
+                // Verify database state
+                const relationModel = connection.model('UserOrgRelation');
+                const updatedRelation = await relationModel.findOne({
+                    userId: mockUserId1,
+                    orgId: mockOrgId1,
+                });
+                expect(updatedRelation!.orgRole).toBe(role);
+            }
+        });
+
+        it('should return updated document with correct structure', async () => 
+        {
+            // Act
+            const result = await service.updateRole(mockUserId1, mockOrgId1, OrgRole.STAFF);
+
+            // Assert - Verify document structure
+            expect(result).toHaveProperty('userId');
+            expect(result).toHaveProperty('orgId');
+            expect(result).toHaveProperty('orgRole');
+            expect(result).toHaveProperty('createdAt');
+            expect(result).toHaveProperty('updatedAt');
+            
+            // Verify types
+            expect(result.userId).toBeInstanceOf(Types.ObjectId);
+            expect(result.orgId).toBeInstanceOf(Types.ObjectId);
+            expect(typeof result.orgRole).toBe('string');
+        });
+    });
 });

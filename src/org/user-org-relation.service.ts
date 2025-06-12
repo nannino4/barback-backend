@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery, Types } from 'mongoose';
 import { OrgRole, UserOrgRelation } from './schemas/user-org-relation.schema';
@@ -56,6 +56,25 @@ export class UserOrgRelationService
         {
             this.logger.debug(`Found relationship: ${relationship.orgRole} for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
         }
+        return relationship;
+    }
+
+    async updateRole(userId: Types.ObjectId, orgId: Types.ObjectId, newRole: OrgRole): Promise<UserOrgRelation>
+    {
+        this.logger.debug(`Attempting to update role for user: ${userId} in org: ${orgId} to role: ${newRole}`, 'UserOrgRelationService#updateRole');
+        const relationship = await this.userOrgRelationModel.findOneAndUpdate(
+            { userId: userId, orgId: orgId },
+            { $set: { orgRole: newRole } },
+            { new: true, runValidators: true }
+        ).exec();
+        
+        if (!relationship)
+        {
+            this.logger.warn(`User-org relationship not found for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#updateRole');
+            throw new NotFoundException(`User is not a member of this organization`);
+        }
+        
+        this.logger.debug(`Role updated successfully for user: ${userId} in org: ${orgId} to role: ${newRole}`, 'UserOrgRelationService#updateRole');
         return relationship;
     }
 }

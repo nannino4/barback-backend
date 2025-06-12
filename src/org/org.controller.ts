@@ -9,6 +9,7 @@ import {
     NotFoundException,
     Param,
     Body,
+    BadRequestException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,6 +22,7 @@ import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
 import { OutOrgPublicDto } from './dto/out.org.public.dto';
 import { OutOrgDto } from './dto/out.org.dto';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
+import { UpdateMemberRoleDto } from './dto/in.update-member-role.dto';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
@@ -126,6 +128,62 @@ export class OrgController
         const updatedOrg = await this.orgService.update(orgId, updateData);
         this.logger.debug(`Organization updated successfully: ${updatedOrg.name}`, 'OrgController#updateOrganization');
         return plainToInstance(OutOrgDto, updatedOrg.toObject(), { excludeExtraneousValues: true });
+    }
+
+    @Put(':id/members/:userId/role')
+    @UseGuards(OrgRolesGuard)
+    @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
+    async updateMemberRole(
+        @CurrentUser() user: User,
+        @Param('id', ObjectIdValidationPipe) orgId: Types.ObjectId,
+        @Param('userId', ObjectIdValidationPipe) userId: Types.ObjectId,
+        @Body() updateData: UpdateMemberRoleDto,
+    ): Promise<OutUserOrgRelationDto>
+    {
+        this.logger.debug(`Updating member role for user: ${userId} in org: ${orgId} to role: ${updateData.role} by user: ${user.email}`, 'OrgController#updateMemberRole');
+        
+        // Prevent assignment of OWNER role through role updates
+        if (updateData.role === OrgRole.OWNER)
+        {
+            this.logger.warn(`Attempt to assign OWNER role to user: ${userId} in org: ${orgId} by user: ${user.email}`, 'OrgController#updateMemberRole');
+            throw new BadRequestException('Cannot assign OWNER role through role updates');
+        }
+        
+        // Verify the target user is a member of the organization
+        const targetMember = await this.userOrgRelationService.findOne(userId, orgId);
+        if (!targetMember)
+        {
+            this.logger.warn(`Target user: ${userId} not found in organization: ${orgId}`, 'OrgController#updateMemberRole');
+            throw new NotFoundException('User is not a member of this organization');
+        }
+        
+        // Prevent modification of OWNER role
+        if (targetMember.orgRole === OrgRole.OWNER)
+        {
+            this.logger.warn(`Attempt to modify OWNER role of user: ${userId} in org: ${orgId} by user: ${user.email}`, 'OrgController#updateMemberRole');
+            throw new BadRequestException('Cannot modify the role of an organization owner');
+        }
+        
+        // Update the role
+        const updatedRelation = await this.userOrgRelationService.updateRole(userId, orgId, updateData.role);
+        
+        // Get organization and user details for response
+        const org = await this.orgService.findById(orgId);
+        const targetUser = await this.userService.findById(userId);
+        
+        if (!org || !targetUser)
+        {
+            this.logger.error(`Failed to get organization or user data for response - org: ${!!org}, user: ${!!targetUser}`, 'OrgController#updateMemberRole');
+            throw new ConflictException('Failed to retrieve updated member information');
+        }
+        
+        this.logger.debug(`Member role updated successfully for user: ${userId} in org: ${orgId} to role: ${updateData.role}`, 'OrgController#updateMemberRole');
+        
+        return plainToInstance(OutUserOrgRelationDto, {
+            user: plainToInstance(OutUserPublicDto, targetUser.toObject()),
+            org: plainToInstance(OutOrgPublicDto, org.toObject()),
+            role: updatedRelation.orgRole,
+        }, { excludeExtraneousValues: true });
     }
 
 }

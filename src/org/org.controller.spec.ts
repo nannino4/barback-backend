@@ -911,4 +911,372 @@ describe('OrgController (Integration)', () =>
             expect(updatedOrg!.name).toBe('Just Name Change');
         });
     });
+
+    describe('PUT /orgs/:id/members/:userId/role (updateMemberRole)', () => 
+    {
+        let testUser3: User; // Additional user for testing role updates
+
+        beforeEach(async () => 
+        {
+            // Create test users
+            testUser = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword123',
+                phoneNumber: '+1234567890',
+            });
+
+            testUser2 = await userService.create({
+                email: 'test2@example.com',
+                firstName: 'Jane',
+                lastName: 'Smith', 
+                hashedPassword: 'hashedPassword456',
+                phoneNumber: '+0987654321',
+            });
+
+            testUser3 = await userService.create({
+                email: 'test3@example.com',
+                firstName: 'Bob',
+                lastName: 'Wilson', 
+                hashedPassword: 'hashedPassword789',
+                phoneNumber: '+0123456789',
+            });
+
+            // Create test organizations with proper ownership
+            const subscriptionId1 = new Types.ObjectId();
+            const subscriptionId2 = new Types.ObjectId();
+
+            testOrgs = await orgModel.insertMany([
+                {
+                    name: 'Test Organization 1',
+                    ownerId: testUser._id,
+                    subscriptionId: subscriptionId1,
+                    settings: { defaultCurrency: 'USD' },
+                },
+                {
+                    name: 'Test Organization 2', 
+                    ownerId: testUser2._id, // Different owner
+                    subscriptionId: subscriptionId2,
+                    settings: { defaultCurrency: 'EUR' },
+                },
+            ]);
+
+            // Create test user-org relations with proper ownership structure
+            await relationModel.insertMany([
+                {
+                    userId: testUser._id,
+                    orgId: testOrgs[0]._id,
+                    orgRole: OrgRole.OWNER, // testUser owns Organization 1
+                },
+                {
+                    userId: testUser2._id,
+                    orgId: testOrgs[1]._id,
+                    orgRole: OrgRole.OWNER, // testUser2 owns Organization 2
+                },
+                {
+                    userId: testUser2._id,
+                    orgId: testOrgs[0]._id,
+                    orgRole: OrgRole.MANAGER, // testUser2 is manager in Organization 1
+                },
+                {
+                    userId: testUser3._id,
+                    orgId: testOrgs[0]._id,
+                    orgRole: OrgRole.STAFF, // testUser3 is staff in Organization 1
+                },
+            ]);
+
+            // Override guards for test setup - authenticate as testUser (owner of org 1)
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                const freshUser = await userService.findById(testUser._id as Types.ObjectId);
+                request.user = freshUser;
+                return true;
+            });
+        });
+
+        afterEach(async () => 
+        {
+            // Clean up database after each test using model references
+            await Promise.all([
+                userModel.deleteMany({}).exec(),
+                orgModel.deleteMany({}).exec(),
+                relationModel.deleteMany({}).exec(),
+            ]);
+        });
+
+        it('should update member role from STAFF to MANAGER successfully', async () => 
+        {
+            // Arrange
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert response structure
+            expect(response.body).toHaveProperty('user');
+            expect(response.body).toHaveProperty('org');
+            expect(response.body).toHaveProperty('role', OrgRole.MANAGER);
+            
+            expect(response.body.user.id).toBe(testUser3.id);
+            expect(response.body.user.email).toBe(testUser3.email);
+            expect(response.body.org.id).toBe(testOrgs[0].id);
+            expect(response.body.org.name).toBe('Test Organization 1');
+
+            // Assert database state
+            const updatedRelation = await relationModel.findOne({
+                userId: testUser3._id,
+                orgId: testOrgs[0]._id,
+            });
+            expect(updatedRelation!.orgRole).toBe(OrgRole.MANAGER);
+        });
+
+        it('should update member role from MANAGER to STAFF successfully', async () => 
+        {
+            // Arrange
+            const updateData = { role: OrgRole.STAFF };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser2.id}/role`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert response structure
+            expect(response.body.role).toBe(OrgRole.STAFF);
+            expect(response.body.user.id).toBe(testUser2.id);
+
+            // Assert database state
+            const updatedRelation = await relationModel.findOne({
+                userId: testUser2._id,
+                orgId: testOrgs[0]._id,
+            });
+            expect(updatedRelation!.orgRole).toBe(OrgRole.STAFF);
+        });
+
+        it('should allow MANAGER to update member roles', async () => 
+        {
+            // Arrange - Switch to testUser2 who is manager in Organization 1
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                const freshUser = await userService.findById(testUser2._id as Types.ObjectId);
+                request.user = freshUser;
+                return true;
+            });
+
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert database state
+            const updatedRelation = await relationModel.findOne({
+                userId: testUser3._id,
+                orgId: testOrgs[0]._id,
+            });
+            expect(updatedRelation!.orgRole).toBe(OrgRole.MANAGER);
+        });
+
+        it('should prevent assignment of OWNER role', async () => 
+        {
+            // Arrange
+            const updateData = { role: OrgRole.OWNER };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .send(updateData)
+                .expect(400);
+
+            expect(response.body.message).toContain('Cannot assign OWNER role through role updates');
+
+            // Assert database state unchanged
+            const unchangedRelation = await relationModel.findOne({
+                userId: testUser3._id,
+                orgId: testOrgs[0]._id,
+            });
+            expect(unchangedRelation!.orgRole).toBe(OrgRole.STAFF); // Should remain unchanged
+        });
+
+        it('should prevent modification of OWNER role', async () => 
+        {
+            // Arrange - Try to modify the owner's role
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser.id}/role`)
+                .send(updateData)
+                .expect(400);
+
+            expect(response.body.message).toContain('Cannot modify the role of an organization owner');
+
+            // Assert database state unchanged
+            const unchangedRelation = await relationModel.findOne({
+                userId: testUser._id,
+                orgId: testOrgs[0]._id,
+            });
+            expect(unchangedRelation!.orgRole).toBe(OrgRole.OWNER); // Should remain unchanged
+        });
+
+        it('should return 404 when target user is not a member of the organization', async () => 
+        {
+            // Arrange - Create a user not in the organization
+            const nonMemberUser = await userService.create({
+                email: 'nonmember@example.com',
+                firstName: 'Non',
+                lastName: 'Member',
+                hashedPassword: 'hashedPassword123',
+                phoneNumber: '+9999999999',
+            });
+
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act & Assert
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${nonMemberUser.id}/role`)
+                .send(updateData)
+                .expect(404);
+
+            expect(response.body.message).toContain('User is not a member of this organization');
+        });
+
+        it('should return 403 when user is STAFF trying to update roles', async () => 
+        {
+            // Arrange - Switch to testUser3 who is staff in Organization 1
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                const freshUser = await userService.findById(testUser3._id as Types.ObjectId);
+                request.user = freshUser;
+                return true;
+            });
+
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser2.id}/role`)
+                .send(updateData)
+                .expect(403); // ForbiddenException from OrgRolesGuard
+        });
+
+        it('should return 403 when user has no access to organization', async () => 
+        {
+            // Arrange - Use non-existent organization
+            const nonExistentOrgId = new Types.ObjectId();
+            const updateData = { role: OrgRole.MANAGER };
+            
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${nonExistentOrgId}/members/${testUser3.id}/role`)
+                .send(updateData)
+                .expect(403); // ForbiddenException from OrgRolesGuard
+        });
+
+        it('should validate role enum values', async () => 
+        {
+            // Arrange
+            const invalidData = { role: 'invalid_role' };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .send(invalidData)
+                .expect(400); // ValidationPipe should reject invalid enum
+        });
+
+        it('should require authentication', async () => 
+        {
+            // Arrange
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async () => false);
+
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .send(updateData)
+                .expect(403);
+        });
+
+        it('should return 400 for invalid ObjectId format', async () => 
+        {
+            // Arrange
+            const invalidId = 'invalid-id';
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act & Assert - ObjectIdValidationPipe should catch invalid ObjectId
+            await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${invalidId}/role`)
+                .send(updateData)
+                .expect(400);
+        });
+
+        it('should exclude sensitive user data in response', async () => 
+        {
+            // Arrange
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .send(updateData)
+                .expect(200);
+
+            // Assert - Verify sensitive fields are not exposed
+            expect(response.body.user).not.toHaveProperty('hashedPassword');
+            expect(response.body.user).not.toHaveProperty('phoneNumber');
+            expect(response.body.user).not.toHaveProperty('role'); // User system role, not org role
+            expect(response.body.user).not.toHaveProperty('authProvider');
+            expect(response.body.user).not.toHaveProperty('isActive');
+            expect(response.body.user).not.toHaveProperty('isEmailVerified');
+            
+            // Verify org sensitive fields are not exposed
+            expect(response.body.org).not.toHaveProperty('ownerId');
+            expect(response.body.org).not.toHaveProperty('subscriptionId');
+            expect(response.body.org).not.toHaveProperty('settings');
+        });
+
+        it('should handle concurrent role updates gracefully', async () => 
+        {
+            // Arrange
+            const updateData = { role: OrgRole.MANAGER };
+
+            // Act - Simulate concurrent requests
+            const promises = Array(3).fill(null).map(() =>
+                request(app.getHttpServer())
+                    .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                    .send(updateData)
+            );
+
+            const results = await Promise.allSettled(promises);
+            
+            // Assert - At least one should succeed, others might fail due to race conditions
+            const successfulRequests = results.filter(result => 
+                result.status === 'fulfilled' && result.value.status === 200
+            );
+            
+            expect(successfulRequests.length).toBeGreaterThanOrEqual(1);
+
+            // Verify final database state
+            const finalRelation = await relationModel.findOne({
+                userId: testUser3._id,
+                orgId: testOrgs[0]._id,
+            });
+            expect(finalRelation!.orgRole).toBe(OrgRole.MANAGER);
+        });
+    });
 });
