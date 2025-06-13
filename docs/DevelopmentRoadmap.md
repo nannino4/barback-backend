@@ -145,6 +145,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] OrgInvite schema
   - [X] Input/Output DTOs with proper validation and transformation
 - [ ] **User Management within Organization**:
+  - [ ] Allow Owners/Managers to invite users to their organization via app.
   - [ ] Allow Owners/Managers to invite users to their organization via email.
   - [ ] Implement email invitation system with accept/decline functionality.
   - [ ] Allow users to view organizations they're invited to and organizations they're part of.
