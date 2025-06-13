@@ -7,6 +7,7 @@ import { AdminModule } from './admin/admin.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { OrgModule } from './org/org.module';
 import { CategoryModule } from './category/category.module';
+import { ProductModule } from './product/product.module';
 
 @Module({
     imports: [
@@ -27,6 +28,7 @@ import { CategoryModule } from './category/category.module';
         SubscriptionModule,
         OrgModule,
         CategoryModule,
+        ProductModule,
     ],
     controllers: [],
     providers: [
