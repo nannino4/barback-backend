@@ -138,8 +138,27 @@ export class ProductController
     {
         this.logger.debug(`Getting inventory logs for product ${productId} in org ${orgId}`, 'ProductController#getProductInventoryLogs');
         
-        const startDateObj = startDate ? new Date(startDate) : undefined;
-        const endDateObj = endDate ? new Date(endDate) : undefined;
+        // Handle date parsing with validation
+        let startDateObj: Date | undefined;
+        let endDateObj: Date | undefined;
+        
+        if (startDate) 
+        {
+            startDateObj = new Date(startDate);
+            if (isNaN(startDateObj.getTime())) 
+            {
+                startDateObj = undefined; // Ignore invalid dates
+            }
+        }
+        
+        if (endDate) 
+        {
+            endDateObj = new Date(endDate);
+            if (isNaN(endDateObj.getTime())) 
+            {
+                endDateObj = undefined; // Ignore invalid dates
+            }
+        }
         
         const logs = await this.inventoryService.getProductInventoryLogs(
             orgId, 
