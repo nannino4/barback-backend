@@ -12,14 +12,19 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { ProductService } from './product.service';
+import { InventoryService } from './inventory.service';
 import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
+import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
 import { OutProductDto } from './dto/out.product.dto';
+import { OutInventoryLogDto } from './dto/out.inventory-log.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
 import { OrgRoles } from '../org/decorators/org-roles.decorator';
 import { OrgRole } from '../org/schemas/user-org-relation.schema';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { User } from '../user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
 
 @Controller('orgs/:orgId/products')
@@ -28,7 +33,10 @@ export class ProductController
 {
     private readonly logger = new Logger(ProductController.name);
 
-    constructor(private readonly productService: ProductService) {}
+    constructor(
+        private readonly productService: ProductService,
+        private readonly inventoryService: InventoryService,
+    ) {}
 
     @Get()
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)
@@ -94,5 +102,52 @@ export class ProductController
         
         await this.productService.deleteProduct(orgId, productId);
         return { message: 'Product deleted successfully' };
+    }
+
+    // ===== INVENTORY ENDPOINTS =====
+
+    @Post(':id/adjust-stock')
+    @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)
+    async adjustStock(
+        @Param('orgId', ObjectIdValidationPipe) orgId: Types.ObjectId,
+        @Param('id', ObjectIdValidationPipe) productId: Types.ObjectId,
+        @CurrentUser() user: User,
+        @Body() adjustmentDto: InStockAdjustmentDto,
+    ): Promise<OutInventoryLogDto> 
+    {
+        this.logger.debug(`Adjusting stock for product ${productId} in org ${orgId}`, 'ProductController#adjustStock');
+        
+        const inventoryLog = await this.inventoryService.adjustStock(
+            orgId, 
+            productId, 
+            user._id as Types.ObjectId,
+            adjustmentDto
+        );
+        
+        return plainToInstance(OutInventoryLogDto, inventoryLog, { excludeExtraneousValues: true });
+    }
+
+    @Get(':id/logs')
+    @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)
+    async getProductInventoryLogs(
+        @Param('orgId', ObjectIdValidationPipe) orgId: Types.ObjectId,
+        @Param('id', ObjectIdValidationPipe) productId: Types.ObjectId,
+        @Query('startDate') startDate?: string,
+        @Query('endDate') endDate?: string,
+    ): Promise<OutInventoryLogDto[]> 
+    {
+        this.logger.debug(`Getting inventory logs for product ${productId} in org ${orgId}`, 'ProductController#getProductInventoryLogs');
+        
+        const startDateObj = startDate ? new Date(startDate) : undefined;
+        const endDateObj = endDate ? new Date(endDate) : undefined;
+        
+        const logs = await this.inventoryService.getProductInventoryLogs(
+            orgId, 
+            productId, 
+            startDateObj, 
+            endDateObj
+        );
+        
+        return plainToInstance(OutInventoryLogDto, logs, { excludeExtraneousValues: true });
     }
 }
