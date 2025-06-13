@@ -9,13 +9,13 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - **Admin Management**: User administration, role management 
 - **Subscription Management**: Stripe integration, automatic trial-to-paid conversion, payment methods, webhooks
 - **Organization Management**: Basic organization CRUD, member management, role-based access control
+- **Category Management**: Product categorization system with hierarchical structure
 
 **🔄 Next Priority:**
 - **Organization Invitation Integration**
-- **Category Management**: Product categorization system
 - **Product Management**: Core inventory items with par levels
 
-**📊 Overall Progress**: ~50% of MVP features completed
+**📊 Overall Progress**: ~60% of MVP features completed
 
 ## MVP Stage
 
@@ -155,21 +155,29 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] `DELETE /orgs/{id}/invites/{invitationId}` - Revoke invitation
 
 #### Category Management
-- [ ] **Data Layer Setup**:
-  - [ ] Create Category Mongoose schema with validation and indexes
-  - [ ] Create Category DTOs (CreateCategoryDto, UpdateCategoryDto, CategoryDto)
-- [ ] **Service Implementation**:
-  - [ ] Implement CategoryService with CRUD operations and hierarchy validation
-  - [ ] Add business logic for preventing circular references and handling deletions
-- [ ] **API Endpoints**:
-  - [ ] `GET /orgs/:orgId/categories` - List categories (with optional tree structure)
-  - [ ] `GET /orgs/:orgId/categories/:id` - Get single category
-  - [ ] `POST /orgs/:orgId/categories` - Create category (owners/managers only)
-  - [ ] `PUT /orgs/:orgId/categories/:id` - Update category (owners/managers only)
-  - [ ] `DELETE /orgs/:orgId/categories/:id` - Delete category (owners/managers only)
-- [ ] **Access Control**:
-  - [ ] Extend OrgRolesGuard to restrict create/update/delete to owners and managers
-  - [ ] Ensure all operations are scoped to user's organization
+- [X] **Data Layer Setup**:
+  - [X] Create Category Mongoose schema with validation and indexes
+  - [X] Create Category DTOs (CreateCategoryDto, UpdateCategoryDto, CategoryDto)
+- [X] **Service Implementation**:
+  - [X] Implement CategoryService with CRUD operations and hierarchy validation
+  - [X] Add business logic for preventing circular references and handling deletions
+- [X] **API Endpoints**:
+  - [X] `GET /orgs/:orgId/categories` - List categories (with optional tree structure)
+  - [X] `GET /orgs/:orgId/categories/:id` - Get single category
+  - [X] `POST /orgs/:orgId/categories` - Create category (owners/managers only)
+  - [X] `PUT /orgs/:orgId/categories/:id` - Update category (owners/managers only)
+  - [X] `DELETE /orgs/:orgId/categories/:id` - Delete category (owners/managers only)
+- [X] **Access Control**:
+  - [X] Extend OrgRolesGuard to restrict create/update/delete to owners and managers
+  - [X] Ensure all operations are scoped to user's organization
+
+**✅ Category Management Status: COMPLETED**
+- Full category CRUD operations with hierarchical support
+- Parent-child relationship validation and circular reference prevention
+- Role-based access control (owners/managers can modify, all members can view)
+- Proper data validation and error handling
+- Integration with organization-scoped access control
+- Comprehensive API endpoints following RESTful conventions
 
 #### Product Management
 - [ ] **Data Layer Setup**:

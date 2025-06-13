@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { OrgModule } from './org/org.module';
+import { CategoryModule } from './category/category.module';
 
 @Module({
     imports: [
@@ -25,6 +26,7 @@ import { OrgModule } from './org/org.module';
         AdminModule,
         SubscriptionModule,
         OrgModule,
+        CategoryModule,
     ],
     controllers: [],
     providers: [
