@@ -20,10 +20,12 @@ export class CategoryService
         // If parentId is provided, validate it exists and belongs to the same org
         if (createCategoryDto.parentId) 
         {
-            await this.validateParentCategory(orgId, createCategoryDto.parentId);
+            const parentIdObj = new Types.ObjectId(createCategoryDto.parentId);
+            await this.validateParentCategory(orgId, parentIdObj);
         }
         const category = new this.categoryModel({
             ...createCategoryDto,
+            parentId: createCategoryDto.parentId ? new Types.ObjectId(createCategoryDto.parentId) : undefined,
             orgId,
         });
         const savedCategory = await category.save();
@@ -69,23 +71,31 @@ export class CategoryService
         {
             if (updateCategoryDto.parentId) 
             {
+                const parentIdObj = new Types.ObjectId(updateCategoryDto.parentId);
+                
                 // Prevent setting self as parent
-                if (updateCategoryDto.parentId.equals(categoryId)) 
+                if (parentIdObj.equals(categoryId)) 
                 {
                     throw new BadRequestException('Category cannot be its own parent');
                 }
 
-                await this.validateParentCategory(orgId, updateCategoryDto.parentId);
+                await this.validateParentCategory(orgId, parentIdObj);
                 
                 // Check for circular references
-                await this.checkCircularReference(categoryId, updateCategoryDto.parentId);
+                await this.checkCircularReference(categoryId, parentIdObj);
             }
         }
+
+        // Convert parentId string to ObjectId for database update
+        const updateData = {
+            ...updateCategoryDto,
+            parentId: updateCategoryDto.parentId ? new Types.ObjectId(updateCategoryDto.parentId) : updateCategoryDto.parentId,
+        };
 
         const updatedCategory = await this.categoryModel
             .findOneAndUpdate(
                 { _id: categoryId, orgId },
-                updateCategoryDto,
+                updateData,
                 { new: true }
             )
             .exec();

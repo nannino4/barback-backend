@@ -1,5 +1,4 @@
 import { IsString, IsNotEmpty, IsMongoId, ValidateIf } from 'class-validator';
-import { Types } from 'mongoose';
 
 export class InCreateCategoryDto 
 {
@@ -14,5 +13,5 @@ export class InCreateCategoryDto
 
     @ValidateIf(o => o.parentId !== undefined)
     @IsMongoId()
-    parentId?: Types.ObjectId;
+    parentId?: string;
 }
