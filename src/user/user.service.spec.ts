@@ -4,7 +4,7 @@ import { Connection, Types } from 'mongoose';
 import { ConflictException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { User, UserSchema, UserRole, AuthProvider } from './schemas/user.schema';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from './dto/in.create-user.dto';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import * as bcrypt from 'bcrypt';

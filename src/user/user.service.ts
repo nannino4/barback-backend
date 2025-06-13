@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, Logger, ConflictException, UnauthorizedE
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserRole, AuthProvider } from './schemas/user.schema';
-import { CreateUserDto } from './dto/create-user.dto';
+import { CreateUserDto } from './dto/in.create-user.dto';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import * as bcrypt from 'bcrypt';
 
