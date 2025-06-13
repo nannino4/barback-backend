@@ -54,13 +54,13 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Define and implement user session management (e.g., JWT-based).
 - [ ] **Email/Password Authentication**:
   - [X] Implement User Registration with email and password.
-  - [ ] Implement Email Verification for new accounts.
+  - [ ] Implement Email verification for new accounts
   - [X] Implement User Login with email and password.
-  - [ ] Implement Password Reset functionality via email.
-  - [ ] Implement Email Service for organization invitations.
+  - [ ] Implement Password reset functionality via email
+  - [ ] Implement Email service for organization invitations
 - [ ] **Google OAuth Authentication**:
-  - [ ] Implement User Registration with Google.
-  - [ ] Implement User Login with Google.
+  - [ ] Implement User Registration with Google OAuth
+  - [ ] Implement User Login with Google OAuth
 - [X] **UserRole-Based Access Control (RBAC)**:
   - [X] Implement guards for UserRoles.
 - [X] **User Account Management (Admin)**:
@@ -132,7 +132,6 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] **Basic Organization API Endpoints**:
   - [X] `GET /orgs` - List all organizations user is in (optional filter by orgRole)
   - [X] `GET /orgs/{id}/members` - List organization members
-  - [ ] `GET /invitations` - List user's invitations
   - [X] `POST /orgs` - Create organization
   - [X] `PUT /orgs/{id}` - Update organization name/settings (owner only)
   - [X] `PUT /orgs/{id}/members/{userId}/role` - Update member role (owners/managers only)
@@ -144,75 +143,80 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] UserOrgRelationship schema
   - [X] OrgInvite schema
   - [X] Input/Output DTOs with proper validation and transformation
-- [ ] **User Management within Organization**:
-  - [ ] Allow Owners/Managers to invite users to their organization via app.
-  - [ ] Allow Owners/Managers to invite users to their organization via email.
-  - [ ] Implement email invitation system with accept/decline functionality.
-  - [ ] Allow users to view organizations they're invited to and organizations they're part of.
-  - [ ] Implement invitation token generation and validation.
-  - [ ] Handle user registration with automatic invitation acceptance.
-- [ ] **Advanced Invitation Workflow** (Future Enhancement):
-  - [ ] Generate secure invitation tokens with expiration.
-  - [ ] Send invitation emails with accept/decline links.
-  - [ ] Handle invitation acceptance for existing users.
-  - [ ] Handle invitation acceptance during user registration.
-  - [ ] Handle partial acceptance (user accepts but hasn't completed registration).
-  - [ ] Allow invitation decline and cleanup.
-  - [ ] Allow invitation revocation by inviter (Owner/Manager).
-  - [ ] Prevent duplicate invitations to same email for same organization.
-  - [ ] Handle expired invitations cleanup.
-- [ ] **API Endpoints**:
-  - [ ] Develop Organization management endpoints (CRUD for organizations, user management within orgs).
-  - [ ] `/orgs/{id}/invites` - Send user invites.
-  - [ ] `/orgs/{id}/invites/{invitationId}/revoke` - Revoke pending invitation.
-  - [ ] `/invites/accept/{token}` - Accept organization invitation.
-  - [ ] `/invites/decline/{token}` - Decline organization invitation.
+- [ ] **Organization Invitation System**:
+  - [ ] Implement invitation token generation and validation logic
+  - [ ] Create email service for sending organization invitations
+  - [ ] Handle invitation acceptance for existing and new users
+- [ ] **Invitation API Endpoints**:
+  - [ ] `GET /invitations` - List user's pending invitations
+  - [ ] `POST /orgs/{id}/invites` - Send organization invitation
+  - [ ] `POST /invites/accept/{token}` - Accept invitation
+  - [ ] `POST /invites/decline/{token}` - Decline invitation
+  - [ ] `DELETE /orgs/{id}/invites/{invitationId}` - Revoke invitation
 
 #### Category Management
-- [ ] **Core Functionality**:
-  - [ ] Implement CRUD operations for Product Categories.
-  - [ ] Implement functionality to link Products to Categories.
+- [ ] **Data Layer Setup**:
+  - [ ] Create Category Mongoose schema with validation and indexes
+  - [ ] Create Category DTOs (CreateCategoryDto, UpdateCategoryDto, CategoryDto)
+- [ ] **Service Implementation**:
+  - [ ] Implement CategoryService with CRUD operations and hierarchy validation
+  - [ ] Add business logic for preventing circular references and handling deletions
 - [ ] **API Endpoints**:
-  - [ ] Develop Category management endpoints.
+  - [ ] `GET /orgs/:orgId/categories` - List categories (with optional tree structure)
+  - [ ] `GET /orgs/:orgId/categories/:id` - Get single category
+  - [ ] `POST /orgs/:orgId/categories` - Create category (owners/managers only)
+  - [ ] `PUT /orgs/:orgId/categories/:id` - Update category (owners/managers only)
+  - [ ] `DELETE /orgs/:orgId/categories/:id` - Delete category (owners/managers only)
+- [ ] **Access Control**:
+  - [ ] Extend OrgRolesGuard to restrict create/update/delete to owners and managers
+  - [ ] Ensure all operations are scoped to user's organization
 
 #### Product Management
-- [ ] **Core Functionality**:
-  - [ ] Implement CRUD operations for Products (name, category, unit, par level, current quantity).
+- [ ] **Data Layer Setup**:
+  - [ ] Create Product Mongoose schema with category linking and validation
+  - [ ] Create Product DTOs (CreateProductDto, UpdateProductDto, ProductDto)
+- [ ] **Service Implementation**:
+  - [ ] Implement ProductService with CRUD operations and category validation
+  - [ ] Add business logic for stock quantity tracking and category assignments
 - [ ] **API Endpoints**:
-  - [ ] Develop Product management endpoints.
+  - [ ] `GET /orgs/:orgId/products` - List products (with category filtering)
+  - [ ] `GET /orgs/:orgId/products/:id` - Get single product
+  - [ ] `POST /orgs/:orgId/products` - Create product
+  - [ ] `PUT /orgs/:orgId/products/:id` - Update product
+  - [ ] `DELETE /orgs/:orgId/products/:id` - Delete product
 
 #### Inventory Management
-- [ ] **Stock Tracking**:
-  - [ ] Implement manual stock adjustments with reason codes (creating inventory log entries).
-  - [ ] Implement real-time stock level display (from Product.currentQuantity).
-- [ ] **Reporting**:
-  - [ ] Implement generation of inventory reports by date range.
-  - [ ] Implement generation of inventory reports for a specific date (snapshot).
+- [ ] **Data Layer Setup**:
+  - [ ] Create InventoryLog Mongoose schema for tracking stock changes
+  - [ ] Create inventory DTOs (StockAdjustmentDto, InventoryReportDto)
+- [ ] **Service Implementation**:
+  - [ ] Implement manual stock adjustments with reason codes and logging
+  - [ ] Implement inventory report generation by date range and snapshots
 - [ ] **API Endpoints**:
-  - [ ] Develop Inventory management endpoints (adjust stock, view stock, generate reports).
+  - [ ] `POST /orgs/:orgId/products/:productId/adjust-stock` - Manual stock adjustment
+  - [ ] `GET /orgs/:orgId/inventory/reports` - Generate inventory reports
+  - [ ] `GET /orgs/:orgId/products/:productId/logs` - Get product inventory history
 
 #### Alerts & Notifications
-- [ ] **Low Stock Alerts**:
-  - [ ] Implement system to trigger alerts when product stock falls below its defined par level.
-  - [ ] Allow users to define/update par levels for products.
-- [ ] **Time-Based Reminders**:
-  - [ ] Implement basic functionality for creating and triggering time-based reminders (e.g., weekly inventory count reminder).
-- [ ] **Notification Delivery**:
-  - [ ] Implement Email notifications for alerts.
-  - [ ] Implement Email notifications for organization invitations.
-  - [ ] (Optional MVP Stretch) Implement basic Push notification infrastructure for alerts.
+- [ ] **Data Layer Setup**:
+  - [ ] Create Alert Mongoose schema for low stock and scheduled alerts
+  - [ ] Create alert DTOs (CreateAlertDto, UpdateAlertDto, AlertDto)
+- [ ] **Service Implementation**:
+  - [ ] Implement alert trigger system for low stock detection
+  - [ ] Implement time-based reminder scheduling and execution
+  - [ ] Integrate email service for alert notifications
 - [ ] **API Endpoints**:
-  - [ ] Develop Alerts endpoints (configure alerts, view active alerts).
+  - [ ] `GET /orgs/:orgId/alerts` - List organization alerts
+  - [ ] `POST /orgs/:orgId/alerts` - Create new alert
+  - [ ] `PUT /orgs/:orgId/alerts/:id` - Update alert configuration
+  - [ ] `DELETE /orgs/:orgId/alerts/:id` - Delete alert
 
 #### Analytics (Basic MVP)
-- [ ] **Data Collection**:
-  - [ ] Ensure inventory changes (consumption) are logged appropriately for analytics.
-- [ ] **Consumption Tracking**:
-  - [ ] Implement API to retrieve product consumption data by a specified time period.
-  - [ ] Implement API to retrieve product consumption data by category over a time period.
-  - [ ] Implement API to retrieve consumption data for a specific product over a time period.
+- [ ] **Service Implementation**:
+  - [ ] Implement consumption tracking from inventory logs
+  - [ ] Create analytics service for consumption reports by time period, category, and product
 - [ ] **API Endpoints**:
-  - [ ] Develop Analytics endpoints to expose consumption data.
+  - [ ] `GET /orgs/:orgId/analytics/consumption?category=mycategory&productId=myproductid` - Product consumption by time period, category and product
 
 ---
 This roadmap will be updated as development progresses.
