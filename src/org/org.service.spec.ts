@@ -5,6 +5,7 @@ import { OrgService } from './org.service';
 import { Org, OrgSchema } from './schemas/org.schema';
 import { UserOrgRelation, UserOrgRelationSchema } from './schemas/user-org-relation.schema';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
+import { CreateOrgDto } from './dto/in.create-org.dto';
 
 describe('OrgService - Service Tests (Unit-style)', () => 
 {
@@ -105,6 +106,147 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             // Assert
             expect(result).toBeDefined();
             expect(result!.settings.defaultCurrency).toBe('EUR'); // Default from schema
+        });
+    });
+
+    describe('create', () => 
+    {
+        it('should create organization successfully with all required fields', async () => 
+        {
+            // Arrange
+            const createData: CreateOrgDto = {
+                name: 'New Test Organization',
+                subscriptionId: mockSubscriptionId,
+                settings: { defaultCurrency: 'USD' },
+            };
+            const ownerId = mockUserId;
+            const subscriptionId = mockSubscriptionId;
+
+            // Act
+            const result = await service.create(createData, ownerId, subscriptionId);
+
+            // Assert - Verify return value
+            expect(result).toBeDefined();
+            expect(result.name).toBe(createData.name);
+            expect(result.ownerId.toString()).toBe(ownerId.toString());
+            expect(result.subscriptionId.toString()).toBe(subscriptionId.toString());
+            expect(result.settings.defaultCurrency).toBe('USD');
+            expect(result).toHaveProperty('_id');
+
+            // Assert - Verify database state
+            const orgModel = connection.model('Org');
+            const orgInDb = await orgModel.findById(result._id);
+            expect(orgInDb).toBeDefined();
+            expect(orgInDb!.name).toBe(createData.name);
+            expect(orgInDb!.ownerId.toString()).toBe(ownerId.toString());
+            expect(orgInDb!.subscriptionId.toString()).toBe(subscriptionId.toString());
+        });
+
+        it('should create organization with default settings when none provided', async () => 
+        {
+            // Arrange
+            const createData = {
+                name: 'Org Without Settings',
+                subscriptionId: mockSubscriptionId,
+                // No settings provided, should use default from schema
+            };
+            const ownerId = mockUserId;
+            const subscriptionId = new Types.ObjectId();
+
+            // Act
+            const result = await service.create(createData, ownerId, subscriptionId);
+
+            // Assert
+            expect(result.settings.defaultCurrency).toBe('EUR'); // Default value
+            expect(result.name).toBe(createData.name);
+
+            // Verify database state
+            const orgModel = connection.model('Org');
+            const orgInDb = await orgModel.findById(result._id);
+            expect(orgInDb!.settings.defaultCurrency).toBe('EUR');
+        });
+
+        it('should create organizations for different owners', async () => 
+        {
+            // Arrange
+            const subscription1 = mockSubscriptionId;
+            const subscription2 = new Types.ObjectId();
+            const createData1 = { name: 'Org 1', subscriptionId: subscription1, settings: { defaultCurrency: 'USD' } };
+            const createData2 = { name: 'Org 2', subscriptionId: subscription2, settings: { defaultCurrency: 'GBP' } };
+            const owner1 = mockUserId;
+            const owner2 = new Types.ObjectId();
+
+            // Act
+            const org1 = await service.create(createData1, owner1, subscription1);
+            const org2 = await service.create(createData2, owner2, subscription2);
+
+            // Assert
+            expect(org1.ownerId.toString()).toBe(owner1.toString());
+            expect(org1.subscriptionId.toString()).toBe(subscription1.toString());
+            expect(org1.name).toBe('Org 1');
+
+            expect(org2.ownerId.toString()).toBe(owner2.toString());
+            expect(org2.subscriptionId.toString()).toBe(subscription2.toString());
+            expect(org2.name).toBe('Org 2');
+
+            // Verify both exist in database
+            const orgModel = connection.model('Org');
+            const allOrgs = await orgModel.find({}).exec();
+            expect(allOrgs).toHaveLength(2);
+        });
+
+        it('should create organization with custom settings', async () => 
+        {
+            // Arrange
+            const createData = {
+                name: 'Custom Settings Org',
+                subscriptionId: mockSubscriptionId,
+                settings: { defaultCurrency: 'JPY' },
+            };
+            const ownerId = mockUserId;
+            const subscriptionId = mockSubscriptionId;
+
+            // Act
+            const result = await service.create(createData, ownerId, subscriptionId);
+
+            // Assert
+            expect(result.settings.defaultCurrency).toBe('JPY');
+            expect(result.name).toBe(createData.name);
+
+            // Verify database state
+            const orgModel = connection.model('Org');
+            const orgInDb = await orgModel.findById(result._id);
+            expect(orgInDb!.settings.defaultCurrency).toBe('JPY');
+        });
+
+        it('should return document with correct structure and types', async () => 
+        {
+            // Arrange
+            const createData = { name: 'Structure Test Org', subscriptionId: mockSubscriptionId };
+            const ownerId = mockUserId;
+            const subscriptionId = mockSubscriptionId;
+
+            // Act
+            const result = await service.create(createData, ownerId, subscriptionId);
+
+            // Assert - Verify document structure
+            expect(result).toHaveProperty('name');
+            expect(result).toHaveProperty('ownerId');
+            expect(result).toHaveProperty('subscriptionId');
+            expect(result).toHaveProperty('settings');
+            expect(result).toHaveProperty('_id');
+            
+            // Verify types
+            expect(typeof result.name).toBe('string');
+            expect(result.ownerId).toBeInstanceOf(Types.ObjectId);
+            expect(result.subscriptionId).toBeInstanceOf(Types.ObjectId);
+            expect(typeof result.settings).toBe('object');
+            expect(typeof result.settings.defaultCurrency).toBe('string');
+            
+            // Verify timestamps exist (they're added by mongoose timestamps: true)
+            const resultObject = result.toObject();
+            expect(resultObject).toHaveProperty('createdAt');
+            expect(resultObject).toHaveProperty('updatedAt');
         });
     });
 

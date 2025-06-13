@@ -1,6 +1,7 @@
 import {
     Controller,
     Get,
+    Post,
     Put,
     Query,
     UseGuards,
@@ -23,12 +24,15 @@ import { OutOrgPublicDto } from './dto/out.org.public.dto';
 import { OutOrgDto } from './dto/out.org.dto';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { UpdateMemberRoleDto } from './dto/in.update-member-role.dto';
+import { CreateOrgDto } from './dto/in.create-org.dto';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 import { OrgRolesGuard } from './guards/org-roles.guard';
 import { OrgRoles } from './decorators/org-roles.decorator';
 import { UserService } from '../user/user.service';
+import { SubscriptionService } from '../subscription/subscription.service';
+import { SubscriptionStatus } from '../subscription/schemas/subscription.schema';
 
 @Controller('orgs')
 @UseGuards(JwtAuthGuard)
@@ -40,7 +44,46 @@ export class OrgController
         private readonly orgService: OrgService,
         private readonly userOrgRelationService: UserOrgRelationService,
         private readonly userService: UserService,
+        private readonly subscriptionService: SubscriptionService,
     ) { }
+
+    @Post()
+    async createOrganization(
+        @CurrentUser() user: User,
+        @Body() createData: CreateOrgDto,
+    ): Promise<OutOrgDto>
+    {
+        this.logger.debug(`Creating organization: ${createData.name} for user: ${user.email} with subscription: ${createData.subscriptionId}`, 'OrgController#createOrganization');
+        
+        // Verify the subscription belongs to the user and is active
+        const subscription = await this.subscriptionService.findById(createData.subscriptionId);
+        if (!subscription)
+        {
+            this.logger.error(`Subscription not found: ${createData.subscriptionId}`, 'OrgController#createOrganization');
+            throw new NotFoundException('Subscription not found');
+        }
+        if (subscription.status !== SubscriptionStatus.ACTIVE && subscription.status !== SubscriptionStatus.TRIALING)
+        {
+            this.logger.error(`Subscription is not active: ${createData.subscriptionId}`, 'OrgController#createOrganization');
+            throw new ConflictException('Subscription is not active');
+        }
+        
+        if (subscription.userId.toString() !== (user._id as Types.ObjectId).toString())
+        {
+            this.logger.error(`Subscription ${createData.subscriptionId} does not belong to user: ${user.email}`, 'OrgController#createOrganization');
+            throw new ConflictException('Subscription does not belong to the current user');
+        }
+        
+        // Create the organization
+        const org = await this.orgService.create(createData, user._id as Types.ObjectId, subscription._id as Types.ObjectId);
+        
+        // Create user-org relationship with OWNER role
+        await this.userOrgRelationService.create(user._id as Types.ObjectId, org._id as Types.ObjectId, OrgRole.OWNER);
+        
+        this.logger.debug(`Organization created successfully: ${org.name} with ID: ${org._id}`, 'OrgController#createOrganization');
+        
+        return plainToInstance(OutOrgDto, org.toObject(), { excludeExtraneousValues: true });
+    }
 
     @Get()
     async getUserOrgs(

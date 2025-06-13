@@ -161,17 +161,6 @@ export class SubscriptionService
         return subscription;
     }
 
-    async isSubscriptionActive(userId: Types.ObjectId): Promise<boolean> 
-    {
-        const subscription = await this.findByUserId(userId);
-        if (!subscription) 
-        {
-            return false;
-        }
-
-        return subscription.status === SubscriptionStatus.ACTIVE || subscription.status === SubscriptionStatus.TRIALING;
-    }
-
     async handleStripeWebhook(event: Stripe.Event): Promise<void> 
     {
         this.logger.debug(`Handling Stripe webhook: ${event.type}`, 'SubscriptionService#handleStripeWebhook');

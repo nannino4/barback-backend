@@ -12,6 +12,20 @@ export class UserOrgRelationService
         @InjectModel(UserOrgRelation.name) private readonly userOrgRelationModel: Model<UserOrgRelation>,
     ) {}
 
+    async create(userId: Types.ObjectId, orgId: Types.ObjectId, orgRole: OrgRole): Promise<UserOrgRelation>
+    {
+        this.logger.debug(`Creating user-org relationship for user: ${userId} in org: ${orgId} with role: ${orgRole}`, 'UserOrgRelationService#create');
+        const relationship = new this.userOrgRelationModel({
+            userId: userId,
+            orgId: orgId,
+            orgRole: orgRole,
+        });
+        
+        await relationship.save();
+        this.logger.debug(`User-org relationship created successfully for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#create');
+        return relationship;
+    }
+
     async findAll(userId?: Types.ObjectId, orgRole?: OrgRole, orgId?: Types.ObjectId): Promise<UserOrgRelation[]>
     {
         this.logger.debug(`Finding user-org relations with userId: ${userId}, orgRole: ${orgRole}, orgId: ${orgId}`, 'UserOrgRelationService#findAll');

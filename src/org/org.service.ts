@@ -4,6 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Org } from './schemas/org.schema';
 import { UserOrgRelation } from './schemas/user-org-relation.schema';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
+import { CreateOrgDto } from './dto/in.create-org.dto';
 
 @Injectable()
 export class OrgService 
@@ -14,6 +15,21 @@ export class OrgService
         @InjectModel(Org.name) private readonly orgModel: Model<Org>,
         @InjectModel(UserOrgRelation.name) private readonly relationshipModel: Model<UserOrgRelation>,
     ) {}
+
+    async create(createData: CreateOrgDto, ownerId: Types.ObjectId, subscriptionId: Types.ObjectId): Promise<Org>
+    {
+        this.logger.debug(`Creating organization: ${createData.name} for owner: ${ownerId}`, 'OrgService#create');
+        const org = new this.orgModel({
+            name: createData.name,
+            ownerId: ownerId,
+            subscriptionId: subscriptionId,
+            settings: createData.settings || { defaultCurrency: 'EUR' },
+        });
+        
+        await org.save();
+        this.logger.debug(`Organization created successfully: ${org.name} with ID: ${org._id}`, 'OrgService#create');
+        return org;
+    }
 
     async findById(orgId: Types.ObjectId): Promise<Org | null> 
     {

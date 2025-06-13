@@ -4,15 +4,18 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import * as request from 'supertest';
 import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { OrgController } from './org.controller';
 import { OrgService } from './org.service';
 import { UserOrgRelationService } from './user-org-relation.service';
 import { Org, OrgSchema } from './schemas/org.schema';
 import { UserOrgRelation, UserOrgRelationSchema, OrgRole } from './schemas/user-org-relation.schema';
 import { User, UserSchema } from '../user/schemas/user.schema';
+import { Subscription, SubscriptionSchema } from '../subscription/schemas/subscription.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from './guards/org-roles.guard';
 import { UserService } from '../user/user.service';
+import { SubscriptionService } from '../subscription/subscription.service';
 import { Types } from 'mongoose';
 import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
@@ -30,6 +33,7 @@ describe('OrgController (Integration)', () =>
     let userModel: any;
     let orgModel: any;
     let relationModel: any;
+    let subscriptionModel: any;
 
     beforeAll(async () => 
     {
@@ -43,6 +47,7 @@ describe('OrgController (Integration)', () =>
                     { name: User.name, schema: UserSchema },
                     { name: Org.name, schema: OrgSchema },
                     { name: UserOrgRelation.name, schema: UserOrgRelationSchema },
+                    { name: Subscription.name, schema: SubscriptionSchema },
                 ]),
                 JwtModule.register({
                     secret: 'test-secret',
@@ -50,12 +55,25 @@ describe('OrgController (Integration)', () =>
                 }),
             ],
             controllers: [OrgController],
-            providers: [OrgService, UserOrgRelationService, UserService, OrgRolesGuard],
+            providers: [
+                OrgService, 
+                UserOrgRelationService, 
+                UserService, 
+                OrgRolesGuard,
+                SubscriptionService,
+                {
+                    provide: ConfigService,
+                    useValue: {
+                        get: jest.fn().mockReturnValue('test-stripe-key'),
+                    },
+                },
+            ],
         })
             .overrideGuard(JwtAuthGuard)
             .useValue({
                 canActivate: () => true, // Will be overridden in beforeEach
             })
+
             .compile();
 
         app = moduleFixture.createNestApplication();
@@ -68,9 +86,10 @@ describe('OrgController (Integration)', () =>
         userService = moduleFixture.get<UserService>(UserService);
 
         // Get model references
-        userModel = app.get('UserModel');
-        orgModel = app.get('OrgModel');
-        relationModel = app.get('UserOrgRelationModel');
+        userModel = moduleFixture.get('UserModel');
+        orgModel = moduleFixture.get('OrgModel');
+        relationModel = moduleFixture.get('UserOrgRelationModel');
+        subscriptionModel = moduleFixture.get('SubscriptionModel');
 
         await app.init();
     });
@@ -79,6 +98,407 @@ describe('OrgController (Integration)', () =>
     {
         await app.close();
         await mongoServer.stop();
+    });
+
+    describe('POST /orgs (createOrganization)', () => 
+    {
+        beforeEach(async () => 
+        {
+            // Create test user
+            testUser = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword123',
+                phoneNumber: '+1234567890',
+            });
+
+            // Override guard to use the created test user
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                const freshUser = await userService.findById(testUser._id as Types.ObjectId);
+                request.user = freshUser;
+                return true;
+            });
+        });
+
+        afterEach(async () => 
+        {
+            // Clean up database after each test
+            await Promise.all([
+                userModel.deleteMany({}).exec(),
+                orgModel.deleteMany({}).exec(),
+                relationModel.deleteMany({}).exec(),
+                subscriptionModel.deleteMany({}).exec(),
+            ]);
+        });
+
+        it('should create organization successfully with active subscription', async () => 
+        {
+            // Arrange - Create real subscription for user
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_test123',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const createData = {
+                name: 'New Test Organization',
+                subscriptionId: subscription._id,
+                settings: { defaultCurrency: 'USD' },
+            };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(201);
+
+            // Assert response structure
+            expect(response.body).toHaveProperty('id');
+            expect(response.body).toHaveProperty('name', 'New Test Organization');
+            expect(response.body).toHaveProperty('settings');
+            expect(response.body.settings).toHaveProperty('defaultCurrency', 'USD');
+
+            // Assert database state - organization created
+            const orgInDb = await orgModel.findById(response.body.id);
+            expect(orgInDb).toBeDefined();
+            expect(orgInDb!.name).toBe('New Test Organization');
+            expect(orgInDb!.ownerId.toString()).toBe((testUser._id as Types.ObjectId).toString());
+
+            // Verify the subscription ID matches the real subscription
+            expect(orgInDb!.subscriptionId.toString()).toBe(subscription._id.toString());
+
+            // Assert database state - user-org relationship created with OWNER role
+            const relationInDb = await relationModel.findOne({
+                userId: testUser._id,
+                orgId: orgInDb!._id,
+            });
+            expect(relationInDb).toBeDefined();
+            expect(relationInDb!.orgRole).toBe(OrgRole.OWNER);
+        });
+
+        it('should create organization with default settings when none provided', async () => 
+        {
+            // Arrange - Create subscription for user
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_test456',
+                status: 'trialing',
+                autoRenew: true,
+            });
+
+            const createData = {
+                name: 'Minimal Organization',
+                subscriptionId: subscription._id,
+            };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(201);
+
+            // Assert
+            expect(response.body.settings.defaultCurrency).toBe('EUR'); // Default value
+            expect(response.body.name).toBe('Minimal Organization');
+
+            // Verify database state
+            const orgInDb = await orgModel.findById(response.body.id);
+            expect(orgInDb!.settings.defaultCurrency).toBe('EUR');
+        });
+
+        it('should return 400 when user has no active subscription (missing subscriptionId)', async () => 
+        {
+            // Arrange - No subscription created for user, and no subscriptionId provided
+            const createData = {
+                name: 'Should Fail Organization',
+                // Missing subscriptionId field
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(400); // Bad Request due to missing required field
+        });
+
+        it('should return 409 when user has inactive subscription', async () => 
+        {
+            // Arrange - Create inactive subscription
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_cancelled123',
+                status: 'canceled',
+                autoRenew: false,
+            });
+
+            const createData = {
+                name: 'Should Fail Organization',
+                subscriptionId: subscription._id,
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(409); // ConflictException: Subscription is not active
+        });
+
+        it('should return 400 with invalid request data (empty name)', async () => 
+        {
+            // Arrange - Create subscription
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_test789',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const invalidData = { 
+                name: '', // Empty name should fail validation
+                subscriptionId: subscription._id,
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(invalidData)
+                .expect(400);
+        });
+
+        it('should return 400 with missing required fields', async () => 
+        {
+            // Arrange - Create subscription
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_test101112',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            // Act & Assert - Missing name field
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send({ subscriptionId: subscription._id }) // Missing name
+                .expect(400);
+                
+            // Act & Assert - Missing subscriptionId field
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send({ name: 'Test Org' }) // Missing subscriptionId
+                .expect(400);
+        });
+
+        it('should require authentication', async () => 
+        {
+            // Arrange
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async () => false);
+
+            const createData = {
+                name: 'Unauthorized Organization',
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(403);
+        });
+
+        it('should create multiple organizations for same user with separate subscriptions', async () => 
+        {
+            // Arrange - Create multiple subscriptions for the user
+            const subscription1 = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_multiple123',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const subscription2 = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_multiple456',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const createData1 = { 
+                name: 'First Organization',
+                subscriptionId: subscription1._id,
+            };
+            const createData2 = { 
+                name: 'Second Organization',
+                subscriptionId: subscription2._id,
+            };
+
+            // Act
+            const response1 = await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData1)
+                .expect(201);
+
+            const response2 = await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData2)
+                .expect(201);
+
+            // Assert
+            expect(response1.body.name).toBe('First Organization');
+            expect(response2.body.name).toBe('Second Organization');
+            expect(response1.body.id).not.toBe(response2.body.id);
+
+            // Verify both organizations exist in database
+            const orgsInDb = await orgModel.find({ ownerId: testUser._id });
+            expect(orgsInDb).toHaveLength(2);
+            expect(orgsInDb[0].subscriptionId.toString()).toBe(subscription1._id.toString());
+            expect(orgsInDb[1].subscriptionId.toString()).toBe(subscription2._id.toString());
+
+            // Verify both user-org relationships exist with OWNER role
+            const relationsInDb = await relationModel.find({ userId: testUser._id });
+            expect(relationsInDb).toHaveLength(2);
+            expect(relationsInDb.every((rel: any) => rel.orgRole === OrgRole.OWNER)).toBe(true);
+        });
+
+        it('should only expose fields defined in OutOrgDto', async () => 
+        {
+            // Arrange - Create subscription
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_dto123',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const createData = {
+                name: 'DTO Test Organization',
+                subscriptionId: subscription._id,
+                settings: { defaultCurrency: 'GBP' },
+            };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(201);
+
+            // Assert - Only exposed fields are present
+            const expectedKeys = ['id', 'name', 'settings'];
+            expect(Object.keys(response.body)).toEqual(expect.arrayContaining(expectedKeys));
+            expect(Object.keys(response.body)).toHaveLength(expectedKeys.length);
+
+            // Assert - Sensitive fields are not exposed
+            expect(response.body).not.toHaveProperty('ownerId');
+            expect(response.body).not.toHaveProperty('subscriptionId');
+            expect(response.body).not.toHaveProperty('_id');
+            expect(response.body).not.toHaveProperty('__v');
+            expect(response.body).not.toHaveProperty('createdAt');
+            expect(response.body).not.toHaveProperty('updatedAt');
+        });
+
+        it('should return 409 when trying to use another user\'s subscription', async () => 
+        {
+            // Arrange - Create another user with their own subscription
+            const anotherUser = await userService.create({
+                email: 'another@example.com',
+                firstName: 'Another',
+                lastName: 'User',
+                hashedPassword: 'hashedPassword456',
+                phoneNumber: '+9876543210',
+            });
+
+            const anotherSubscription = await subscriptionModel.create({
+                userId: anotherUser._id,
+                stripeSubscriptionId: 'sub_another123',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const createData = {
+                name: 'Should Fail Organization',
+                subscriptionId: anotherSubscription._id, // Using another user's subscription
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(409); // ConflictException: Subscription does not belong to current user
+        });
+
+        it('should return 404 when using non-existent subscription', async () => 
+        {
+            // Arrange
+            const nonExistentSubscriptionId = new Types.ObjectId();
+            const createData = {
+                name: 'Should Fail Organization',
+                subscriptionId: nonExistentSubscriptionId,
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(404); // NotFoundException: Subscription not found
+        });
+
+        it('should return 409 when trying to create multiple organizations with same subscription', async () => 
+        {
+            // Arrange - Create one subscription
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_duplicate123',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const createData1 = { 
+                name: 'First Organization',
+                subscriptionId: subscription._id,
+            };
+            const createData2 = { 
+                name: 'Second Organization',
+                subscriptionId: subscription._id, // Same subscription ID
+            };
+
+            // Act - Create first organization (should succeed)
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData1)
+                .expect(201);
+
+            // Act - Try to create second organization with same subscription (should fail)
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData2)
+                .expect(500); // Internal Server Error due to unique constraint violation
+        });
+
+        it('should return 409 when subscription is not active', async () => 
+        {
+            // Arrange - Create subscription with cancelled status
+            const cancelledSubscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_cancelled456',
+                status: 'canceled',
+                autoRenew: false,
+            });
+
+            const createData = {
+                name: 'Should Fail Organization',
+                subscriptionId: cancelledSubscription._id,
+            };
+
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/orgs')
+                .send(createData)
+                .expect(409); // ConflictException: Subscription is not active
+        });
     });
 
     describe('GET /orgs', () => 

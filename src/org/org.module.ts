@@ -10,6 +10,7 @@ import {
 } from './schemas/user-org-relation.schema';
 import { AuthModule } from '../auth/auth.module';
 import { UserModule } from '../user/user.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { UserModule } from '../user/user.module';
         ]),
         AuthModule,
         UserModule,
+        SubscriptionModule,
     ],
     controllers: [OrgController],
     providers: [OrgService, UserOrgRelationService],
