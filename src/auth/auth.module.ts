@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { EmailModule } from '../email/email.module';
+import { OrgModule } from '../org/org.module';
 
 @Module({
     imports: [
@@ -13,6 +14,7 @@ import { EmailModule } from '../email/email.module';
         ConfigModule,
         JwtModule,
         EmailModule,
+        OrgModule,
     ],
     providers: [AuthService, JwtAuthGuard],
     controllers: [AuthController],

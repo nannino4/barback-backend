@@ -22,7 +22,7 @@ export class OrgInvite extends Document
     @Prop({ type: String, enum: OrgRole, required: true })
     role!: OrgRole;
 
-    @Prop({ type: String, enum: InviteStatus, default: InviteStatus.ACCEPTED })
+    @Prop({ type: String, enum: InviteStatus, default: InviteStatus.PENDING })
     status!: InviteStatus;
 
     @Prop({ type: String, required: false })

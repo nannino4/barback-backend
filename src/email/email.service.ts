@@ -134,4 +134,50 @@ export class EmailService
             `,
         };
     }
+
+    generateOrganizationInvitationEmail(
+        email: string,
+        token: string,
+        organizationName: string,
+        role: string,
+    ): EmailOptions 
+    {
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+        const acceptUrl = `${frontendUrl}/invitations/accept?token=${token}`;
+        const declineUrl = `${frontendUrl}/invitations/decline?token=${token}`;
+
+        const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
+
+        return {
+            to: email,
+            subject: `You're invited to join ${organizationName} on Barback`,
+            text: `You've been invited to join ${organizationName} as a ${roleDisplay}. Accept: ${acceptUrl} or Decline: ${declineUrl}`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h2>You're invited to join ${organizationName}!</h2>
+                    <p>You've been invited to join <strong>${organizationName}</strong> as a <strong>${roleDisplay}</strong> on Barback.</p>
+                    <p>Barback helps bar teams manage their inventory efficiently and reduce waste.</p>
+                    
+                    <div style="margin: 24px 0;">
+                        <a href="${acceptUrl}" style="display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; margin-right: 12px;">
+                            Accept Invitation
+                        </a>
+                        <a href="${declineUrl}" style="display: inline-block; padding: 12px 24px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px;">
+                            Decline
+                        </a>
+                    </div>
+                    
+                    <p style="font-size: 14px; color: #666;">
+                        This invitation will expire in 7 days. If you didn't expect this invitation, you can safely ignore this email.
+                    </p>
+                    
+                    <p style="font-size: 12px; color: #999; margin-top: 32px;">
+                        If the buttons don't work, you can copy and paste these links:<br>
+                        Accept: <a href="${acceptUrl}">${acceptUrl}</a><br>
+                        Decline: <a href="${declineUrl}">${declineUrl}</a>
+                    </p>
+                </div>
+            `,
+        };
+    }
 }

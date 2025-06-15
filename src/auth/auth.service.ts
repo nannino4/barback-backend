@@ -11,6 +11,7 @@ import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from '../user/dto/in.create-user.dto';
 import { OutTokensDto } from './dto/out.tokens.dto';
 import { EmailService } from '../email/email.service';
+import { InvitationService } from '../org/invitation.service';
 
 @Injectable()
 export class AuthService
@@ -22,6 +23,7 @@ export class AuthService
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         private readonly emailService: EmailService,
+        private readonly orgInviteService: InvitationService,
     ) {}
 
     async generateTokens(user: User): Promise<OutTokensDto>
@@ -133,6 +135,25 @@ export class AuthService
         }
         const newUser = await this.userService.create(userData);
         this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#registerEmail');
+        
+        // Process pending invitations for this user
+        try 
+        {
+            await this.orgInviteService.processPendingInvitationsForUser(
+                newUser._id as Types.ObjectId,
+                newUser.email,
+            );
+            this.logger.debug(`Processed pending invitations for user: ${newUser.email}`, 'AuthService#registerEmail');
+        } 
+        catch (error) 
+        {
+            this.logger.warn(
+                `Failed to process pending invitations for user: ${newUser.email}`,
+                error instanceof Error ? error.stack : undefined,
+                'AuthService#registerEmail',
+            );
+            // Don't fail registration if invitation processing fails
+        }
         
         // Send verification email
         try 

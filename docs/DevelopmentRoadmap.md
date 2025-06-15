@@ -9,7 +9,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - **Admin Management**: User administration, role management 
 - **Email/Password Authentication**: Email verification, password reset, secure token management
 - **Subscription Management**: Stripe integration, automatic trial-to-paid conversion, payment methods, webhooks
-- **Organization Management**: Basic organization CRUD, member management, role-based access control
+- **Organization Management**: Complete organization system with invitation management, member roles, email notifications
 - **Category Management**: Product categorization system with hierarchical structure
 - **Product Management**: Core inventory items with category linking and stock tracking
 - **Inventory Management**: Stock adjustments and reporting system
@@ -17,7 +17,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 **🔄 Next Priority:**
 - **Alerts & Notifications**: Low stock alerts and time-based reminders
 
-**📊 Overall Progress**: ~90% of MVP features completed
+**📊 Overall Progress**: ~95% of MVP features completed
 
 ## MVP Stage
 
@@ -154,16 +154,28 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] UserOrgRelationship schema
   - [X] OrgInvite schema
   - [X] Input/Output DTOs with proper validation and transformation
-- [ ] **Organization Invitation System**:
-  - [ ] Implement invitation token generation and validation logic
-  - [ ] Create email service for sending organization invitations
-  - [ ] Handle invitation acceptance for existing and new users
-- [ ] **Invitation API Endpoints**:
-  - [ ] `GET /invitations` - List user's pending invitations
-  - [ ] `POST /orgs/{id}/invites` - Send organization invitation
-  - [ ] `POST /invites/accept/{token}` - Accept invitation
-  - [ ] `POST /invites/decline/{token}` - Decline invitation
-  - [ ] `DELETE /orgs/{id}/invites/{invitationId}` - Revoke invitation
+- [X] **Organization Invitation System**:
+  - [X] Implement invitation token generation and validation logic
+  - [X] Handle invitation acceptance for existing and new users
+- [X] **Invitation API Endpoints**:
+  - [X] `GET /invitations` - List user's pending invitations
+  - [X] `POST /orgs/{id}/invites` - Send organization invitation
+  - [X] `POST /invitations/accept/{token}` - Accept invitation (logged-in users)
+  - [X] `POST /invitations/decline/{token}` - Decline invitation (logged-in users)
+  - [X] `POST /public/invitations/accept/{token}` - Accept invitation (anonymous users)
+  - [X] `POST /public/invitations/decline/{token}` - Decline invitation (anonymous users)
+  - [X] `GET /public/invitations/details/{token}` - Get invitation details
+  - [X] `DELETE /orgs/{id}/invites/{invitationId}` - Revoke invitation
+
+**✅ Organization Management Status: COMPLETED**
+- Full organization CRUD operations with member management
+- Complete invitation system with email notifications
+- Token-based invitation security with 7-day expiration
+- Support for both authenticated and anonymous invitation acceptance
+- Role-based access control for all organization operations
+- Automatic invitation processing during user registration
+- Beautiful HTML email templates for invitations
+- Comprehensive API endpoints following RESTful conventions
 
 #### Category Management
 - [X] **Data Layer Setup**:
