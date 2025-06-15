@@ -10,18 +10,19 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { OrgRolesGuard } from './guards/org-roles.guard';
-import { OrgRoles } from './decorators/org-roles.decorator';
+import { OrgRolesGuard } from '../org/guards/org-roles.guard';
+import { OrgRoles } from '../org/decorators/org-roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { InvitationService } from './invitation.service';
-import { OrgService } from './org.service';
-import { InCreateOrgInviteDto } from './dto/in.create-org-invite.dto';
-import { OutOrgInviteDto, OutPendingInvitationDto } from './dto/out.org-invite.dto';
-import { OrgRole } from './schemas/user-org-relation.schema';
+import { OrgService } from '../org/org.service';
+import { InCreateInvitationDto } from './dto/in.create-invitation.dto';
+import { OutInvitationDto } from './dto/out.invitation.dto';
+import { OrgRole } from '../org/schemas/user-org-relation.schema';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { User } from '../user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
 import { Types } from 'mongoose';
+import { OutInvitationPublicDto } from './dto/out.invitation-public.dto';
 
 /**
  * Controller for organization owners and managers to manage invitations.
@@ -51,9 +52,9 @@ export class InvitationController
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async sendInvitation(
         @Param('orgId', ObjectIdValidationPipe) orgId: string,
-        @Body() createInviteDto: InCreateOrgInviteDto,
+        @Body() createInviteDto: InCreateInvitationDto,
         @CurrentUser() user: User,
-    ): Promise<OutOrgInviteDto> 
+    ): Promise<OutInvitationDto> 
     {
         this.logger.debug(
             `User ${user._id} sending invitation to ${createInviteDto.invitedEmail} for org ${orgId}`,
@@ -74,7 +75,7 @@ export class InvitationController
             organization.name,
         );
 
-        return plainToInstance(OutOrgInviteDto, invitation, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
     }
 
     /**
@@ -87,12 +88,12 @@ export class InvitationController
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async getOrganizationInvitations(
         @Param('orgId', ObjectIdValidationPipe) orgId: string,
-    ): Promise<OutOrgInviteDto[]> 
+    ): Promise<OutInvitationDto[]> 
     {
         this.logger.debug(`Getting invitations for organization ${orgId}`, 'InvitationController#getOrganizationInvitations');
         
         const invitations = await this.invitationService.findPendingInvitationsByOrg(new Types.ObjectId(orgId));
-        return plainToInstance(OutOrgInviteDto, invitations, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationDto, invitations, { excludeExtraneousValues: true });
     }
 
     /**
@@ -125,12 +126,12 @@ export class InvitationController
      * @returns List of pending invitations for the user
      */
     @Get('invites')
-    async getUserPendingInvitations(@CurrentUser() user: User): Promise<OutPendingInvitationDto[]> 
+    async getUserPendingInvitations(@CurrentUser() user: User): Promise<OutInvitationPublicDto[]> 
     {
         this.logger.debug(`Getting pending invitations for user ${user._id}`, 'InvitationController#getUserPendingInvitations');
         
         const invitations = await this.invitationService.findPendingInvitationsByEmail(user.email);
-        return plainToInstance(OutPendingInvitationDto, invitations, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationPublicDto, invitations, { excludeExtraneousValues: true });
     }
 
     /**

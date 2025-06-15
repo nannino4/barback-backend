@@ -1,7 +1,7 @@
 import { IsEmail, IsEnum, IsNotEmpty } from 'class-validator';
 import { OrgRole } from '../schemas/user-org-relation.schema';
 
-export class InCreateOrgInviteDto 
+export class InCreateInvitationDto 
 {
     @IsEmail()
     @IsNotEmpty()

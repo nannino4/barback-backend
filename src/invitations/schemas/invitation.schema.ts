@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { OrgRole } from './user-org-relation.schema';
 
-export enum InviteStatus {
+export enum InvitationStatus {
     PENDING = 'pending',
     DECLINED = 'declined',
     REVOKED = 'revoked',
@@ -11,7 +11,7 @@ export enum InviteStatus {
 }
 
 @Schema({ timestamps: true, collection: 'org_invites' })
-export class OrgInvite extends Document 
+export class Invitation extends Document 
 {
     @Prop({ type: Types.ObjectId, ref: 'Org', required: true })
     orgId!: Types.ObjectId;
@@ -22,8 +22,8 @@ export class OrgInvite extends Document
     @Prop({ type: String, enum: OrgRole, required: true })
     role!: OrgRole;
 
-    @Prop({ type: String, enum: InviteStatus, default: InviteStatus.PENDING })
-    status!: InviteStatus;
+    @Prop({ type: String, enum: InvitationStatus, default: InvitationStatus.PENDING })
+    status!: InvitationStatus;
 
     @Prop({ type: String, required: false })
     invitationToken?: string;
@@ -37,11 +37,11 @@ export class OrgInvite extends Document
     // createdAt and updatedAt are handled by timestamps: true
 }
 
-export const OrgInviteSchema = SchemaFactory.createForClass(OrgInvite);
+export const InvitationSchema = SchemaFactory.createForClass(Invitation);
 
 // Define indexes as required by coding guidelines
-OrgInviteSchema.index({ invitedEmail: 1, orgId: 1 }, { unique: true });
-OrgInviteSchema.index({ orgId: 1 });
-OrgInviteSchema.index({ status: 1 });
-OrgInviteSchema.index({ invitedEmail: 1 });
-OrgInviteSchema.index({ invitationExpires: 1 });
+InvitationSchema.index({ invitedEmail: 1, orgId: 1 }, { unique: true });
+InvitationSchema.index({ orgId: 1 });
+InvitationSchema.index({ status: 1 });
+InvitationSchema.index({ invitedEmail: 1 });
+InvitationSchema.index({ invitationExpires: 1 });

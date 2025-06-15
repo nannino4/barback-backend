@@ -7,8 +7,8 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { InvitationService } from './invitation.service';
-import { OutPendingInvitationDto } from './dto/out.org-invite.dto';
 import { plainToInstance } from 'class-transformer';
+import { OutInvitationPublicDto } from './dto/out.invitation-public.dto';
 
 /**
  * Public controller for anonymous users to interact with invitations.
@@ -30,7 +30,7 @@ export class InvitationPublicController
      * @returns Invitation details
      */
     @Get('details/:token')
-    async getInvitationDetails(@Param('token') token: string): Promise<OutPendingInvitationDto> 
+    async getInvitationDetails(@Param('token') token: string): Promise<OutInvitationPublicDto> 
     {
         this.logger.debug('Getting invitation details for token', 'InvitationPublicController#getInvitationDetails');
         
@@ -40,7 +40,7 @@ export class InvitationPublicController
             throw new NotFoundException('Invalid or expired invitation token');
         }
         
-        return plainToInstance(OutPendingInvitationDto, invitation, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationPublicDto, invitation, { excludeExtraneousValues: true });
     }
 
     /**

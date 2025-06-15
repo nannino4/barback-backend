@@ -11,7 +11,7 @@ import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from '../user/dto/in.create-user.dto';
 import { OutTokensDto } from './dto/out.tokens.dto';
 import { EmailService } from '../email/email.service';
-import { InvitationService } from '../org/invitation.service';
+import { InvitationService } from '../invitations/invitation.service';
 
 @Injectable()
 export class AuthService

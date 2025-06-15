@@ -2,11 +2,11 @@ import { Injectable, Logger, NotFoundException, BadRequestException, ConflictExc
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
-import { OrgInvite, InviteStatus } from './schemas/org-invite.schema';
-import { UserOrgRelation, OrgRole } from './schemas/user-org-relation.schema';
+import { Invitation, InvitationStatus } from './schemas/invitation.schema';
+import { UserOrgRelation, OrgRole } from '../org/schemas/user-org-relation.schema';
 import { User } from '../user/schemas/user.schema';
 import { EmailService } from '../email/email.service';
-import { InCreateOrgInviteDto } from './dto/in.create-org-invite.dto';
+import { InCreateInvitationDto } from './dto/in.create-invitation.dto';
 
 @Injectable()
 export class InvitationService 
@@ -14,7 +14,7 @@ export class InvitationService
     private readonly logger = new Logger(InvitationService.name);
 
     constructor(
-        @InjectModel(OrgInvite.name) private readonly orgInviteModel: Model<OrgInvite>,
+        @InjectModel(Invitation.name) private readonly orgInviteModel: Model<Invitation>,
         @InjectModel(UserOrgRelation.name) private readonly userOrgRelationModel: Model<UserOrgRelation>,
         @InjectModel(User.name) private readonly userModel: Model<User>,
         private readonly emailService: EmailService,
@@ -23,9 +23,9 @@ export class InvitationService
     async createInvitation(
         orgId: Types.ObjectId,
         invitedBy: Types.ObjectId,
-        createInviteDto: InCreateOrgInviteDto,
+        createInviteDto: InCreateInvitationDto,
         organizationName: string,
-    ): Promise<OrgInvite> 
+    ): Promise<Invitation> 
     {
         const { invitedEmail, role } = createInviteDto;
 
@@ -54,7 +54,7 @@ export class InvitationService
         const existingInvite = await this.orgInviteModel.findOne({
             orgId: orgId,
             invitedEmail: invitedEmail,
-            status: InviteStatus.PENDING,
+            status: InvitationStatus.PENDING,
         });
 
         if (existingInvite) 
@@ -72,7 +72,7 @@ export class InvitationService
             orgId,
             invitedEmail,
             role,
-            status: InviteStatus.PENDING,
+            status: InvitationStatus.PENDING,
             invitationToken,
             invitationExpires,
             invitedBy,
@@ -110,24 +110,24 @@ export class InvitationService
         return invitation;
     }
 
-    async findPendingInvitationsByEmail(email: string): Promise<OrgInvite[]> 
+    async findPendingInvitationsByEmail(email: string): Promise<Invitation[]> 
     {
         return this.orgInviteModel
             .find({
                 invitedEmail: email,
-                status: InviteStatus.PENDING,
+                status: InvitationStatus.PENDING,
                 invitationExpires: { $gt: new Date() },
             })
             .populate('orgId', 'name')
             .exec();
     }
 
-    async findPendingInvitationsByOrg(orgId: Types.ObjectId): Promise<OrgInvite[]> 
+    async findPendingInvitationsByOrg(orgId: Types.ObjectId): Promise<Invitation[]> 
     {
         return this.orgInviteModel
             .find({
                 orgId,
-                status: { $in: [InviteStatus.PENDING] },
+                status: { $in: [InvitationStatus.PENDING] },
             })
             .sort({ createdAt: -1 })
             .exec();
@@ -137,7 +137,7 @@ export class InvitationService
     {
         const invitation = await this.orgInviteModel.findOne({
             invitationToken: token,
-            status: InviteStatus.PENDING,
+            status: InvitationStatus.PENDING,
             invitationExpires: { $gt: new Date() },
         });
 
@@ -154,7 +154,7 @@ export class InvitationService
         else 
         {
             // User needs to register first - mark as accepted pending registration
-            invitation.status = InviteStatus.ACCEPTED_PENDING_REGISTRATION;
+            invitation.status = InvitationStatus.ACCEPTED_PENDING_REGISTRATION;
             await invitation.save();
         }
     }
@@ -163,7 +163,7 @@ export class InvitationService
     {
         const invitation = await this.orgInviteModel.findOne({
             invitationToken: token,
-            status: InviteStatus.PENDING,
+            status: InvitationStatus.PENDING,
             invitationExpires: { $gt: new Date() },
         });
 
@@ -172,7 +172,7 @@ export class InvitationService
             throw new NotFoundException('Invalid or expired invitation token');
         }
 
-        invitation.status = InviteStatus.DECLINED;
+        invitation.status = InvitationStatus.DECLINED;
         await invitation.save();
 
         this.logger.debug(
@@ -186,7 +186,7 @@ export class InvitationService
         const invitation = await this.orgInviteModel.findOne({
             _id: invitationId,
             orgId,
-            status: InviteStatus.PENDING,
+            status: InvitationStatus.PENDING,
         });
 
         if (!invitation) 
@@ -194,7 +194,7 @@ export class InvitationService
             throw new NotFoundException('Invitation not found or cannot be revoked');
         }
 
-        invitation.status = InviteStatus.REVOKED;
+        invitation.status = InvitationStatus.REVOKED;
         await invitation.save();
 
         this.logger.debug(
@@ -207,7 +207,7 @@ export class InvitationService
     {
         const pendingInvitations = await this.orgInviteModel.find({
             invitedEmail: email,
-            status: InviteStatus.ACCEPTED_PENDING_REGISTRATION,
+            status: InvitationStatus.ACCEPTED_PENDING_REGISTRATION,
         });
 
         for (const invitation of pendingInvitations) 
@@ -221,19 +221,19 @@ export class InvitationService
         );
     }
 
-    async getInvitationByToken(token: string): Promise<OrgInvite | null> 
+    async getInvitationByToken(token: string): Promise<Invitation | null> 
     {
         return this.orgInviteModel
             .findOne({
                 invitationToken: token,
-                status: InviteStatus.PENDING,
+                status: InvitationStatus.PENDING,
                 invitationExpires: { $gt: new Date() },
             })
             .populate('orgId', 'name')
             .exec();
     }
 
-    private async completeInvitationAcceptance(invitation: OrgInvite, userId: Types.ObjectId): Promise<void> 
+    private async completeInvitationAcceptance(invitation: Invitation, userId: Types.ObjectId): Promise<void> 
     {
         // Check if user is already a member
         const existingRelation = await this.userOrgRelationModel.findOne({
@@ -244,7 +244,7 @@ export class InvitationService
         if (existingRelation) 
         {
             // User is already a member, just mark invitation as accepted
-            invitation.status = InviteStatus.ACCEPTED;
+            invitation.status = InvitationStatus.ACCEPTED;
             await invitation.save();
             return;
         }
@@ -259,7 +259,7 @@ export class InvitationService
         await userOrgRelation.save();
 
         // Mark invitation as accepted
-        invitation.status = InviteStatus.ACCEPTED;
+        invitation.status = InvitationStatus.ACCEPTED;
         await invitation.save();
 
         this.logger.debug(
