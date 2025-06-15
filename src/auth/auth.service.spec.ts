@@ -10,6 +10,7 @@ import { User, UserSchema, UserRole, AuthProvider } from '../user/schemas/user.s
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
+import { InvitationService } from '../invitations/invitation.service';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthService - Service Tests (Unit-style)', () => 
@@ -72,6 +73,10 @@ describe('AuthService - Service Tests (Unit-style)', () =>
                 {
                     provide: EmailService,
                     useValue: mockEmailService,
+                },
+                {
+                    provide: InvitationService,
+                    useValue: {},
                 },
                 {
                     provide: ConfigService,

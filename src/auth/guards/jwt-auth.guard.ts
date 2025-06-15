@@ -42,7 +42,11 @@ export class JwtAuthGuard implements CanActivate
             // Assign the current user to the request object
             // so that we can access it in our route handlers
             const user = await this.userModel.findById(payload.sub);
-            request['user'] = user ? user : undefined;
+            if (!user)
+            {
+                throw new UnauthorizedException('Invalid or expired token');
+            }
+            request['user'] = user;
         }
         catch (error)
         {

@@ -15,6 +15,7 @@ import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
+import { InvitationService } from '../invitations/invitation.service';
 
 describe('AuthController - Integration Tests', () => 
 {
@@ -65,6 +66,10 @@ describe('AuthController - Integration Tests', () =>
                 {
                     provide: EmailService,
                     useValue: mockEmailService,
+                },
+                {
+                    provide: InvitationService,
+                    useValue: {},
                 },
                 {
                     provide: ConfigService,
