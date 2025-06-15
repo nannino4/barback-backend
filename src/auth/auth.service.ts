@@ -23,7 +23,7 @@ export class AuthService
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         private readonly emailService: EmailService,
-        private readonly orgInviteService: InvitationService,
+        private readonly invitationService: InvitationService,
     ) {}
 
     async generateTokens(user: User): Promise<OutTokensDto>
@@ -139,7 +139,7 @@ export class AuthService
         // Process pending invitations for this user
         try 
         {
-            await this.orgInviteService.processPendingInvitationsForUser(
+            await this.invitationService.processPendingInvitationsForUser(
                 newUser._id as Types.ObjectId,
                 newUser.email,
             );

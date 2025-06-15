@@ -1,6 +1,6 @@
 import { Expose, Transform } from "class-transformer";
-import { InviteStatus } from "../schemas/org-invite.schema";
-import { OrgRole } from "../schemas/user-org-relation.schema";
+import { InvitationStatus } from "../schemas/invitation.schema";
+import { OrgRole } from "../../org/schemas/user-org-relation.schema";
 
 
 export class OutInvitationPublicDto 
@@ -17,7 +17,7 @@ export class OutInvitationPublicDto
     role!: OrgRole;
 
     @Expose()
-    status!: InviteStatus;
+    status!: InvitationStatus;
 
     @Expose()
     createdAt!: Date;

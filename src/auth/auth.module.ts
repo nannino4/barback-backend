@@ -1,23 +1,20 @@
 import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule } from '@nestjs/config';
-import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { EmailModule } from '../email/email.module';
-import { OrgModule } from '../org/org.module';
+import { InvitationModule } from 'src/invitations/invitation.module';
 
 @Module({
     imports: [
+        JwtModule, // Used by AuthService for token generation
         UserModule,
-        ConfigModule,
-        JwtModule,
         EmailModule,
-        OrgModule,
+        InvitationModule,
     ],
-    providers: [AuthService, JwtAuthGuard],
+    providers: [AuthService],
     controllers: [AuthController],
-    exports: [AuthService, JwtModule, JwtAuthGuard],
+    exports: [AuthService],
 })
 export class AuthModule {}

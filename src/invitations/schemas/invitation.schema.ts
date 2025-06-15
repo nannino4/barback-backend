@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { OrgRole } from './user-org-relation.schema';
+import { OrgRole } from '../../org/schemas/user-org-relation.schema';
 
 export enum InvitationStatus {
     PENDING = 'pending',

@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule } from '@nestjs/config';
 import { OrgController } from './org.controller';
 import { OrgService } from './org.service';
 import { UserOrgRelationService } from './user-org-relation.service';
@@ -10,27 +8,25 @@ import {
     UserOrgRelation, 
     UserOrgRelationSchema,
 } from './schemas/user-org-relation.schema';
-import { User, UserSchema } from '../user/schemas/user.schema';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UserModule } from '../user/user.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
 import { EmailModule } from '../email/email.module';
+import { AuthGuardModule } from '../auth/auth-guard.module';
+import { OrgRolesGuard } from './guards/org-roles.guard';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
     imports: [
         MongooseModule.forFeature([
             { name: Org.name, schema: OrgSchema },
             { name: UserOrgRelation.name, schema: UserOrgRelationSchema },
-            { name: User.name, schema: UserSchema },
         ]),
-        ConfigModule,
-        JwtModule,
+        AuthGuardModule, // Provides guards for controllers
         UserModule,
-        SubscriptionModule,
-        EmailModule,
+        SubscriptionModule, // Used for org subscription management
+        EmailModule, // Used for notifications
     ],
     controllers: [OrgController],
-    providers: [OrgService, UserOrgRelationService, JwtAuthGuard],
-    exports: [OrgService, UserOrgRelationService],
+    providers: [OrgService, UserOrgRelationService, OrgRolesGuard],
+    exports: [OrgService, UserOrgRelationService, OrgRolesGuard],
 })
 export class OrgModule { }

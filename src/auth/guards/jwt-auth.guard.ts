@@ -2,7 +2,9 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { UserService } from '../../user/user.service';
+import { User } from 'src/user/schemas/user.schema';
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate
@@ -10,7 +12,7 @@ export class JwtAuthGuard implements CanActivate
     constructor(
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
-        private readonly userService: UserService,
+        @InjectModel(User.name) private readonly userModel: Model<User>,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean>
@@ -39,8 +41,8 @@ export class JwtAuthGuard implements CanActivate
 
             // Assign the current user to the request object
             // so that we can access it in our route handlers
-            const user = this.userService.findById(payload.sub);
-            request['user'] = await user;
+            const user = await this.userModel.findById(payload.sub);
+            request['user'] = user ? user : undefined;
         }
         catch (error)
         {

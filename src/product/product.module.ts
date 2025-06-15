@@ -5,10 +5,10 @@ import { ProductService } from './product.service';
 import { InventoryService } from './inventory.service';
 import { Product, ProductSchema } from './schemas/product.schema';
 import { InventoryLog, InventoryLogSchema } from './schemas/inventory-log.schema';
-import { AuthModule } from '../auth/auth.module';
 import { OrgModule } from '../org/org.module';
 import { CategoryModule } from '../category/category.module';
 import { UserModule } from 'src/user/user.module';
+import { AuthGuardModule } from 'src/auth/auth-guard.module';
 
 @Module({
     imports: [
@@ -16,7 +16,7 @@ import { UserModule } from 'src/user/user.module';
             { name: Product.name, schema: ProductSchema },
             { name: InventoryLog.name, schema: InventoryLogSchema },
         ]),
-        AuthModule,
+        AuthGuardModule,
         OrgModule,
         CategoryModule,
         UserModule,

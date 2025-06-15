@@ -1,6 +1,6 @@
 import { Expose, Transform } from 'class-transformer';
-import { OrgRole } from '../schemas/user-org-relation.schema';
-import { InviteStatus } from '../schemas/org-invite.schema';
+import { OrgRole } from '../../org/schemas/user-org-relation.schema';
+import { InvitationStatus } from '../schemas/invitation.schema';
 
 export class OutInvitationDto 
 {
@@ -19,7 +19,7 @@ export class OutInvitationDto
     role!: OrgRole;
 
     @Expose()
-    status!: InviteStatus;
+    status!: InvitationStatus;
 
     @Expose()
     @Transform(({ obj }) => obj.invitedBy.toString())

@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
 import { Invitation, InvitationStatus } from './schemas/invitation.schema';
 import { UserOrgRelation, OrgRole } from '../org/schemas/user-org-relation.schema';
-import { User } from '../user/schemas/user.schema';
+import { UserService } from '../user/user.service';
 import { EmailService } from '../email/email.service';
 import { InCreateInvitationDto } from './dto/in.create-invitation.dto';
 
@@ -14,9 +14,9 @@ export class InvitationService
     private readonly logger = new Logger(InvitationService.name);
 
     constructor(
-        @InjectModel(Invitation.name) private readonly orgInviteModel: Model<Invitation>,
+        @InjectModel(Invitation.name) private readonly invitationModel: Model<Invitation>,
         @InjectModel(UserOrgRelation.name) private readonly userOrgRelationModel: Model<UserOrgRelation>,
-        @InjectModel(User.name) private readonly userModel: Model<User>,
+        private readonly userService: UserService,
         private readonly emailService: EmailService,
     ) {}
 
@@ -36,7 +36,7 @@ export class InvitationService
         }
 
         // Check if user is already a member of the organization
-        const existingUser = await this.userModel.findOne({ email: invitedEmail });
+        const existingUser = await this.userService.findByEmail(invitedEmail);
         if (existingUser) 
         {
             const existingRelation = await this.userOrgRelationModel.findOne({
@@ -51,7 +51,7 @@ export class InvitationService
         }
 
         // Check for existing pending invitation
-        const existingInvite = await this.orgInviteModel.findOne({
+        const existingInvite = await this.invitationModel.findOne({
             orgId: orgId,
             invitedEmail: invitedEmail,
             status: InvitationStatus.PENDING,
@@ -68,7 +68,7 @@ export class InvitationService
         invitationExpires.setDate(invitationExpires.getDate() + 7); // 7 days expiration
 
         // Create the invitation
-        const invitation = new this.orgInviteModel({
+        const invitation = new this.invitationModel({
             orgId,
             invitedEmail,
             role,
@@ -103,7 +103,7 @@ export class InvitationService
                 'InvitationService#createInvitation',
             );
             // Delete the invitation if email failed
-            await this.orgInviteModel.deleteOne({ _id: invitation._id });
+            await this.invitationModel.deleteOne({ _id: invitation._id });
             throw new BadRequestException('Failed to send invitation email');
         }
 
@@ -112,7 +112,7 @@ export class InvitationService
 
     async findPendingInvitationsByEmail(email: string): Promise<Invitation[]> 
     {
-        return this.orgInviteModel
+        return this.invitationModel
             .find({
                 invitedEmail: email,
                 status: InvitationStatus.PENDING,
@@ -124,7 +124,7 @@ export class InvitationService
 
     async findPendingInvitationsByOrg(orgId: Types.ObjectId): Promise<Invitation[]> 
     {
-        return this.orgInviteModel
+        return this.invitationModel
             .find({
                 orgId,
                 status: { $in: [InvitationStatus.PENDING] },
@@ -135,7 +135,7 @@ export class InvitationService
 
     async acceptInvitation(token: string, userId?: Types.ObjectId): Promise<void> 
     {
-        const invitation = await this.orgInviteModel.findOne({
+        const invitation = await this.invitationModel.findOne({
             invitationToken: token,
             status: InvitationStatus.PENDING,
             invitationExpires: { $gt: new Date() },
@@ -161,7 +161,7 @@ export class InvitationService
 
     async declineInvitation(token: string): Promise<void> 
     {
-        const invitation = await this.orgInviteModel.findOne({
+        const invitation = await this.invitationModel.findOne({
             invitationToken: token,
             status: InvitationStatus.PENDING,
             invitationExpires: { $gt: new Date() },
@@ -183,7 +183,7 @@ export class InvitationService
 
     async revokeInvitation(invitationId: string, orgId: Types.ObjectId): Promise<void> 
     {
-        const invitation = await this.orgInviteModel.findOne({
+        const invitation = await this.invitationModel.findOne({
             _id: invitationId,
             orgId,
             status: InvitationStatus.PENDING,
@@ -205,7 +205,7 @@ export class InvitationService
 
     async processPendingInvitationsForUser(userId: Types.ObjectId, email: string): Promise<void> 
     {
-        const pendingInvitations = await this.orgInviteModel.find({
+        const pendingInvitations = await this.invitationModel.find({
             invitedEmail: email,
             status: InvitationStatus.ACCEPTED_PENDING_REGISTRATION,
         });
@@ -223,7 +223,7 @@ export class InvitationService
 
     async getInvitationByToken(token: string): Promise<Invitation | null> 
     {
-        return this.orgInviteModel
+        return this.invitationModel
             .findOne({
                 invitationToken: token,
                 status: InvitationStatus.PENDING,
