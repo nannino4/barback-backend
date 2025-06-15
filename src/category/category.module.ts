@@ -5,6 +5,7 @@ import { CategoryService } from './category.service';
 import { Category, CategorySchema } from './schemas/category.schema';
 import { AuthModule } from '../auth/auth.module';
 import { OrgModule } from '../org/org.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
     imports: [
@@ -13,6 +14,7 @@ import { OrgModule } from '../org/org.module';
         ]),
         AuthModule,
         OrgModule,
+        UserModule,
     ],
     controllers: [CategoryController],
     providers: [CategoryService],

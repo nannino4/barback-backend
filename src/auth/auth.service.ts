@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Logger, BadRequestException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -10,6 +10,7 @@ import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from '../user/dto/in.create-user.dto';
 import { OutTokensDto } from './dto/out.tokens.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService
@@ -20,6 +21,7 @@ export class AuthService
         private readonly userService: UserService,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
+        private readonly emailService: EmailService,
     ) {}
 
     async generateTokens(user: User): Promise<OutTokensDto>
@@ -131,8 +133,76 @@ export class AuthService
         }
         const newUser = await this.userService.create(userData);
         this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#registerEmail');
+        
+        // Send verification email
+        try 
+        {
+            await this.sendVerificationEmail(newUser.email);
+        } 
+        catch (error) 
+        {
+            this.logger.warn(`Failed to send verification email to ${newUser.email}`, 'AuthService#registerEmail');
+            // Don't fail registration if email sending fails
+        }
+        
         const tokens = await this.generateTokens(newUser);
         this.logger.debug(`Tokens generated for new user: ${newUser.email}`, 'AuthService#registerEmail');
         return tokens;
+    }
+
+    async sendVerificationEmail(email: string): Promise<void>
+    {
+        this.logger.debug(`Sending verification email to: ${email}`, 'AuthService#sendVerificationEmail');
+        const user = await this.userService.findByEmail(email);
+        if (!user)
+        {
+            this.logger.warn(`User not found for email verification: ${email}`, 'AuthService#sendVerificationEmail');
+            throw new BadRequestException('User not found');
+        }
+
+        if (user.isEmailVerified)
+        {
+            this.logger.debug(`User ${email} is already verified`, 'AuthService#sendVerificationEmail');
+            throw new BadRequestException('Email is already verified');
+        }
+
+        const token = await this.userService.generateEmailVerificationToken(new Types.ObjectId(user.id));
+        const emailOptions = this.emailService.generateVerificationEmail(email, token);
+        
+        await this.emailService.sendEmail(emailOptions);
+        this.logger.debug(`Verification email sent to: ${email}`, 'AuthService#sendVerificationEmail');
+    }
+
+    async verifyEmail(token: string): Promise<void>
+    {
+        this.logger.debug('Processing email verification', 'AuthService#verifyEmail');
+        await this.userService.verifyEmail(token);
+        this.logger.debug('Email verification completed successfully', 'AuthService#verifyEmail');
+    }
+
+    async forgotPassword(email: string): Promise<void>
+    {
+        this.logger.debug(`Processing forgot password request for: ${email}`, 'AuthService#forgotPassword');
+        const token = await this.userService.generatePasswordResetToken(email);
+        
+        if (token)
+        {
+            const emailOptions = this.emailService.generatePasswordResetEmail(email, token);
+            await this.emailService.sendEmail(emailOptions);
+            this.logger.debug(`Password reset email sent to: ${email}`, 'AuthService#forgotPassword');
+        }
+        else
+        {
+            this.logger.debug(`No valid user found for password reset: ${email}`, 'AuthService#forgotPassword');
+        }
+        
+        // Always return success to prevent email enumeration
+    }
+
+    async resetPassword(token: string, newPassword: string): Promise<void>
+    {
+        this.logger.debug('Processing password reset', 'AuthService#resetPassword');
+        await this.userService.resetPassword(token, newPassword);
+        this.logger.debug('Password reset completed successfully', 'AuthService#resetPassword');
     }
 }

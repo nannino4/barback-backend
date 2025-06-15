@@ -5,6 +5,7 @@ import { User, UserRole, AuthProvider } from './schemas/user.schema';
 import { CreateUserDto } from './dto/in.create-user.dto';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UserService
@@ -192,6 +193,179 @@ export class UserService
             throw new NotFoundException(`User with ID "${userId}" not found`);
         }
         this.logger.debug(`Stripe customer ID updated successfully for user: ${user.email}`, 'UserService#updateStripeCustomerId');
+        return user;
+    }
+
+    async generateEmailVerificationToken(userId: Types.ObjectId): Promise<string>
+    {
+        this.logger.debug(`Generating email verification token for user ID: ${userId}`, 'UserService#generateEmailVerificationToken');
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
+
+        await this.userModel.findByIdAndUpdate(
+            userId,
+            { 
+                $set: { 
+                    emailVerificationToken: token,
+                    emailVerificationExpires: expiresAt,
+                },
+            },
+            { new: true, runValidators: true }
+        ).exec();
+
+        this.logger.debug(`Email verification token generated for user ID: ${userId}`, 'UserService#generateEmailVerificationToken');
+        return token;
+    }
+
+    async verifyEmail(token: string): Promise<User>
+    {
+        this.logger.debug('Attempting to verify email with token', 'UserService#verifyEmail');
+        const user = await this.userModel.findOne({
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: new Date() },
+        }).exec();
+
+        if (!user)
+        {
+            this.logger.warn('Invalid or expired email verification token', 'UserService#verifyEmail');
+            throw new UnauthorizedException('Invalid or expired verification token');
+        }
+
+        const updatedUser = await this.userModel.findByIdAndUpdate(
+            user.id,
+            { 
+                $set: { 
+                    isEmailVerified: true,
+                },
+                $unset: { 
+                    emailVerificationToken: 1,
+                    emailVerificationExpires: 1,
+                },
+            },
+            { new: true, runValidators: true }
+        ).exec();
+
+        if (!updatedUser)
+        {
+            this.logger.error(`Failed to update user after email verification for user ID: ${user.id}`, 'UserService#verifyEmail');
+            throw new NotFoundException('User not found');
+        }
+
+        this.logger.debug(`Email verified successfully for user: ${updatedUser.email}`, 'UserService#verifyEmail');
+        return updatedUser;
+    }
+
+    async findByEmailVerificationToken(token: string): Promise<User | null>
+    {
+        this.logger.debug('Attempting to find user by email verification token', 'UserService#findByEmailVerificationToken');
+        const user = await this.userModel.findOne({
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: new Date() },
+        }).exec();
+
+        if (!user)
+        {
+            this.logger.debug('User not found with valid email verification token', 'UserService#findByEmailVerificationToken');
+            return null;
+        }
+
+        this.logger.debug(`User found with email verification token: ${user.email}`, 'UserService#findByEmailVerificationToken');
+        return user;
+    }
+
+    async generatePasswordResetToken(email: string): Promise<string | null>
+    {
+        this.logger.debug(`Generating password reset token for email: ${email}`, 'UserService#generatePasswordResetToken');
+        const user = await this.userModel.findOne({ email }).exec();
+        
+        if (!user)
+        {
+            this.logger.debug(`User not found for password reset request: ${email}`, 'UserService#generatePasswordResetToken');
+            return null; // Don't reveal if email exists
+        }
+
+        if (user.authProvider !== AuthProvider.EMAIL)
+        {
+            this.logger.debug(`User ${email} is not using EMAIL authentication for password reset`, 'UserService#generatePasswordResetToken');
+            return null; // Don't reveal auth provider
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour from now
+
+        await this.userModel.findByIdAndUpdate(
+            user.id,
+            { 
+                $set: { 
+                    passwordResetToken: token,
+                    passwordResetExpires: expiresAt,
+                },
+            },
+            { new: true, runValidators: true }
+        ).exec();
+
+        this.logger.debug(`Password reset token generated for user: ${user.email}`, 'UserService#generatePasswordResetToken');
+        return token;
+    }
+
+    async resetPassword(token: string, newPassword: string): Promise<User>
+    {
+        this.logger.debug('Attempting to reset password with token', 'UserService#resetPassword');
+        const user = await this.userModel.findOne({
+            passwordResetToken: token,
+            passwordResetExpires: { $gt: new Date() },
+        }).exec();
+
+        if (!user)
+        {
+            this.logger.warn('Invalid or expired password reset token', 'UserService#resetPassword');
+            throw new UnauthorizedException('Invalid or expired reset token');
+        }
+
+        const saltOrRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltOrRounds);
+
+        const updatedUser = await this.userModel.findByIdAndUpdate(
+            user.id,
+            { 
+                $set: { 
+                    hashedPassword,
+                },
+                $unset: { 
+                    passwordResetToken: 1,
+                    passwordResetExpires: 1,
+                },
+            },
+            { new: true, runValidators: true }
+        ).exec();
+
+        if (!updatedUser)
+        {
+            this.logger.error(`Failed to update user after password reset for user ID: ${user.id}`, 'UserService#resetPassword');
+            throw new NotFoundException('User not found');
+        }
+
+        this.logger.debug(`Password reset successfully for user: ${updatedUser.email}`, 'UserService#resetPassword');
+        return updatedUser;
+    }
+
+    async findByPasswordResetToken(token: string): Promise<User | null>
+    {
+        this.logger.debug('Attempting to find user by password reset token', 'UserService#findByPasswordResetToken');
+        const user = await this.userModel.findOne({
+            passwordResetToken: token,
+            passwordResetExpires: { $gt: new Date() },
+        }).exec();
+
+        if (!user)
+        {
+            this.logger.debug('User not found with valid password reset token', 'UserService#findByPasswordResetToken');
+            return null;
+        }
+
+        this.logger.debug(`User found with password reset token: ${user.email}`, 'UserService#findByPasswordResetToken');
         return user;
     }
 }

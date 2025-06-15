@@ -5,12 +5,14 @@ import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { EmailModule } from '../email/email.module';
 
 @Module({
     imports: [
         UserModule,
         ConfigModule,
         JwtModule,
+        EmailModule,
     ],
     providers: [AuthService, JwtAuthGuard],
     controllers: [AuthController],

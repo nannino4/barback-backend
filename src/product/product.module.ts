@@ -8,6 +8,7 @@ import { InventoryLog, InventoryLogSchema } from './schemas/inventory-log.schema
 import { AuthModule } from '../auth/auth.module';
 import { OrgModule } from '../org/org.module';
 import { CategoryModule } from '../category/category.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
     imports: [
@@ -18,6 +19,7 @@ import { CategoryModule } from '../category/category.module';
         AuthModule,
         OrgModule,
         CategoryModule,
+        UserModule,
     ],
     controllers: [ProductController],
     providers: [ProductService, InventoryService],

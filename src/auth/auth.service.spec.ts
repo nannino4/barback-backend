@@ -1,14 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
-import { Connection } from 'mongoose';
+import { Connection, Types } from 'mongoose';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { User, UserSchema, UserRole, AuthProvider } from '../user/schemas/user.schema';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
+import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcrypt';
 
 describe('AuthService - Service Tests (Unit-style)', () => 
@@ -18,6 +19,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
     let jwtService: JwtService;
     let connection: Connection;
     let module: TestingModule;
+    let mockEmailService: jest.Mocked<EmailService>;
 
     const mockUser = {
         _id: '507f1f77bcf86cd799439011',
@@ -45,6 +47,12 @@ describe('AuthService - Service Tests (Unit-style)', () =>
 
     beforeAll(async () => 
     {
+        mockEmailService = {
+            sendEmail: jest.fn(),
+            generateVerificationEmail: jest.fn(),
+            generatePasswordResetEmail: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -61,6 +69,10 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             providers: [
                 AuthService,
                 UserService,
+                {
+                    provide: EmailService,
+                    useValue: mockEmailService,
+                },
                 {
                     provide: ConfigService,
                     useValue: {
@@ -88,6 +100,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
     beforeEach(async () => 
     {
         await DatabaseTestHelper.clearDatabase(connection);
+        jest.clearAllMocks();
     });
 
     afterAll(async () => 
@@ -372,6 +385,181 @@ describe('AuthService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.registerEmail(mockRegisterEmailDto)).rejects.toThrow(ConflictException);
+        });
+    });
+
+    describe('sendVerificationEmail', () => 
+    {
+        it('should send verification email to existing user', async () => 
+        {
+            // Arrange
+            const user = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword',
+                role: UserRole.USER,
+                authProvider: AuthProvider.EMAIL,
+                isEmailVerified: false,
+            });
+
+            mockEmailService.generateVerificationEmail.mockReturnValue({
+                to: user.email,
+                subject: 'Verify your Barback account',
+                text: 'Verification email text',
+                html: 'Verification email html',
+            });
+
+            // Act
+            await service.sendVerificationEmail(user.email);
+
+            // Assert
+            expect(mockEmailService.generateVerificationEmail).toHaveBeenCalledWith(user.email, expect.any(String));
+            expect(mockEmailService.sendEmail).toHaveBeenCalled();
+        });
+
+        it('should throw BadRequestException when user not found', async () => 
+        {
+            // Act & Assert
+            await expect(service.sendVerificationEmail('nonexistent@example.com')).rejects.toThrow(BadRequestException);
+        });
+
+        it('should throw BadRequestException when user is already verified', async () => 
+        {
+            // Arrange
+            await userService.create({
+                email: 'verified@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword',
+                role: UserRole.USER,
+                authProvider: AuthProvider.EMAIL,
+                isEmailVerified: true,
+            });
+
+            // Act & Assert
+            await expect(service.sendVerificationEmail('verified@example.com')).rejects.toThrow(BadRequestException);
+        });
+    });
+
+    describe('verifyEmail', () => 
+    {
+        it('should verify email with valid token', async () => 
+        {
+            // Arrange
+            const user = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword',
+                role: UserRole.USER,
+                authProvider: AuthProvider.EMAIL,
+                isEmailVerified: false,
+            });
+
+            const token = await userService.generateEmailVerificationToken(new Types.ObjectId(user.id));
+
+            // Act
+            await service.verifyEmail(token);
+
+            // Assert
+            const updatedUser = await userService.findById(new Types.ObjectId(user.id));
+            expect(updatedUser.isEmailVerified).toBe(true);
+            expect(updatedUser.emailVerificationToken).toBeUndefined();
+        });
+
+        it('should throw UnauthorizedException with invalid token', async () => 
+        {
+            // Act & Assert
+            await expect(service.verifyEmail('invalid-token')).rejects.toThrow(UnauthorizedException);
+        });
+    });
+
+    describe('forgotPassword', () => 
+    {
+        it('should send password reset email for valid email user', async () => 
+        {
+            // Arrange
+            const user = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword',
+                role: UserRole.USER,
+                authProvider: AuthProvider.EMAIL,
+            });
+
+            mockEmailService.generatePasswordResetEmail.mockReturnValue({
+                to: user.email,
+                subject: 'Reset your Barback password',
+                text: 'Password reset email text',
+                html: 'Password reset email html',
+            });
+
+            // Act
+            await service.forgotPassword(user.email);
+
+            // Assert
+            expect(mockEmailService.generatePasswordResetEmail).toHaveBeenCalledWith(user.email, expect.any(String));
+            expect(mockEmailService.sendEmail).toHaveBeenCalled();
+        });
+
+        it('should not throw error for non-existent email', async () => 
+        {
+            // Act & Assert
+            await expect(service.forgotPassword('nonexistent@example.com')).resolves.not.toThrow();
+            expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
+        });
+
+        it('should not send email for non-EMAIL auth provider', async () => 
+        {
+            // Arrange
+            await userService.create({
+                email: 'google@example.com',
+                firstName: 'Google',
+                lastName: 'User',
+                role: UserRole.USER,
+                authProvider: AuthProvider.GOOGLE,
+            });
+
+            // Act
+            await service.forgotPassword('google@example.com');
+
+            // Assert
+            expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('resetPassword', () => 
+    {
+        it('should reset password with valid token', async () => 
+        {
+            // Arrange
+            const user = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: await bcrypt.hash('oldPassword', 10),
+                role: UserRole.USER,
+                authProvider: AuthProvider.EMAIL,
+            });
+
+            const token = await userService.generatePasswordResetToken(user.email);
+            const newPassword = 'newPassword123';
+
+            // Act
+            await service.resetPassword(token!, newPassword);
+
+            // Assert
+            const updatedUser = await userService.findById(new Types.ObjectId(user.id));
+            expect(updatedUser.passwordResetToken).toBeUndefined();
+            expect(await bcrypt.compare(newPassword, updatedUser.hashedPassword!)).toBe(true);
+        });
+
+        it('should throw UnauthorizedException with invalid token', async () => 
+        {
+            // Act & Assert
+            await expect(service.resetPassword('invalid-token', 'newPassword')).rejects.toThrow(UnauthorizedException);
         });
     });
 });

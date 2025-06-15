@@ -14,6 +14,7 @@ import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
+import { EmailService } from '../email/email.service';
 
 describe('AuthController - Integration Tests', () => 
 {
@@ -22,6 +23,7 @@ describe('AuthController - Integration Tests', () =>
     let userService: UserService;
     let connection: Connection;
     let module: TestingModule;
+    let mockEmailService: jest.Mocked<EmailService>;
 
     const mockRegisterDto: RegisterEmailDto = {
         email: 'test@example.com',
@@ -37,6 +39,12 @@ describe('AuthController - Integration Tests', () =>
 
     beforeAll(async () => 
     {
+        mockEmailService = {
+            sendEmail: jest.fn(),
+            generateVerificationEmail: jest.fn(),
+            generatePasswordResetEmail: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -54,6 +62,10 @@ describe('AuthController - Integration Tests', () =>
             providers: [
                 AuthService,
                 UserService,
+                {
+                    provide: EmailService,
+                    useValue: mockEmailService,
+                },
                 {
                     provide: ConfigService,
                     useValue: {
@@ -84,6 +96,19 @@ describe('AuthController - Integration Tests', () =>
     beforeEach(async () => 
     {
         await DatabaseTestHelper.clearDatabase(connection);
+        
+        // Reset email service mocks
+        jest.clearAllMocks();
+        
+        // Set up mock return values
+        mockEmailService.generateVerificationEmail.mockReturnValue({
+            to: 'test@example.com',
+            subject: 'Verify your Barback account',
+            text: 'Verification email text',
+            html: 'Verification email html',
+        });
+        
+        mockEmailService.sendEmail.mockResolvedValue();
     });
 
     afterAll(async () => 
@@ -119,6 +144,13 @@ describe('AuthController - Integration Tests', () =>
             expect(userInDb!.phoneNumber).toBeUndefined(); // Not provided in DTO
             expect(userInDb!.isActive).toBe(true);
             expect(userInDb!.isEmailVerified).toBe(false);
+            
+            // Verify that verification email was sent
+            expect(mockEmailService.generateVerificationEmail).toHaveBeenCalledWith(
+                mockRegisterDto.email,
+                expect.any(String)
+            );
+            expect(mockEmailService.sendEmail).toHaveBeenCalled();
         });
 
         it('should return 409 when user already exists', async () => 
@@ -337,6 +369,188 @@ describe('AuthController - Integration Tests', () =>
             await request(app.getHttpServer())
                 .post('/auth/refresh-token')
                 .send(emptyRefreshDto)
+                .expect(400);
+        });
+    });
+
+    describe('/auth/send-verification-email (POST)', () => 
+    {
+        it('should send verification email for registered user', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            jest.clearAllMocks(); // Clear mocks from registration
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/auth/send-verification-email')
+                .send({ email: mockRegisterDto.email })
+                .expect(200);
+
+            // Assert
+            expect(response.body).toEqual({});
+            expect(mockEmailService.generateVerificationEmail).toHaveBeenCalledWith(
+                mockRegisterDto.email,
+                expect.any(String)
+            );
+            expect(mockEmailService.sendEmail).toHaveBeenCalled();
+        });
+
+        it('should return 400 for non-existent user', async () => 
+        {
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/auth/send-verification-email')
+                .send({ email: 'nonexistent@example.com' })
+                .expect(400);
+
+            expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('/auth/verify-email (POST)', () => 
+    {
+        it('should verify email with valid token', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            const user = await userService.findByEmail(mockRegisterDto.email);
+            const token = await userService.generateEmailVerificationToken(user!._id as any);
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/auth/verify-email')
+                .send({ token })
+                .expect(200);
+
+            // Assert
+            expect(response.body).toEqual({});
+            
+            const updatedUser = await userService.findByEmail(mockRegisterDto.email);
+            expect(updatedUser!.isEmailVerified).toBe(true);
+        });
+
+        it('should return 401 for invalid token', async () => 
+        {
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/auth/verify-email')
+                .send({ token: 'invalid-token' })
+                .expect(401);
+        });
+    });
+
+    describe('/auth/forgot-password (POST)', () => 
+    {
+        it('should send password reset email for valid user', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            jest.clearAllMocks(); // Clear mocks from registration
+            
+            mockEmailService.generatePasswordResetEmail.mockReturnValue({
+                to: mockRegisterDto.email,
+                subject: 'Reset your Barback password',
+                text: 'Password reset email text',
+                html: 'Password reset email html',
+            });
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/auth/forgot-password')
+                .send({ email: mockRegisterDto.email })
+                .expect(200);
+
+            // Assert
+            expect(response.body).toEqual({});
+            expect(mockEmailService.generatePasswordResetEmail).toHaveBeenCalledWith(
+                mockRegisterDto.email,
+                expect.any(String)
+            );
+            expect(mockEmailService.sendEmail).toHaveBeenCalled();
+        });
+
+        it('should return success for non-existent email (security)', async () => 
+        {
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/auth/forgot-password')
+                .send({ email: 'nonexistent@example.com' })
+                .expect(200);
+
+            // Assert
+            expect(response.body).toEqual({});
+            expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('/auth/reset-password (POST)', () => 
+    {
+        it('should reset password with valid token', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            const token = await userService.generatePasswordResetToken(mockRegisterDto.email);
+
+            const newPassword = 'NewPassword123!';
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/auth/reset-password')
+                .send({ token, newPassword })
+                .expect(200);
+
+            // Assert
+            expect(response.body).toEqual({});
+            
+            // Verify password was actually changed by trying to login with new password
+            const loginResponse = await request(app.getHttpServer())
+                .post('/auth/login/email')
+                .send({ email: mockRegisterDto.email, password: newPassword })
+                .expect(200);
+
+            expect(loginResponse.body).toHaveProperty('access_token');
+        });
+
+        it('should return 401 for invalid token', async () => 
+        {
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/auth/reset-password')
+                .send({ token: 'invalid-token', newPassword: 'NewPassword123!' })
+                .expect(401);
+        });
+
+        it('should validate new password strength', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            const token = await userService.generatePasswordResetToken(mockRegisterDto.email);
+
+            // Act & Assert - weak password should fail validation
+            await request(app.getHttpServer())
+                .post('/auth/reset-password')
+                .send({ token, newPassword: 'weak' })
                 .expect(400);
         });
     });

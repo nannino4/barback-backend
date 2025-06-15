@@ -55,6 +55,9 @@ export class User extends Document
     @Prop({ type: String, required: false })
     emailVerificationToken?: string;
 
+    @Prop({ type: Date, required: false })
+    emailVerificationExpires?: Date;
+
     @Prop({ type: String, required: false })
     passwordResetToken?: string;
 
