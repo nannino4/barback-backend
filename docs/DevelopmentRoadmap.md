@@ -266,5 +266,8 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - [ ] **API Endpoints**:
   - [ ] `GET /orgs/:orgId/analytics/consumption?category=mycategory&productId=myproductid` - Product consumption by time period, category and product
 
+- [ ] **Next steps**:
+  - [ ] Rate limiting
+
 ---
 This roadmap will be updated as development progresses.
