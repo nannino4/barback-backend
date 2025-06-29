@@ -43,6 +43,7 @@ describe('UserController (Integration)', () =>
             .compile();
 
         app = moduleFixture.createNestApplication();
+        app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe({
             whitelist: true,
             forbidNonWhitelisted: true,
@@ -96,7 +97,7 @@ describe('UserController (Integration)', () =>
         it('should return current user profile', async () =>
         {
             const response = await request(app.getHttpServer())
-                .get('/users/me')
+                .get('/api/users/me')
                 .expect(200);
 
             expect(response.body.email).toBe(testUser.email);
@@ -117,7 +118,7 @@ describe('UserController (Integration)', () =>
             };
 
             const response = await request(app.getHttpServer())
-                .put('/users/me')
+                .put('/api/users/me')
                 .send(updateData)
                 .expect(200);
 
@@ -135,7 +136,7 @@ describe('UserController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .put('/users/me')
+                .put('/api/users/me')
                 .send(invalidData)
                 .expect(400);
         });
@@ -147,7 +148,7 @@ describe('UserController (Integration)', () =>
             };
 
             const response = await request(app.getHttpServer())
-                .put('/users/me')
+                .put('/api/users/me')
                 .send(partialUpdate)
                 .expect(200);
 
@@ -166,7 +167,7 @@ describe('UserController (Integration)', () =>
             };
 
             const response = await request(app.getHttpServer())
-                .put('/users/me/password')
+                .put('/api/users/me/password')
                 .send(changePasswordDto)
                 .expect(200);
 
@@ -189,7 +190,7 @@ describe('UserController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .put('/users/me/password')
+                .put('/api/users/me/password')
                 .send(weakPasswordDto)
                 .expect(400);
         });
@@ -202,7 +203,7 @@ describe('UserController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .put('/users/me/password')
+                .put('/api/users/me/password')
                 .send(incorrectPasswordDto)
                 .expect(401);
         });
@@ -222,7 +223,7 @@ describe('UserController (Integration)', () =>
             for (const invalidPassword of invalidPasswords)
             {
                 await request(app.getHttpServer())
-                    .put('/users/me/password')
+                    .put('/api/users/me/password')
                     .send({
                         currentPassword: 'testPassword123',
                         ...invalidPassword,
@@ -239,7 +240,7 @@ describe('UserController (Integration)', () =>
             const userIdToDelete = testUser.id;
             
             const response = await request(app.getHttpServer())
-                .delete('/users/me')
+                .delete('/api/users/me')
                 .expect(200);
 
             // Should return empty response body for void method
@@ -263,12 +264,12 @@ describe('UserController (Integration)', () =>
         {
             // First delete the user
             await request(app.getHttpServer())
-                .delete('/users/me')
+                .delete('/api/users/me')
                 .expect(200);
 
             // Try to delete again - should fail
             await request(app.getHttpServer())
-                .delete('/users/me')
+                .delete('/api/users/me')
                 .expect(404);
         });
     });
@@ -297,25 +298,26 @@ describe('UserController (Integration)', () =>
                 .compile();
 
             const unauthenticatedApp = moduleWithoutAuth.createNestApplication();
+            unauthenticatedApp.setGlobalPrefix('api');
             await unauthenticatedApp.init();
 
             // Test all endpoints require authentication
             await request(unauthenticatedApp.getHttpServer())
-                .get('/users/me')
+                .get('/api/users/me')
                 .expect(403);
 
             await request(unauthenticatedApp.getHttpServer())
-                .put('/users/me')
+                .put('/api/users/me')
                 .send({ firstName: 'Test' })
                 .expect(403);
 
             await request(unauthenticatedApp.getHttpServer())
-                .put('/users/me/password')
+                .put('/api/users/me/password')
                 .send({ currentPassword: 'test', newPassword: 'NewTest123!' })
                 .expect(403);
 
             await request(unauthenticatedApp.getHttpServer())
-                .delete('/users/me')
+                .delete('/api/users/me')
                 .expect(403);
 
             await unauthenticatedApp.close();
@@ -332,7 +334,7 @@ describe('UserController (Integration)', () =>
             );
 
             await request(app.getHttpServer())
-                .put('/users/me')
+                .put('/api/users/me')
                 .send({ firstName: 'Test' })
                 .expect(500);
         });
@@ -340,7 +342,7 @@ describe('UserController (Integration)', () =>
         it('should return proper error format for validation failures', async () =>
         {
             const response = await request(app.getHttpServer())
-                .put('/users/me')
+                .put('/api/users/me')
                 .send({
                     firstName: '', // Empty string should fail validation
                 })
@@ -360,7 +362,7 @@ describe('UserController (Integration)', () =>
             // Simulate concurrent password change requests
             const promises = Array(3).fill(null).map(() =>
                 request(app.getHttpServer())
-                    .put('/users/me/password')
+                    .put('/api/users/me/password')
                     .send(changePasswordDto)
             );
 
@@ -389,7 +391,7 @@ describe('UserController (Integration)', () =>
             for (const invalidUpdate of invalidUpdates)
             {
                 await request(app.getHttpServer())
-                    .put('/users/me')
+                    .put('/api/users/me')
                     .send(invalidUpdate)
                     .expect(400);
             }
@@ -406,7 +408,7 @@ describe('UserController (Integration)', () =>
             for (const phoneNumber of validPhoneNumbers)
             {
                 await request(app.getHttpServer())
-                    .put('/users/me')
+                    .put('/api/users/me')
                     .send({ phoneNumber })
                     .expect(200);
             }
@@ -418,7 +420,7 @@ describe('UserController (Integration)', () =>
         it('should not expose sensitive information in responses', async () =>
         {
             const response = await request(app.getHttpServer())
-                .get('/users/me')
+                .get('/api/users/me')
                 .expect(200);
 
             expect(response.body).not.toHaveProperty('hashedPassword');
@@ -441,7 +443,7 @@ describe('UserController (Integration)', () =>
             for (const weakPassword of weakPasswords)
             {
                 await request(app.getHttpServer())
-                    .put('/users/me/password')
+                    .put('/api/users/me/password')
                     .send({
                         currentPassword: 'testPassword123',
                         newPassword: weakPassword,
@@ -465,7 +467,7 @@ describe('UserController (Integration)', () =>
             for (const update of partialUpdates)
             {
                 const response = await request(app.getHttpServer())
-                    .put('/users/me')
+                    .put('/api/users/me')
                     .send(update)
                     .expect(200);
 
@@ -485,13 +487,13 @@ describe('UserController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .put('/users/me')
+                .put('/api/users/me')
                 .send(updates)
                 .expect(200);
 
             // Verify changes are persisted
             const getResponse = await request(app.getHttpServer())
-                .get('/users/me')
+                .get('/api/users/me')
                 .expect(200);
 
             expect(getResponse.body.firstName).toBe(updates.firstName);

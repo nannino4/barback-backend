@@ -12,7 +12,7 @@ The Product Management module handles inventory items within organizations. Prod
 
 ## Endpoints
 
-### GET /orgs/:orgId/products
+### GET /api/orgs/:orgId/products
 Get all products for an organization.
 
 **Authentication**: Required (JWT)
@@ -55,12 +55,12 @@ Get all products for an organization.
 ```
 
 **Filtering Examples**:
-- `GET /orgs/123/products` - All products
-- `GET /orgs/123/products?categoryId=456` - Products in specific category
+- `GET /api/orgs/123/products` - All products
+- `GET /api/orgs/123/products?categoryId=456` - Products in specific category
 
 ---
 
-### GET /orgs/:orgId/products/:id
+### GET /api/orgs/:orgId/products/:id
 Get a specific product.
 
 **Authentication**: Required (JWT)
@@ -91,7 +91,7 @@ Get a specific product.
 
 ---
 
-### POST /orgs/:orgId/products
+### POST /api/orgs/:orgId/products
 Create a new product.
 
 **Authentication**: Required (JWT)
@@ -147,7 +147,7 @@ Create a new product.
 
 ---
 
-### PUT /orgs/:orgId/products/:id
+### PUT /api/orgs/:orgId/products/:id
 Update an existing product.
 
 **Authentication**: Required (JWT)
@@ -195,7 +195,7 @@ Update an existing product.
 
 ---
 
-### DELETE /orgs/:orgId/products/:id
+### DELETE /api/orgs/:orgId/products/:id
 Delete a product.
 
 **Authentication**: Required (JWT)

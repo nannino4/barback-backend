@@ -19,7 +19,7 @@ The Inventory Management module handles stock adjustments and inventory logging 
 
 ## Endpoints
 
-### POST /orgs/:orgId/products/:productId/adjust-stock
+### POST /api/orgs/:orgId/products/:productId/adjust-stock
 Manually adjust product stock quantity.
 
 **Authentication**: Required (JWT)
@@ -77,7 +77,7 @@ Manually adjust product stock quantity.
 
 ---
 
-### GET /orgs/:orgId/products/:productId/logs
+### GET /api/orgs/:orgId/products/:productId/logs
 Get inventory adjustment history for a product.
 
 **Authentication**: Required (JWT)
@@ -132,9 +132,9 @@ Get inventory adjustment history for a product.
 ```
 
 **Date Filtering Examples**:
-- `GET /orgs/123/products/456/logs` - All logs
-- `GET /orgs/123/products/456/logs?startDate=2024-01-01` - Logs from Jan 1st
-- `GET /orgs/123/products/456/logs?startDate=2024-01-01&endDate=2024-01-31` - January logs
+- `GET /api/orgs/123/products/456/logs` - All logs
+- `GET /api/orgs/123/products/456/logs?startDate=2024-01-01` - Logs from Jan 1st
+- `GET /api/orgs/123/products/456/logs?startDate=2024-01-01&endDate=2024-01-31` - January logs
 
 **Notes**:
 - Results are ordered by creation date (newest first)

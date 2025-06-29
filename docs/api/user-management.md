@@ -5,7 +5,7 @@ The User Management module handles user profile operations, allowing users to vi
 
 ## Endpoints
 
-### GET /users/me
+### GET /api/users/me
 Get current user's profile information.
 
 **Authentication**: Required (JWT)
@@ -38,7 +38,7 @@ Get current user's profile information.
 
 ---
 
-### PUT /users/me
+### PUT /api/users/me
 Update current user's profile information.
 
 **Authentication**: Required (JWT)
@@ -79,7 +79,7 @@ Update current user's profile information.
 
 ---
 
-### PUT /users/me/password
+### PUT /api/users/me/password
 Change current user's password.
 
 **Authentication**: Required (JWT)
@@ -114,7 +114,7 @@ Change current user's password.
 
 ---
 
-### DELETE /users/me
+### DELETE /api/users/me
 Delete current user's account.
 
 **Authentication**: Required (JWT)

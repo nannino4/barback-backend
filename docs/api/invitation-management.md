@@ -12,7 +12,7 @@ The Invitation Management module handles organization invitations, allowing owne
 
 ## Endpoints for Organization Owners/Managers
 
-### POST /orgs/:orgId/invitations
+### POST /api/orgs/:orgId/invitations
 Send an invitation to join the organization.
 
 **Authentication**: Required (JWT)
@@ -67,7 +67,7 @@ Send an invitation to join the organization.
 
 ---
 
-### GET /orgs/:orgId/invitations
+### GET /api/orgs/:orgId/invitations
 Get all pending invitations for the organization.
 
 **Authentication**: Required (JWT)
@@ -102,7 +102,7 @@ Get all pending invitations for the organization.
 
 ---
 
-### DELETE /orgs/:orgId/invitations/:invitationId
+### DELETE /api/orgs/:orgId/invitations/:invitationId
 Revoke a pending invitation.
 
 **Authentication**: Required (JWT)
@@ -127,7 +127,7 @@ Revoke a pending invitation.
 
 ## Endpoints for Invited Users
 
-### GET /invites
+### GET /api/invites
 Get current user's pending invitations.
 
 **Authentication**: Required (JWT)
@@ -159,7 +159,7 @@ Get current user's pending invitations.
 
 ---
 
-### POST /invites/accept/:token
+### POST /api/invites/accept/:token
 Accept an invitation (authenticated users).
 
 **Authentication**: Required (JWT)
@@ -185,7 +185,7 @@ Accept an invitation (authenticated users).
 
 ---
 
-### POST /invites/decline/:token
+### POST /api/invites/decline/:token
 Decline an invitation (authenticated users).
 
 **Authentication**: Required (JWT)

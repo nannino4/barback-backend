@@ -5,7 +5,7 @@ The Authentication module handles user registration, login, email verification, 
 
 ## Endpoints
 
-### POST /auth/register/email
+### POST /api/auth/register/email
 Register a new user with email and password.
 
 **Authentication**: Not required
@@ -42,7 +42,7 @@ Register a new user with email and password.
 
 ---
 
-### POST /auth/login/email
+### POST /api/auth/login/email
 Login with email and password.
 
 **Authentication**: Not required
@@ -68,7 +68,7 @@ Login with email and password.
 
 ---
 
-### POST /auth/refresh-token
+### POST /api/auth/refresh-token
 Refresh an expired access token using a valid refresh token.
 
 **Authentication**: Not required (uses refresh token)
@@ -95,7 +95,7 @@ Refresh an expired access token using a valid refresh token.
 
 ## Email Verification
 
-### POST /auth/send-verification-email
+### POST /api/auth/send-verification-email
 Send or resend email verification.
 
 **Authentication**: Not required
@@ -113,7 +113,7 @@ Send or resend email verification.
 
 ---
 
-### POST /auth/verify-email
+### POST /api/auth/verify-email
 Verify email with token (for API calls).
 
 **Authentication**: Not required
@@ -132,7 +132,7 @@ Verify email with token (for API calls).
 
 ---
 
-### GET /auth/verify-email/:token
+### GET /api/auth/verify-email/:token
 Browser-friendly email verification link.
 
 **Authentication**: Not required
@@ -149,7 +149,7 @@ Browser-friendly email verification link.
 
 ## Password Reset
 
-### POST /auth/forgot-password
+### POST /api/auth/forgot-password
 Request password reset email.
 
 **Authentication**: Not required
@@ -170,7 +170,7 @@ Request password reset email.
 
 ---
 
-### POST /auth/reset-password
+### POST /api/auth/reset-password
 Reset password using reset token.
 
 **Authentication**: Not required
@@ -193,7 +193,7 @@ Reset password using reset token.
 
 ---
 
-### GET /auth/reset-password/:token
+### GET /api/auth/reset-password/:token
 Validate reset token (for frontend form display).
 
 **Authentication**: Not required

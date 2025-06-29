@@ -13,7 +13,7 @@ The Subscription Management module handles user subscriptions for organization o
 
 ## Subscription Endpoints
 
-### GET /subscription
+### GET /api/subscription
 Get current user's subscription details.
 
 **Authentication**: Required (JWT)
@@ -46,7 +46,7 @@ null
 
 ---
 
-### GET /subscription/trial-eligibility
+### GET /api/subscription/trial-eligibility
 Check if current user is eligible for a trial subscription.
 
 **Authentication**: Required (JWT)
@@ -65,7 +65,7 @@ Check if current user is eligible for a trial subscription.
 
 ---
 
-### POST /subscription/start-owner-trial
+### POST /api/subscription/start-owner-trial
 Start a trial subscription for becoming an organization owner.
 
 **Authentication**: Required (JWT)
@@ -94,7 +94,7 @@ Start a trial subscription for becoming an organization owner.
 
 ---
 
-### DELETE /subscription/cancel
+### DELETE /api/subscription/cancel
 Cancel the current subscription.
 
 **Authentication**: Required (JWT)
@@ -118,7 +118,7 @@ Cancel the current subscription.
 
 ---
 
-### GET /subscription/plans
+### GET /api/subscription/plans
 Get available subscription plans (public endpoint).
 
 **Authentication**: Not required
@@ -154,7 +154,7 @@ Get available subscription plans (public endpoint).
 
 ## Payment Methods API
 
-### GET /payment/methods
+### GET /api/payment/methods
 Get user's payment methods.
 
 **Authentication**: Required (JWT)
@@ -179,7 +179,7 @@ Get user's payment methods.
 
 ---
 
-### POST /payment/methods
+### POST /api/payment/methods
 Add a new payment method.
 
 **Authentication**: Required (JWT)
@@ -214,7 +214,7 @@ Add a new payment method.
 
 ---
 
-### DELETE /payment/methods/:paymentMethodId
+### DELETE /api/payment/methods/:paymentMethodId
 Remove a payment method.
 
 **Authentication**: Required (JWT)
@@ -230,7 +230,7 @@ Remove a payment method.
 
 ---
 
-### POST /payment/methods/default
+### POST /api/payment/methods/default
 Set default payment method.
 
 **Authentication**: Required (JWT)

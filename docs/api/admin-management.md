@@ -12,7 +12,7 @@ The Admin Management module provides administrative operations for managing user
 
 ## Endpoints
 
-### GET /admin/users
+### GET /api/admin/users
 Get list of all users in the platform.
 
 **Authentication**: Required (JWT)
@@ -51,9 +51,9 @@ Get list of all users in the platform.
 ```
 
 **Pagination Examples**:
-- `GET /admin/users` - First 10 users
-- `GET /admin/users?limit=25&offset=0` - First 25 users
-- `GET /admin/users?limit=10&offset=20` - Users 21-30
+- `GET /api/admin/users` - First 10 users
+- `GET /api/admin/users?limit=25&offset=0` - First 25 users
+- `GET /api/admin/users?limit=10&offset=20` - Users 21-30
 
 **Notes**:
 - Results are ordered by creation date (newest first)
@@ -62,7 +62,7 @@ Get list of all users in the platform.
 
 ---
 
-### GET /admin/users/:id
+### GET /api/admin/users/:id
 Get detailed information about a specific user.
 
 **Authentication**: Required (JWT)
@@ -92,7 +92,7 @@ Get detailed information about a specific user.
 
 ---
 
-### PUT /admin/users/:id/profile
+### PUT /api/admin/users/:id/profile
 Update a user's profile information (admin override).
 
 **Authentication**: Required (JWT)
@@ -142,7 +142,7 @@ Update a user's profile information (admin override).
 
 ---
 
-### PUT /admin/users/:id/role
+### PUT /api/admin/users/:id/role
 Update a user's role (promote/demote).
 
 **Authentication**: Required (JWT)

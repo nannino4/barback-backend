@@ -11,7 +11,7 @@ The Organization Management module handles organization CRUD operations, member 
 
 ## Endpoints
 
-### POST /orgs
+### POST /api/orgs
 Create a new organization.
 
 **Authentication**: Required (JWT)
@@ -56,7 +56,7 @@ Create a new organization.
 
 ---
 
-### GET /orgs
+### GET /api/orgs
 Get organizations user is a member of.
 
 **Authentication**: Required (JWT)
@@ -86,13 +86,13 @@ Get organizations user is a member of.
 ```
 
 **Role Filter Examples**:
-- `GET /orgs?orgRole=OWNER` - Organizations where user is owner
-- `GET /orgs?orgRole=MANAGER` - Organizations where user is manager
-- `GET /orgs` - All organizations user is member of
+- `GET /api/orgs?orgRole=OWNER` - Organizations where user is owner
+- `GET /api/orgs?orgRole=MANAGER` - Organizations where user is manager
+- `GET /api/orgs` - All organizations user is member of
 
 ---
 
-### GET /orgs/:id/members
+### GET /api/orgs/:id/members
 Get organization members.
 
 **Authentication**: Required (JWT)
@@ -135,7 +135,7 @@ Get organization members.
 
 ---
 
-### PUT /orgs/:id
+### PUT /api/orgs/:id
 Update organization details.
 
 **Authentication**: Required (JWT)
@@ -176,7 +176,7 @@ Update organization details.
 
 ---
 
-### PUT /orgs/:id/members/:userId/role
+### PUT /api/orgs/:id/members/:userId/role
 Update member role in organization.
 
 **Authentication**: Required (JWT)

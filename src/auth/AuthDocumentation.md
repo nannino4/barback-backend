@@ -24,7 +24,7 @@ Two types of JWTs are used:
     *   **Payload Includes**: `userId` (as `sub`), `type: 'refresh'`.
     *   **Lifetime**: Longer-lived (e.g., 7 days, configurable via `JWT_REFRESH_TOKEN_EXPIRATION_TIME` in `.env` files).
     *   **Secret**: Signed with `JWT_REFRESH_TOKEN_SECRET` from `.env` (a different secret than the access token for better security).
-    *   **Transmission**: Sent in the request body to a dedicated `/auth/refresh-token` endpoint.
+    *   **Transmission**: Sent in the request body to a dedicated `/api/auth/refresh-token` endpoint.
     *   **Storage**: Client is responsible for securely storing the refresh token.
     *   **Rotation**: Refresh tokens are now rotated. When a refresh token is used to obtain a new access token, a new refresh token is also issued and returned to the client. The client must then use this new refresh token for subsequent refreshes. This helps mitigate the risk of a compromised refresh token being used indefinitely.
 
@@ -32,13 +32,13 @@ Two types of JWTs are used:
 
 ### Core Authentication Flow
 
-1.  **Registration (`/auth/register/email`)**:
+1.  **Registration (`/api/auth/register/email`)**:
     *   User submits registration data (email, password, firstName, lastName, optional phoneNumber).
     *   `AuthService.registerEmail()`: Creates new user account with hashed password.
     *   **Email Verification**: Automatically generates verification token and sends verification email.
     *   Returns access and refresh tokens (user can use the app immediately but should verify email).
 
-2.  **Login (`/auth/login/email`)**:
+2.  **Login (`/api/auth/login/email`)**:
     *   User submits credentials (email, password).
     *   `AuthService.loginEmail()`: Verifies credentials against stored user data (password hashes are compared using `bcrypt`).
     *   If valid, generates both an `access_token` and a `refresh_token`.
@@ -53,9 +53,9 @@ Two types of JWTs are used:
         *   If valid, attaches the token payload to `request.user` and allows access.
         *   If invalid (expired, wrong type, bad signature), throws an `UnauthorizedException`.
 
-4.  **Token Refresh (`/auth/refresh-token`)**:
+4.  **Token Refresh (`/api/auth/refresh-token`)**:
     *   When an access token expires, the client receives a 401 error.
-    *   The client sends its stored `refresh_token` in the body of a POST request to `/auth/refresh-token`.
+    *   The client sends its stored `refresh_token` in the body of a POST request to `/api/auth/refresh-token`.
     *   `AuthService.validateRefreshToken()`:
         *   Verifies the refresh token using `JwtService` and `JWT_REFRESH_TOKEN_SECRET`.
         *   Checks `payload.type === 'refresh'`.
@@ -69,12 +69,12 @@ Two types of JWTs are used:
     *   During registration, a verification email is automatically sent to the user's email address.
     *   If email sending fails, registration still succeeds (graceful degradation).
 
-2.  **Manual Email Verification Request (`/auth/send-verification-email`)**:
+2.  **Manual Email Verification Request (`/api/auth/send-verification-email`)**:
     *   User can request a new verification email by providing their email address.
     *   System generates a new verification token (invalidates previous one).
     *   Verification email is sent with secure token link.
 
-3.  **Email Verification (`/auth/verify-email` or `/auth/verify-email/:token`)**:
+3.  **Email Verification (`/api/auth/verify-email` or `/api/auth/verify-email/:token`)**:
     *   User clicks verification link in email or submits token via API.
     *   System validates token and expiration (24 hours default).
     *   If valid, marks user's email as verified and clears verification token.
@@ -82,13 +82,13 @@ Two types of JWTs are used:
 
 ### Password Reset Flow
 
-1.  **Password Reset Request (`/auth/forgot-password`)**:
+1.  **Password Reset Request (`/api/auth/forgot-password`)**:
     *   User submits their email address.
     *   System generates secure reset token (if user exists and uses email authentication).
     *   Reset email is sent with token link.
     *   **Security**: Always returns success message to prevent email enumeration.
 
-2.  **Password Reset (`/auth/reset-password`)**:
+2.  **Password Reset (`/api/auth/reset-password`)**:
     *   User submits reset token and new password.
     *   System validates token and expiration (1 hour default).
     *   If valid, updates password hash and clears reset token.
@@ -120,25 +120,25 @@ Two types of JWTs are used:
 
 | Method | Endpoint | Description | Body | Response |
 |--------|----------|-------------|------|----------|
-| POST | `/auth/register/email` | Register new user with email/password | `{email, password, firstName, lastName, phoneNumber?}` | `{access_token, refresh_token}` |
-| POST | `/auth/login/email` | Login with email/password | `{email, password}` | `{access_token, refresh_token}` |
-| POST | `/auth/refresh-token` | Refresh access token | `{refresh_token}` | `{access_token, refresh_token}` |
+| POST | `/api/auth/register/email` | Register new user with email/password | `{email, password, firstName, lastName, phoneNumber?}` | `{access_token, refresh_token}` |
+| POST | `/api/auth/login/email` | Login with email/password | `{email, password}` | `{access_token, refresh_token}` |
+| POST | `/api/auth/refresh-token` | Refresh access token | `{refresh_token}` | `{access_token, refresh_token}` |
 
 ### Email Verification Endpoints
 
 | Method | Endpoint | Description | Body | Response |
 |--------|----------|-------------|------|----------|
-| POST | `/auth/send-verification-email` | Send/resend verification email | `{email}` | `200 OK` |
-| POST | `/auth/verify-email` | Verify email with token | `{token}` | `200 OK` |
-| GET | `/auth/verify-email/:token` | Browser-friendly verification link | - | `200 OK` |
+| POST | `/api/auth/send-verification-email` | Send/resend verification email | `{email}` | `200 OK` |
+| POST | `/api/auth/verify-email` | Verify email with token | `{token}` | `200 OK` |
+| GET | `/api/auth/verify-email/:token` | Browser-friendly verification link | - | `200 OK` |
 
 ### Password Reset Endpoints
 
 | Method | Endpoint | Description | Body | Response |
 |--------|----------|-------------|------|----------|
-| POST | `/auth/forgot-password` | Request password reset | `{email}` | `200 OK` |
-| POST | `/auth/reset-password` | Reset password with token | `{token, newPassword}` | `200 OK` |
-| GET | `/auth/reset-password/:token` | Validate reset token | - | `200 OK` or `401 Unauthorized` |
+| POST | `/api/auth/forgot-password` | Request password reset | `{email}` | `200 OK` |
+| POST | `/api/auth/reset-password` | Reset password with token | `{token, newPassword}` | `200 OK` |
+| GET | `/api/auth/reset-password/:token` | Validate reset token | - | `200 OK` or `401 Unauthorized` |
 
 ## Security Considerations & Choices
 

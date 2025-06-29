@@ -141,11 +141,11 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 - Depends on: Subscription Management (✅ Completed)
 - Integration: Uses `ActiveSubscriptionGuard` to restrict organization creation
 - [X] **Basic Organization API Endpoints**:
-  - [X] `GET /orgs` - List all organizations user is in (optional filter by orgRole)
-  - [X] `GET /orgs/{id}/members` - List organization members
-  - [X] `POST /orgs` - Create organization
-  - [X] `PUT /orgs/{id}` - Update organization name/settings (owner only)
-  - [X] `PUT /orgs/{id}/members/{userId}/role` - Update member role (owners/managers only)
+  - [X] `GET /api/orgs` - List all organizations user is in (optional filter by orgRole)
+  - [X] `GET /api/orgs/{id}/members` - List organization members
+  - [X] `POST /api/orgs` - Create organization
+  - [X] `PUT /api/orgs/{id}` - Update organization name/settings (owner only)
+  - [X] `PUT /api/orgs/{id}/members/{userId}/role` - Update member role (owners/managers only)
 - [X] **Role-Based Access Control**:
   - [X] Implement `OrgRolesGuard` for organization-level permissions
   - [X] Prevent owner role assignment through role updates
@@ -159,13 +159,13 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Handle invitation acceptance for existing and new users
 - [X] **Invitation API Endpoints**:
   - [X] `GET /invitations` - List user's pending invitations
-  - [X] `POST /orgs/{id}/invites` - Send organization invitation
+  - [X] `POST /api/orgs/{id}/invites` - Send organization invitation
   - [X] `POST /invitations/accept/{token}` - Accept invitation (logged-in users)
   - [X] `POST /invitations/decline/{token}` - Decline invitation (logged-in users)
   - [X] `POST /public/invitations/accept/{token}` - Accept invitation (anonymous users)
   - [X] `POST /public/invitations/decline/{token}` - Decline invitation (anonymous users)
   - [X] `GET /public/invitations/details/{token}` - Get invitation details
-  - [X] `DELETE /orgs/{id}/invites/{invitationId}` - Revoke invitation
+  - [X] `DELETE /api/orgs/{id}/invites/{invitationId}` - Revoke invitation
 
 **✅ Organization Management Status: COMPLETED**
 - Full organization CRUD operations with member management
@@ -185,11 +185,11 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Implement CategoryService with CRUD operations and hierarchy validation
   - [X] Add business logic for preventing circular references and handling deletions
 - [X] **API Endpoints**:
-  - [X] `GET /orgs/:orgId/categories` - List categories (with optional tree structure)
-  - [X] `GET /orgs/:orgId/categories/:id` - Get single category
-  - [X] `POST /orgs/:orgId/categories` - Create category (owners/managers only)
-  - [X] `PUT /orgs/:orgId/categories/:id` - Update category (owners/managers only)
-  - [X] `DELETE /orgs/:orgId/categories/:id` - Delete category (owners/managers only)
+  - [X] `GET /api/orgs/:orgId/categories` - List categories (with optional tree structure)
+  - [X] `GET /api/orgs/:orgId/categories/:id` - Get single category
+  - [X] `POST /api/orgs/:orgId/categories` - Create category (owners/managers only)
+  - [X] `PUT /api/orgs/:orgId/categories/:id` - Update category (owners/managers only)
+  - [X] `DELETE /api/orgs/:orgId/categories/:id` - Delete category (owners/managers only)
 - [X] **Access Control**:
   - [X] Extend OrgRolesGuard to restrict create/update/delete to owners and managers
   - [X] Ensure all operations are scoped to user's organization
@@ -210,11 +210,11 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Implement ProductService with CRUD operations and category validation
   - [X] Add business logic for stock quantity tracking and category assignments
 - [X] **API Endpoints**:
-  - [X] `GET /orgs/:orgId/products` - List products (with category filtering)
-  - [X] `GET /orgs/:orgId/products/:id` - Get single product
-  - [X] `POST /orgs/:orgId/products` - Create product
-  - [X] `PUT /orgs/:orgId/products/:id` - Update product
-  - [X] `DELETE /orgs/:orgId/products/:id` - Delete product
+  - [X] `GET /api/orgs/:orgId/products` - List products (with category filtering)
+  - [X] `GET /api/orgs/:orgId/products/:id` - Get single product
+  - [X] `POST /api/orgs/:orgId/products` - Create product
+  - [X] `PUT /api/orgs/:orgId/products/:id` - Update product
+  - [X] `DELETE /api/orgs/:orgId/products/:id` - Delete product
 
 **✅ Product Management Status: COMPLETED**
 - Full product CRUD operations with category integration
@@ -233,8 +233,8 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Implement manual stock adjustments with reason codes and logging
   - [X] Implement inventory report generation by date range and snapshots
 - [X] **API Endpoints**:
-  - [X] `POST /orgs/:orgId/products/:productId/adjust-stock` - Manual stock adjustment
-  - [X] `GET /orgs/:orgId/products/:productId/logs` - Get product inventory history
+  - [X] `POST /api/orgs/:orgId/products/:productId/adjust-stock` - Manual stock adjustment
+  - [X] `GET /api/orgs/:orgId/products/:productId/logs` - Get product inventory history
 
 **✅ Inventory Management Status: COMPLETED**
 - Full stock adjustment system with support for purchase, consumption, adjustment, and stocktake types
@@ -254,17 +254,17 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [ ] Implement time-based reminder scheduling and execution
   - [ ] Integrate email service for alert notifications
 - [ ] **API Endpoints**:
-  - [ ] `GET /orgs/:orgId/alerts` - List organization alerts
-  - [ ] `POST /orgs/:orgId/alerts` - Create new alert
-  - [ ] `PUT /orgs/:orgId/alerts/:id` - Update alert configuration
-  - [ ] `DELETE /orgs/:orgId/alerts/:id` - Delete alert
+  - [ ] `GET /api/orgs/:orgId/alerts` - List organization alerts
+  - [ ] `POST /api/orgs/:orgId/alerts` - Create new alert
+  - [ ] `PUT /api/orgs/:orgId/alerts/:id` - Update alert configuration
+  - [ ] `DELETE /api/orgs/:orgId/alerts/:id` - Delete alert
 
 #### Analytics (Basic MVP)
 - [ ] **Service Implementation**:
   - [ ] Implement consumption tracking from inventory logs
   - [ ] Create analytics service for consumption reports by time period, category, and product
 - [ ] **API Endpoints**:
-  - [ ] `GET /orgs/:orgId/analytics/consumption?category=mycategory&productId=myproductid` - Product consumption by time period, category and product
+  - [ ] `GET /api/orgs/:orgId/analytics/consumption?category=mycategory&productId=myproductid` - Product consumption by time period, category and product
 
 - [ ] **Next steps**:
   - [ ] Rate limiting

@@ -77,6 +77,7 @@ describe('OrgController (Integration)', () =>
             .compile();
 
         app = moduleFixture.createNestApplication();
+        app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe({
             whitelist: true,
             forbidNonWhitelisted: true,
@@ -153,7 +154,7 @@ describe('OrgController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(201);
 
@@ -198,7 +199,7 @@ describe('OrgController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(201);
 
@@ -221,7 +222,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(400); // Bad Request due to missing required field
         });
@@ -243,7 +244,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(409); // ConflictException: Subscription is not active
         });
@@ -265,7 +266,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(invalidData)
                 .expect(400);
         });
@@ -282,13 +283,13 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert - Missing name field
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send({ subscriptionId: subscription._id }) // Missing name
                 .expect(400);
                 
             // Act & Assert - Missing subscriptionId field
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send({ name: 'Test Org' }) // Missing subscriptionId
                 .expect(400);
         });
@@ -305,7 +306,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(403);
         });
@@ -338,12 +339,12 @@ describe('OrgController (Integration)', () =>
 
             // Act
             const response1 = await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData1)
                 .expect(201);
 
             const response2 = await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData2)
                 .expect(201);
 
@@ -382,7 +383,7 @@ describe('OrgController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(201);
 
@@ -425,7 +426,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(409); // ConflictException: Subscription does not belong to current user
         });
@@ -441,7 +442,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(404); // NotFoundException: Subscription not found
         });
@@ -467,13 +468,13 @@ describe('OrgController (Integration)', () =>
 
             // Act - Create first organization (should succeed)
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData1)
                 .expect(201);
 
             // Act - Try to create second organization with same subscription (should fail)
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData2)
                 .expect(500); // Internal Server Error due to unique constraint violation
         });
@@ -495,7 +496,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/orgs')
+                .post('/api/orgs')
                 .send(createData)
                 .expect(409); // ConflictException: Subscription is not active
         });
@@ -597,7 +598,7 @@ describe('OrgController (Integration)', () =>
         it('should return all user organizations without role filter', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs')
+                .get('/api/orgs')
                 .expect(200);
 
             expect(response.body).toHaveLength(3);
@@ -619,7 +620,7 @@ describe('OrgController (Integration)', () =>
         it('should filter organizations by OWNER role', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs?orgRole=owner')
+                .get('/api/orgs?orgRole=owner')
                 .expect(200);
 
             expect(response.body).toHaveLength(1);
@@ -630,7 +631,7 @@ describe('OrgController (Integration)', () =>
         it('should filter organizations by MANAGER role', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs?orgRole=manager')
+                .get('/api/orgs?orgRole=manager')
                 .expect(200);
 
             expect(response.body).toHaveLength(1);
@@ -641,7 +642,7 @@ describe('OrgController (Integration)', () =>
         it('should filter organizations by STAFF role', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs?orgRole=staff')
+                .get('/api/orgs?orgRole=staff')
                 .expect(200);
 
             expect(response.body).toHaveLength(1);
@@ -656,7 +657,7 @@ describe('OrgController (Integration)', () =>
             await relationModel.deleteMany({}).exec();
 
             const response = await request(app.getHttpServer())
-                .get('/orgs?orgRole=owner')
+                .get('/api/orgs?orgRole=owner')
                 .expect(200);
 
             expect(response.body).toHaveLength(0);
@@ -665,7 +666,7 @@ describe('OrgController (Integration)', () =>
         it('should handle invalid role filter gracefully', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs?orgRole=invalid_role')
+                .get('/api/orgs?orgRole=invalid_role')
                 .expect(200);
 
             // Should return empty array for invalid role
@@ -679,7 +680,7 @@ describe('OrgController (Integration)', () =>
             jest.spyOn(moduleRef, 'canActivate').mockImplementation(async () => false);
 
             await request(app.getHttpServer())
-                .get('/orgs')
+                .get('/api/orgs')
                 .expect(403);
         });
 
@@ -690,7 +691,7 @@ describe('OrgController (Integration)', () =>
             await orgModel.findByIdAndDelete(testOrgs[0]._id).exec();
 
             const response = await request(app.getHttpServer())
-                .get('/orgs')
+                .get('/api/orgs')
                 .expect(409); // ConflictException
 
             expect(response.body.message).toContain('Organization not found for relation');
@@ -699,7 +700,7 @@ describe('OrgController (Integration)', () =>
         it('should return organizations in correct DTO format', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs')
+                .get('/api/orgs')
                 .expect(200);
 
             expect(response.body).toHaveLength(3);
@@ -743,7 +744,7 @@ describe('OrgController (Integration)', () =>
         it('should only expose fields defined in DTOs and exclude sensitive data', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs')
+                .get('/api/orgs')
                 .expect(200);
 
             expect(response.body).toHaveLength(3);
@@ -813,7 +814,7 @@ describe('OrgController (Integration)', () =>
         it('should return user data correctly in DTO format', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/orgs')
+                .get('/api/orgs')
                 .expect(200);
 
             expect(response.body).toHaveLength(3);
@@ -862,7 +863,7 @@ describe('OrgController (Integration)', () =>
             });
 
             const response = await request(app.getHttpServer())
-                .get('/orgs')
+                .get('/api/orgs')
                 .expect(200);
 
             // Should only return the one organization the other user has access to
@@ -989,7 +990,7 @@ describe('OrgController (Integration)', () =>
             });
 
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${testOrgs[0].id}/members`)
+                .get(`/api/orgs/${testOrgs[0].id}/members`)
                 .expect(200);
 
             expect(response.body).toHaveLength(2); // testUser (OWNER) + anotherUser (STAFF)
@@ -1015,7 +1016,7 @@ describe('OrgController (Integration)', () =>
         {
             // Use Organization 2 which already has testUser2 (OWNER) + testUser (MANAGER)
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${testOrgs[1].id}/members`)
+                .get(`/api/orgs/${testOrgs[1].id}/members`)
                 .expect(200);
 
             expect(response.body).toHaveLength(2);
@@ -1030,7 +1031,7 @@ describe('OrgController (Integration)', () =>
         {
             // Use Organization 3 which only has testUser as STAFF
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${testOrgs[2].id}/members`)
+                .get(`/api/orgs/${testOrgs[2].id}/members`)
                 .expect(200);
 
             expect(response.body).toHaveLength(1);
@@ -1044,14 +1045,14 @@ describe('OrgController (Integration)', () =>
             const nonExistentOrgId = new Types.ObjectId();
             
             await request(app.getHttpServer())
-                .get(`/orgs/${nonExistentOrgId}/members`)
+                .get(`/api/orgs/${nonExistentOrgId}/members`)
                 .expect(403); // ForbiddenException thrown by guard when user has no relationship with org
         });
 
         it('should exclude sensitive user data in response', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${testOrgs[0].id}/members`)
+                .get(`/api/orgs/${testOrgs[0].id}/members`)
                 .expect(200);
 
             response.body.forEach((member: OutUserOrgRelationDto) => 
@@ -1078,7 +1079,7 @@ describe('OrgController (Integration)', () =>
             jest.spyOn(moduleRef, 'canActivate').mockImplementation(async () => false);
 
             await request(app.getHttpServer())
-                .get(`/orgs/${testOrgs[0].id}/members`)
+                .get(`/api/orgs/${testOrgs[0].id}/members`)
                 .expect(403);
         });
     });
@@ -1166,7 +1167,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(updateData)
                 .expect(200);
 
@@ -1192,7 +1193,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(updateData)
                 .expect(200);
 
@@ -1219,7 +1220,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(updateData)
                 .expect(200);
 
@@ -1242,7 +1243,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(invalidData)
                 .expect(400);
         });
@@ -1258,7 +1259,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(invalidData)
                 .expect(400);
         });
@@ -1279,7 +1280,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(updateData)
                 .expect(403);
         });
@@ -1294,7 +1295,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(updateData)
                 .expect(403);
         });
@@ -1307,7 +1308,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert - Guard validation catches invalid ObjectId and throws BadRequestException
             await request(app.getHttpServer())
-                .put(`/orgs/${invalidId}`)
+                .put(`/api/orgs/${invalidId}`)
                 .send(updateData)
                 .expect(400);
         });
@@ -1320,7 +1321,7 @@ describe('OrgController (Integration)', () =>
 
             // Act
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}`)
+                .put(`/api/orgs/${testOrgs[0].id}`)
                 .send(updateData)
                 .expect(200);
 
@@ -1434,7 +1435,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
                 .send(updateData)
                 .expect(200);
 
@@ -1463,7 +1464,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser2.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser2.id}/role`)
                 .send(updateData)
                 .expect(200);
 
@@ -1495,7 +1496,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
                 .send(updateData)
                 .expect(200);
 
@@ -1514,7 +1515,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
                 .send(updateData)
                 .expect(400);
 
@@ -1535,7 +1536,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser.id}/role`)
                 .send(updateData)
                 .expect(400);
 
@@ -1564,7 +1565,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${nonMemberUser.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${nonMemberUser.id}/role`)
                 .send(updateData)
                 .expect(404);
 
@@ -1587,7 +1588,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser2.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser2.id}/role`)
                 .send(updateData)
                 .expect(403); // ForbiddenException from OrgRolesGuard
         });
@@ -1600,7 +1601,7 @@ describe('OrgController (Integration)', () =>
             
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${nonExistentOrgId}/members/${testUser3.id}/role`)
+                .put(`/api/orgs/${nonExistentOrgId}/members/${testUser3.id}/role`)
                 .send(updateData)
                 .expect(403); // ForbiddenException from OrgRolesGuard
         });
@@ -1612,7 +1613,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
                 .send(invalidData)
                 .expect(400); // ValidationPipe should reject invalid enum
         });
@@ -1627,7 +1628,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
                 .send(updateData)
                 .expect(403);
         });
@@ -1640,7 +1641,7 @@ describe('OrgController (Integration)', () =>
 
             // Act & Assert - ObjectIdValidationPipe should catch invalid ObjectId
             await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${invalidId}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${invalidId}/role`)
                 .send(updateData)
                 .expect(400);
         });
@@ -1652,7 +1653,7 @@ describe('OrgController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                .put(`/api/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
                 .send(updateData)
                 .expect(200);
 
@@ -1678,7 +1679,7 @@ describe('OrgController (Integration)', () =>
             // Act - Simulate concurrent requests
             const promises = Array(3).fill(null).map(() =>
                 request(app.getHttpServer())
-                    .put(`/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
+                    .put(`/api/orgs/${testOrgs[0].id}/members/${testUser3.id}/role`)
                     .send(updateData)
             );
 

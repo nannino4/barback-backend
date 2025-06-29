@@ -38,22 +38,22 @@ Authorization: Bearer <access_token>
 
 ### Core Authentication Endpoints
 ```http
-POST /auth/register/email     # Register new user
-POST /auth/login/email        # Login with credentials
-POST /auth/refresh-token      # Refresh access token
+POST /api/auth/register/email     # Register new user
+POST /api/auth/login/email        # Login with credentials
+POST /api/auth/refresh-token      # Refresh access token
 ```
 
 ### Email Verification
 ```http
-POST /auth/send-verification-email  # Send verification email
-POST /auth/verify-email            # Verify with token
+POST /api/auth/send-verification-email  # Send verification email
+POST /api/auth/verify-email            # Verify with token
 GET  /auth/verify-email/:token     # Browser verification
 ```
 
 ### Password Reset
 ```http
-POST /auth/forgot-password     # Request password reset
-POST /auth/reset-password      # Reset with token
+POST /api/auth/forgot-password     # Request password reset
+POST /api/auth/reset-password      # Reset with token
 GET  /auth/reset-password/:token  # Validate reset token
 ```
 
@@ -62,44 +62,44 @@ GET  /auth/reset-password/:token  # Validate reset token
 ### 🔐 Authentication & User Management
 | Endpoint | Method | Description | Auth |
 |----------|--------|-------------|------|
-| `/auth/register/email` | POST | Register new user | ❌ |
-| `/auth/login/email` | POST | Login with email/password | ❌ |
-| `/auth/refresh-token` | POST | Refresh access token | ❌ |
-| `/users/me` | GET | Get current user profile | ✅ |
-| `/users/me` | PUT | Update user profile | ✅ |
-| `/users/me/password` | PUT | Change password | ✅ |
-| `/users/me` | DELETE | Delete account | ✅ |
+| `/api/auth/register/email` | POST | Register new user | ❌ |
+| `/api/auth/login/email` | POST | Login with email/password | ❌ |
+| `/api/auth/refresh-token` | POST | Refresh access token | ❌ |
+| `/api/users/me` | GET | Get current user profile | ✅ |
+| `/api/users/me` | PUT | Update user profile | ✅ |
+| `/api/users/me/password` | PUT | Change password | ✅ |
+| `/api/users/me` | DELETE | Delete account | ✅ |
 
 ### 💳 Subscription Management
 | Endpoint | Method | Description | Auth |
 |----------|--------|-------------|------|
-| `/subscription` | GET | Get user's subscription | ✅ |
-| `/subscription/trial-eligibility` | GET | Check trial eligibility | ✅ |
-| `/subscription/start-owner-trial` | POST | Start trial subscription | ✅ |
-| `/subscription/cancel` | DELETE | Cancel subscription | ✅ |
-| `/subscription/plans` | GET | Get available plans | ❌ |
-| `/payment/methods` | GET | Get payment methods | ✅ |
-| `/payment/methods` | POST | Add payment method | ✅ |
-| `/payment/methods/:id` | DELETE | Remove payment method | ✅ |
+| `/api/subscription` | GET | Get user's subscription | ✅ |
+| `/api/subscription/trial-eligibility` | GET | Check trial eligibility | ✅ |
+| `/api/subscription/start-owner-trial` | POST | Start trial subscription | ✅ |
+| `/api/subscription/cancel` | DELETE | Cancel subscription | ✅ |
+| `/api/subscription/plans` | GET | Get available plans | ❌ |
+| `/api/payment/methods` | GET | Get payment methods | ✅ |
+| `/api/payment/methods` | POST | Add payment method | ✅ |
+| `/api/payment/methods/:id` | DELETE | Remove payment method | ✅ |
 
 ### 🏢 Organization Management
 | Endpoint | Method | Description | Auth | Roles |
 |----------|--------|-------------|------|-------|
-| `/orgs` | GET | List user's organizations | ✅ | Any |
-| `/orgs` | POST | Create organization | ✅ | Owner |
-| `/orgs/:id` | PUT | Update organization | ✅ | Owner |
-| `/orgs/:id/members` | GET | List members | ✅ | Any |
-| `/orgs/:id/members/:userId/role` | PUT | Update member role | ✅ | Owner/Manager |
+| `/api/orgs` | GET | List user's organizations | ✅ | Any |
+| `/api/orgs` | POST | Create organization | ✅ | Owner |
+| `/api/orgs/:id` | PUT | Update organization | ✅ | Owner |
+| `/api/orgs/:id/members` | GET | List members | ✅ | Any |
+| `/api/orgs/:id/members/:userId/role` | PUT | Update member role | ✅ | Owner/Manager |
 
 ### 📧 Invitation Management
 | Endpoint | Method | Description | Auth | Roles |
 |----------|--------|-------------|------|-------|
-| `/orgs/:orgId/invitations` | POST | Send invitation | ✅ | Owner/Manager |
-| `/orgs/:orgId/invitations` | GET | List org invitations | ✅ | Owner/Manager |
-| `/orgs/:orgId/invitations/:id` | DELETE | Revoke invitation | ✅ | Owner/Manager |
-| `/invites` | GET | Get user's invitations | ✅ | Any |
-| `/invites/accept/:token` | POST | Accept invitation | ✅ | Any |
-| `/invites/decline/:token` | POST | Decline invitation | ✅ | Any |
+| `/api/orgs/:orgId/invitations` | POST | Send invitation | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/invitations` | GET | List org invitations | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/invitations/:id` | DELETE | Revoke invitation | ✅ | Owner/Manager |
+| `/api/invites` | GET | Get user's invitations | ✅ | Any |
+| `/api/invites/accept/:token` | POST | Accept invitation | ✅ | Any |
+| `/api/invites/decline/:token` | POST | Decline invitation | ✅ | Any |
 | `/public/invitations/details/:token` | GET | Get invitation details | ❌ | Any |
 | `/public/invitations/accept/:token` | POST | Accept (anonymous) | ❌ | Any |
 | `/public/invitations/decline/:token` | POST | Decline (anonymous) | ❌ | Any |
@@ -107,34 +107,34 @@ GET  /auth/reset-password/:token  # Validate reset token
 ### 📁 Category Management
 | Endpoint | Method | Description | Auth | Roles |
 |----------|--------|-------------|------|-------|
-| `/orgs/:orgId/categories` | GET | List categories | ✅ | Any |
-| `/orgs/:orgId/categories/:id` | GET | Get category | ✅ | Any |
-| `/orgs/:orgId/categories` | POST | Create category | ✅ | Owner/Manager |
-| `/orgs/:orgId/categories/:id` | PUT | Update category | ✅ | Owner/Manager |
-| `/orgs/:orgId/categories/:id` | DELETE | Delete category | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/categories` | GET | List categories | ✅ | Any |
+| `/api/orgs/:orgId/categories/:id` | GET | Get category | ✅ | Any |
+| `/api/orgs/:orgId/categories` | POST | Create category | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/categories/:id` | PUT | Update category | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/categories/:id` | DELETE | Delete category | ✅ | Owner/Manager |
 
 ### 📦 Product Management
 | Endpoint | Method | Description | Auth | Roles |
 |----------|--------|-------------|------|-------|
-| `/orgs/:orgId/products` | GET | List products | ✅ | Any |
-| `/orgs/:orgId/products/:id` | GET | Get product | ✅ | Any |
-| `/orgs/:orgId/products` | POST | Create product | ✅ | Owner/Manager |
-| `/orgs/:orgId/products/:id` | PUT | Update product | ✅ | Owner/Manager |
-| `/orgs/:orgId/products/:id` | DELETE | Delete product | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/products` | GET | List products | ✅ | Any |
+| `/api/orgs/:orgId/products/:id` | GET | Get product | ✅ | Any |
+| `/api/orgs/:orgId/products` | POST | Create product | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/products/:id` | PUT | Update product | ✅ | Owner/Manager |
+| `/api/orgs/:orgId/products/:id` | DELETE | Delete product | ✅ | Owner/Manager |
 
 ### 📊 Inventory Management
 | Endpoint | Method | Description | Auth | Roles |
 |----------|--------|-------------|------|-------|
-| `/orgs/:orgId/products/:id/adjust-stock` | POST | Adjust stock | ✅ | Any |
-| `/orgs/:orgId/products/:id/logs` | GET | Get inventory logs | ✅ | Any |
+| `/api/orgs/:orgId/products/:id/adjust-stock` | POST | Adjust stock | ✅ | Any |
+| `/api/orgs/:orgId/products/:id/logs` | GET | Get inventory logs | ✅ | Any |
 
 ### 👑 Admin Management
 | Endpoint | Method | Description | Auth | Roles |
 |----------|--------|-------------|------|-------|
-| `/admin/users` | GET | List all users | ✅ | Admin |
-| `/admin/users/:id` | GET | Get user details | ✅ | Admin |
-| `/admin/users/:id/profile` | PUT | Update user profile | ✅ | Admin |
-| `/admin/users/:id/role` | PUT | Update user role | ✅ | Admin |
+| `/api/admin/users` | GET | List all users | ✅ | Admin |
+| `/api/admin/users/:id` | GET | Get user details | ✅ | Admin |
+| `/api/admin/users/:id/profile` | PUT | Update user profile | ✅ | Admin |
+| `/api/admin/users/:id/role` | PUT | Update user role | ✅ | Admin |
 
 ## Common Patterns
 
@@ -154,13 +154,13 @@ Three organization roles with different permissions:
 
 ### Pagination Pattern
 ```http
-GET /admin/users?limit=25&offset=50
+GET /api/admin/users?limit=25&offset=50
 ```
 
 ### Filtering Pattern
 ```http
-GET /orgs/123/products?categoryId=456
-GET /orgs/123/products/789/logs?startDate=2024-01-01&endDate=2024-01-31
+GET /api/orgs/123/products?categoryId=456
+GET /api/orgs/123/products/789/logs?startDate=2024-01-01&endDate=2024-01-31
 ```
 
 ### Standard Response Formats
@@ -272,7 +272,7 @@ class ApiClient {
 
   // Authentication methods
   async login(email: string, password: string) {
-    return this.request<{ access_token: string; refresh_token: string }>('/auth/login/email', {
+    return this.request<{ access_token: string; refresh_token: string }>('/api/auth/login/email', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -320,7 +320,7 @@ export function useApi() {
   }
 
   const login = async (email, password) => {
-    const tokens = await apiCall('/auth/login/email', {
+    const tokens = await apiCall('/api/auth/login/email', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })

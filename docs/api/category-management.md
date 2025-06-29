@@ -12,7 +12,7 @@ The Category Management module handles product categorization within organizatio
 
 ## Endpoints
 
-### GET /orgs/:orgId/categories
+### GET /api/orgs/:orgId/categories
 Get all categories for an organization.
 
 **Authentication**: Required (JWT)
@@ -52,7 +52,7 @@ Get all categories for an organization.
 
 ---
 
-### GET /orgs/:orgId/categories/:id
+### GET /api/orgs/:orgId/categories/:id
 Get a specific category.
 
 **Authentication**: Required (JWT)
@@ -80,7 +80,7 @@ Get a specific category.
 
 ---
 
-### POST /orgs/:orgId/categories
+### POST /api/orgs/:orgId/categories
 Create a new category.
 
 **Authentication**: Required (JWT)
@@ -127,7 +127,7 @@ Create a new category.
 
 ---
 
-### PUT /orgs/:orgId/categories/:id
+### PUT /api/orgs/:orgId/categories/:id
 Update an existing category.
 
 **Authentication**: Required (JWT)
@@ -176,7 +176,7 @@ Update an existing category.
 
 ---
 
-### DELETE /orgs/:orgId/categories/:id
+### DELETE /api/orgs/:orgId/categories/:id
 Delete a category.
 
 **Authentication**: Required (JWT)

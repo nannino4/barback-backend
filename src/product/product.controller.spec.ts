@@ -68,6 +68,7 @@ describe('ProductController (Integration)', () =>
             .compile();
 
         app = moduleFixture.createNestApplication();
+        app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe({
             whitelist: true,
             forbidNonWhitelisted: true,
@@ -123,7 +124,7 @@ describe('ProductController (Integration)', () =>
         it('should return products for organization', async () =>
         {
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products`)
+                .get(`/api/orgs/${mockOrgId}/products`)
                 .expect(200);
 
             expect(response.body).toHaveLength(2);
@@ -136,7 +137,7 @@ describe('ProductController (Integration)', () =>
         {
             const emptyOrgId = new Types.ObjectId();
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${emptyOrgId}/products`)
+                .get(`/api/orgs/${emptyOrgId}/products`)
                 .expect(200);
 
             expect(response.body).toHaveLength(0);
@@ -146,7 +147,7 @@ describe('ProductController (Integration)', () =>
         {
             // This test assumes category filtering is implemented
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products?categoryId=${new Types.ObjectId()}`)
+                .get(`/api/orgs/${mockOrgId}/products?categoryId=${new Types.ObjectId()}`)
                 .expect(200);
 
             expect(response.body).toHaveLength(0); // No products with this category
@@ -155,7 +156,7 @@ describe('ProductController (Integration)', () =>
         it('should return 400 for invalid orgId', async () =>
         {
             await request(app.getHttpServer())
-                .get('/orgs/invalid-id/products')
+                .get('/api/orgs/invalid-id/products')
                 .expect(400);
         });
     });
@@ -176,7 +177,7 @@ describe('ProductController (Integration)', () =>
         it('should return product by id', async () =>
         {
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${savedProduct.id}`)
+                .get(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .expect(200);
 
             expect(response.body.name).toBe('Test Product');
@@ -188,21 +189,21 @@ describe('ProductController (Integration)', () =>
         {
             const nonExistentId = new Types.ObjectId();
             await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${nonExistentId}`)
+                .get(`/api/orgs/${mockOrgId}/products/${nonExistentId}`)
                 .expect(404);
         });
 
         it('should return 404 when product belongs to different organization', async () =>
         {
             await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId2}/products/${savedProduct.id}`)
+                .get(`/api/orgs/${mockOrgId2}/products/${savedProduct.id}`)
                 .expect(404);
         });
 
         it('should return 400 for invalid productId', async () =>
         {
             await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/invalid-id`)
+                .get(`/api/orgs/${mockOrgId}/products/invalid-id`)
                 .expect(400);
         });
     });
@@ -221,7 +222,7 @@ describe('ProductController (Integration)', () =>
         it('should create a new product successfully', async () =>
         {
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products`)
+                .post(`/api/orgs/${mockOrgId}/products`)
                 .send(validCreateDto)
                 .expect(201);
 
@@ -246,7 +247,7 @@ describe('ProductController (Integration)', () =>
             };
 
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products`)
+                .post(`/api/orgs/${mockOrgId}/products`)
                 .send(minimalDto)
                 .expect(201);
 
@@ -262,7 +263,7 @@ describe('ProductController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products`)
+                .post(`/api/orgs/${mockOrgId}/products`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -275,7 +276,7 @@ describe('ProductController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products`)
+                .post(`/api/orgs/${mockOrgId}/products`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -288,7 +289,7 @@ describe('ProductController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products`)
+                .post(`/api/orgs/${mockOrgId}/products`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -301,7 +302,7 @@ describe('ProductController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products`)
+                .post(`/api/orgs/${mockOrgId}/products`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -313,7 +314,7 @@ describe('ProductController (Integration)', () =>
 
             // Try to create another with same name
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products`)
+                .post(`/api/orgs/${mockOrgId}/products`)
                 .send(validCreateDto)
                 .expect(400);
         });
@@ -325,7 +326,7 @@ describe('ProductController (Integration)', () =>
 
             // Create product with same name in different org
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId2}/products`)
+                .post(`/api/orgs/${mockOrgId2}/products`)
                 .send(validCreateDto)
                 .expect(201);
 
@@ -337,7 +338,7 @@ describe('ProductController (Integration)', () =>
         it('should return 400 for invalid orgId', async () =>
         {
             await request(app.getHttpServer())
-                .post('/orgs/invalid-id/products')
+                .post('/api/orgs/invalid-id/products')
                 .send(validCreateDto)
                 .expect(400);
         });
@@ -365,7 +366,7 @@ describe('ProductController (Integration)', () =>
         it('should update product successfully', async () =>
         {
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/products/${savedProduct.id}`)
+                .put(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .send(validUpdateDto)
                 .expect(200);
 
@@ -385,7 +386,7 @@ describe('ProductController (Integration)', () =>
             };
 
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/products/${savedProduct.id}`)
+                .put(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .send(partialUpdate)
                 .expect(200);
 
@@ -397,7 +398,7 @@ describe('ProductController (Integration)', () =>
         {
             const nonExistentId = new Types.ObjectId();
             await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/products/${nonExistentId}`)
+                .put(`/api/orgs/${mockOrgId}/products/${nonExistentId}`)
                 .send(validUpdateDto)
                 .expect(404);
         });
@@ -405,7 +406,7 @@ describe('ProductController (Integration)', () =>
         it('should return 404 when product belongs to different organization', async () =>
         {
             await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId2}/products/${savedProduct.id}`)
+                .put(`/api/orgs/${mockOrgId2}/products/${savedProduct.id}`)
                 .send(validUpdateDto)
                 .expect(404);
         });
@@ -417,7 +418,7 @@ describe('ProductController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/products/${savedProduct.id}`)
+                .put(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -435,7 +436,7 @@ describe('ProductController (Integration)', () =>
             };
 
             await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/products/${savedProduct.id}`)
+                .put(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .send(updateToExistingName)
                 .expect(400);
         });
@@ -443,7 +444,7 @@ describe('ProductController (Integration)', () =>
         it('should return 400 for invalid productId', async () =>
         {
             await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/products/invalid-id`)
+                .put(`/api/orgs/${mockOrgId}/products/invalid-id`)
                 .send(validUpdateDto)
                 .expect(400);
         });
@@ -451,7 +452,7 @@ describe('ProductController (Integration)', () =>
         it('should return 400 for invalid orgId', async () =>
         {
             await request(app.getHttpServer())
-                .put(`/orgs/invalid-id/products/${savedProduct.id}`)
+                .put(`/api/orgs/invalid-id/products/${savedProduct.id}`)
                 .send(validUpdateDto)
                 .expect(400);
         });
@@ -473,7 +474,7 @@ describe('ProductController (Integration)', () =>
         it('should delete product successfully', async () =>
         {
             const response = await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/products/${savedProduct.id}`)
+                .delete(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .expect(200);
 
             expect(response.body.message).toBe('Product deleted successfully');
@@ -487,28 +488,28 @@ describe('ProductController (Integration)', () =>
         {
             const nonExistentId = new Types.ObjectId();
             await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/products/${nonExistentId}`)
+                .delete(`/api/orgs/${mockOrgId}/products/${nonExistentId}`)
                 .expect(404);
         });
 
         it('should return 404 when product belongs to different organization', async () =>
         {
             await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId2}/products/${savedProduct.id}`)
+                .delete(`/api/orgs/${mockOrgId2}/products/${savedProduct.id}`)
                 .expect(404);
         });
 
         it('should return 400 for invalid productId', async () =>
         {
             await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/products/invalid-id`)
+                .delete(`/api/orgs/${mockOrgId}/products/invalid-id`)
                 .expect(400);
         });
 
         it('should return 400 for invalid orgId', async () =>
         {
             await request(app.getHttpServer())
-                .delete(`/orgs/invalid-id/products/${savedProduct.id}`)
+                .delete(`/api/orgs/invalid-id/products/${savedProduct.id}`)
                 .expect(400);
         });
 
@@ -522,7 +523,7 @@ describe('ProductController (Integration)', () =>
 
             // Delete product in first org
             await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/products/${savedProduct.id}`)
+                .delete(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .expect(200);
 
             // Verify other org's product is not affected
@@ -558,7 +559,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(adjustmentDto)
                 .expect(201);
 
@@ -589,7 +590,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(adjustmentDto)
                 .expect(201);
 
@@ -615,7 +616,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(purchaseDto)
                 .expect(201);
 
@@ -636,7 +637,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(adjustmentDto)
                 .expect(201);
 
@@ -657,7 +658,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(invalidAdjustment)
                 .expect(400);
 
@@ -679,7 +680,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${nonExistentProductId}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${nonExistentProductId}/adjust-stock`)
                 .send(adjustmentDto)
                 .expect(404);
         });
@@ -694,7 +695,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId2}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId2}/products/${testProduct.id}/adjust-stock`)
                 .send(adjustmentDto)
                 .expect(404);
         });
@@ -709,7 +710,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -724,7 +725,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -739,7 +740,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send(invalidDto)
                 .expect(400);
         });
@@ -754,7 +755,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/invalid-id/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/invalid-id/adjust-stock`)
                 .send(adjustmentDto)
                 .expect(400);
         });
@@ -776,7 +777,7 @@ describe('ProductController (Integration)', () =>
             // Create multiple inventory logs
             // First adjustment
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send({
                     type: InventoryLogType.PURCHASE,
                     quantity: 10,
@@ -785,7 +786,7 @@ describe('ProductController (Integration)', () =>
 
             // Second adjustment (simulate different time)
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send({
                     type: InventoryLogType.CONSUMPTION,
                     quantity: -2,
@@ -794,7 +795,7 @@ describe('ProductController (Integration)', () =>
 
             // Third adjustment
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${testProduct.id}/adjust-stock`)
                 .send({
                     type: InventoryLogType.ADJUSTMENT,
                     quantity: 3,
@@ -806,7 +807,7 @@ describe('ProductController (Integration)', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${testProduct.id}/logs`)
+                .get(`/api/orgs/${mockOrgId}/products/${testProduct.id}/logs`)
                 .expect(200);
 
             // Assert
@@ -841,7 +842,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${testProduct.id}/logs?startDate=${startDate}`)
+                .get(`/api/orgs/${mockOrgId}/products/${testProduct.id}/logs?startDate=${startDate}`)
                 .expect(200);
 
             // Assert - Should return recent logs
@@ -862,7 +863,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${testProduct.id}/logs?endDate=${endDate}`)
+                .get(`/api/orgs/${mockOrgId}/products/${testProduct.id}/logs?endDate=${endDate}`)
                 .expect(200);
 
             // Assert - Should return no logs (all our logs are more recent)
@@ -878,7 +879,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${testProduct.id}/logs?startDate=${startDate}&endDate=${endDate}`)
+                .get(`/api/orgs/${mockOrgId}/products/${testProduct.id}/logs?startDate=${startDate}&endDate=${endDate}`)
                 .expect(200);
 
             // Assert
@@ -904,7 +905,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${newProduct.id}/logs`)
+                .get(`/api/orgs/${mockOrgId}/products/${newProduct.id}/logs`)
                 .expect(200);
 
             // Assert
@@ -919,7 +920,7 @@ describe('ProductController (Integration)', () =>
 
             // Act & Assert
             await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${nonExistentProductId}/logs`)
+                .get(`/api/orgs/${mockOrgId}/products/${nonExistentProductId}/logs`)
                 .expect(404);
         });
 
@@ -927,7 +928,7 @@ describe('ProductController (Integration)', () =>
         {
             // Act & Assert
             await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId2}/products/${testProduct.id}/logs`)
+                .get(`/api/orgs/${mockOrgId2}/products/${testProduct.id}/logs`)
                 .expect(404);
         });
 
@@ -935,7 +936,7 @@ describe('ProductController (Integration)', () =>
         {
             // Act & Assert
             await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/invalid-id/logs`)
+                .get(`/api/orgs/${mockOrgId}/products/invalid-id/logs`)
                 .expect(400);
         });
 
@@ -943,7 +944,7 @@ describe('ProductController (Integration)', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${testProduct.id}/logs?startDate=invalid-date`)
+                .get(`/api/orgs/${mockOrgId}/products/${testProduct.id}/logs?startDate=invalid-date`)
                 .expect(200);
 
             // Assert - Should still return logs (invalid date ignored)
@@ -960,7 +961,7 @@ describe('ProductController (Integration)', () =>
             });
 
             await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/products/${anotherProduct.id}/adjust-stock`)
+                .post(`/api/orgs/${mockOrgId}/products/${anotherProduct.id}/adjust-stock`)
                 .send({
                     type: InventoryLogType.PURCHASE,
                     quantity: 5,
@@ -969,7 +970,7 @@ describe('ProductController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/products/${testProduct.id}/logs`)
+                .get(`/api/orgs/${mockOrgId}/products/${testProduct.id}/logs`)
                 .expect(200);
 
             // Assert - Should only return logs for the specified product

@@ -90,6 +90,7 @@ describe('AuthController - Integration Tests', () =>
         }).compile();
 
         app = module.createNestApplication();
+        app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe());
         await app.init();
 
@@ -129,7 +130,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -162,13 +163,13 @@ describe('AuthController - Integration Tests', () =>
         {
             // Arrange - First registration to create the user
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
             // Act & Assert - Second registration with same email should conflict
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(409);
 
@@ -183,7 +184,7 @@ describe('AuthController - Integration Tests', () =>
             const invalidDto = { ...mockRegisterDto, email: 'invalid-email' };
 
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(invalidDto)
                 .expect(400);
         });
@@ -193,7 +194,7 @@ describe('AuthController - Integration Tests', () =>
             const incompleteDto = { email: 'test@example.com' };
 
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(incompleteDto)
                 .expect(400);
         });
@@ -203,7 +204,7 @@ describe('AuthController - Integration Tests', () =>
             const weakPasswordDto = { ...mockRegisterDto, password: '123' };
 
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(weakPasswordDto)
                 .expect(400);
         });
@@ -221,7 +222,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send(mockLoginDto)
                 .expect(200);
 
@@ -244,7 +245,7 @@ describe('AuthController - Integration Tests', () =>
             };
 
             await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send(nonExistentDto)
                 .expect(401);
         });
@@ -257,7 +258,7 @@ describe('AuthController - Integration Tests', () =>
             };
 
             await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send(wrongPasswordDto)
                 .expect(401);
         });
@@ -267,7 +268,7 @@ describe('AuthController - Integration Tests', () =>
             const invalidDto = { ...mockLoginDto, email: 'invalid-email' };
 
             await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send(invalidDto)
                 .expect(400);
         });
@@ -275,12 +276,12 @@ describe('AuthController - Integration Tests', () =>
         it('should return 400 for missing credentials', async () => 
         {
             await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send({ email: 'test@example.com' })
                 .expect(400);
 
             await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send({ password: 'Password123!' })
                 .expect(400);
         });
@@ -294,7 +295,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Register user and get refresh token
             const registerResponse = await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -310,7 +311,7 @@ describe('AuthController - Integration Tests', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/refresh-token')
+                .post('/api/auth/refresh-token')
                 .send(refreshDto)
                 .expect(200);
 
@@ -334,7 +335,7 @@ describe('AuthController - Integration Tests', () =>
             };
 
             await request(app.getHttpServer())
-                .post('/auth/refresh-token')
+                .post('/api/auth/refresh-token')
                 .send(invalidRefreshDto)
                 .expect(401);
         });
@@ -343,7 +344,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Get access token
             const registerResponse = await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send({ ...mockRegisterDto, email: 'another@example.com' })
                 .expect(201);
 
@@ -352,7 +353,7 @@ describe('AuthController - Integration Tests', () =>
             };
 
             await request(app.getHttpServer())
-                .post('/auth/refresh-token')
+                .post('/api/auth/refresh-token')
                 .send(invalidRefreshDto)
                 .expect(401);
         });
@@ -360,7 +361,7 @@ describe('AuthController - Integration Tests', () =>
         it('should return 400 for missing refresh token', async () => 
         {
             await request(app.getHttpServer())
-                .post('/auth/refresh-token')
+                .post('/api/auth/refresh-token')
                 .send({})
                 .expect(400);
         });
@@ -372,7 +373,7 @@ describe('AuthController - Integration Tests', () =>
             };
 
             await request(app.getHttpServer())
-                .post('/auth/refresh-token')
+                .post('/api/auth/refresh-token')
                 .send(emptyRefreshDto)
                 .expect(400);
         });
@@ -384,7 +385,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Arrange
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -392,7 +393,7 @@ describe('AuthController - Integration Tests', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/send-verification-email')
+                .post('/api/auth/send-verification-email')
                 .send({ email: mockRegisterDto.email })
                 .expect(200);
 
@@ -409,7 +410,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/auth/send-verification-email')
+                .post('/api/auth/send-verification-email')
                 .send({ email: 'nonexistent@example.com' })
                 .expect(400);
 
@@ -423,7 +424,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Arrange
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -432,7 +433,7 @@ describe('AuthController - Integration Tests', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/verify-email')
+                .post('/api/auth/verify-email')
                 .send({ token })
                 .expect(200);
 
@@ -447,7 +448,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/auth/verify-email')
+                .post('/api/auth/verify-email')
                 .send({ token: 'invalid-token' })
                 .expect(401);
         });
@@ -459,7 +460,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Arrange
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -474,7 +475,7 @@ describe('AuthController - Integration Tests', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/forgot-password')
+                .post('/api/auth/forgot-password')
                 .send({ email: mockRegisterDto.email })
                 .expect(200);
 
@@ -491,7 +492,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/forgot-password')
+                .post('/api/auth/forgot-password')
                 .send({ email: 'nonexistent@example.com' })
                 .expect(200);
 
@@ -507,7 +508,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Arrange
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -517,7 +518,7 @@ describe('AuthController - Integration Tests', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post('/auth/reset-password')
+                .post('/api/auth/reset-password')
                 .send({ token, newPassword })
                 .expect(200);
 
@@ -526,7 +527,7 @@ describe('AuthController - Integration Tests', () =>
             
             // Verify password was actually changed by trying to login with new password
             const loginResponse = await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send({ email: mockRegisterDto.email, password: newPassword })
                 .expect(200);
 
@@ -537,7 +538,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Act & Assert
             await request(app.getHttpServer())
-                .post('/auth/reset-password')
+                .post('/api/auth/reset-password')
                 .send({ token: 'invalid-token', newPassword: 'NewPassword123!' })
                 .expect(401);
         });
@@ -546,7 +547,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Arrange
             await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -554,7 +555,7 @@ describe('AuthController - Integration Tests', () =>
 
             // Act & Assert - weak password should fail validation
             await request(app.getHttpServer())
-                .post('/auth/reset-password')
+                .post('/api/auth/reset-password')
                 .send({ token, newPassword: 'weak' })
                 .expect(400);
         });
@@ -566,7 +567,7 @@ describe('AuthController - Integration Tests', () =>
         {
             // Step 1: Register
             const registerResponse = await request(app.getHttpServer())
-                .post('/auth/register/email')
+                .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
@@ -576,7 +577,7 @@ describe('AuthController - Integration Tests', () =>
 
             // Step 2: Login
             const loginResponse = await request(app.getHttpServer())
-                .post('/auth/login/email')
+                .post('/api/auth/login/email')
                 .send(mockLoginDto)
                 .expect(200);
 
@@ -590,7 +591,7 @@ describe('AuthController - Integration Tests', () =>
             };
 
             const refreshResponse = await request(app.getHttpServer())
-                .post('/auth/refresh-token')
+                .post('/api/auth/refresh-token')
                 .send(refreshDto)
                 .expect(200);
 

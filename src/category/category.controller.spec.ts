@@ -46,6 +46,7 @@ describe('CategoryController (Integration)', () =>
             .compile();
 
         app = moduleFixture.createNestApplication();
+        app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe({
             whitelist: true,
             forbidNonWhitelisted: true,
@@ -90,7 +91,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/categories`)
+                .get(`/api/orgs/${mockOrgId}/categories`)
                 .expect(200);
 
             // Assert - Test HTTP contract and data filtering
@@ -115,7 +116,7 @@ describe('CategoryController (Integration)', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/categories`)
+                .get(`/api/orgs/${mockOrgId}/categories`)
                 .expect(200);
 
             // Assert
@@ -135,7 +136,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/categories`)
+                .get(`/api/orgs/${mockOrgId}/categories`)
                 .expect(200);
 
             // Assert
@@ -152,7 +153,7 @@ describe('CategoryController (Integration)', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .get('/orgs/invalid-id/categories')
+                .get('/api/orgs/invalid-id/categories')
                 .expect(400);
 
             // Assert
@@ -172,7 +173,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/categories/${category.id}`)
+                .get(`/api/orgs/${mockOrgId}/categories/${category.id}`)
                 .expect(200);
 
             // Assert
@@ -190,7 +191,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/categories/${nonExistentId}`)
+                .get(`/api/orgs/${mockOrgId}/categories/${nonExistentId}`)
                 .expect(404);
 
             // Assert
@@ -206,7 +207,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/categories/${categoryInDifferentOrg.id}`)
+                .get(`/api/orgs/${mockOrgId}/categories/${categoryInDifferentOrg.id}`)
                 .expect(404);
 
             // Assert
@@ -217,7 +218,7 @@ describe('CategoryController (Integration)', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .get(`/orgs/${mockOrgId}/categories/invalid-id`)
+                .get(`/api/orgs/${mockOrgId}/categories/invalid-id`)
                 .expect(400);
 
             // Assert
@@ -237,7 +238,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(createCategoryDto)
                 .expect(201);
 
@@ -270,7 +271,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(createCategoryDto)
                 .expect(201);
 
@@ -290,7 +291,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(createCategoryDto)
                 .expect(201);
 
@@ -308,7 +309,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(invalidDto)
                 .expect(400);
 
@@ -328,7 +329,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(invalidDto)
                 .expect(400);
 
@@ -348,7 +349,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(invalidDto)
                 .expect(400);
 
@@ -369,7 +370,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(invalidDto)
                 .expect(400);
 
@@ -388,7 +389,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .post(`/orgs/${mockOrgId}/categories`)
+                .post(`/api/orgs/${mockOrgId}/categories`)
                 .send(dtoWithExtraFields)
                 .expect(400);
 
@@ -421,7 +422,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${existingCategory.id}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${existingCategory.id}`)
                 .send(updateDto)
                 .expect(200);
 
@@ -450,7 +451,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${existingCategory.id}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${existingCategory.id}`)
                 .send(partialUpdateDto)
                 .expect(200);
 
@@ -471,7 +472,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${existingCategory.id}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${existingCategory.id}`)
                 .send(updateDto)
                 .expect(200);
 
@@ -488,7 +489,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${existingCategory.id}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${existingCategory.id}`)
                 .send(updateDto)
                 .expect(400);
 
@@ -515,7 +516,7 @@ describe('CategoryController (Integration)', () =>
             };
 
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${grandparent.id}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${grandparent.id}`)
                 .send(updateDto)
                 .expect(400);
 
@@ -533,7 +534,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${nonExistentId}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${nonExistentId}`)
                 .send(updateDto)
                 .expect(404);
 
@@ -553,7 +554,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${categoryInDifferentOrg.id}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${categoryInDifferentOrg.id}`)
                 .send(updateDto)
                 .expect(404);
 
@@ -570,7 +571,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/invalid-id`)
+                .put(`/api/orgs/${mockOrgId}/categories/invalid-id`)
                 .send(updateDto)
                 .expect(400);
 
@@ -588,7 +589,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .put(`/orgs/${mockOrgId}/categories/${existingCategory.id}`)
+                .put(`/api/orgs/${mockOrgId}/categories/${existingCategory.id}`)
                 .send(dtoWithExtraFields)
                 .expect(400);
 
@@ -615,7 +616,7 @@ describe('CategoryController (Integration)', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/categories/${existingCategory.id}`)
+                .delete(`/api/orgs/${mockOrgId}/categories/${existingCategory.id}`)
                 .expect(200);
 
             // Assert - Test response format and verify deletion
@@ -639,7 +640,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/categories/${existingCategory.id}`)
+                .delete(`/api/orgs/${mockOrgId}/categories/${existingCategory.id}`)
                 .expect(400);
 
             // Assert
@@ -660,7 +661,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/categories/${nonExistentId}`)
+                .delete(`/api/orgs/${mockOrgId}/categories/${nonExistentId}`)
                 .expect(404);
 
             // Assert
@@ -676,7 +677,7 @@ describe('CategoryController (Integration)', () =>
 
             // Act
             const response = await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/categories/${categoryInDifferentOrg.id}`)
+                .delete(`/api/orgs/${mockOrgId}/categories/${categoryInDifferentOrg.id}`)
                 .expect(404);
 
             // Assert
@@ -687,7 +688,7 @@ describe('CategoryController (Integration)', () =>
         {
             // Act
             const response = await request(app.getHttpServer())
-                .delete(`/orgs/${mockOrgId}/categories/invalid-id`)
+                .delete(`/api/orgs/${mockOrgId}/categories/invalid-id`)
                 .expect(400);
 
             // Assert

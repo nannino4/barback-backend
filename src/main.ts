@@ -11,6 +11,9 @@ async function bootstrap()
         rawBody: true, // Enable raw body for webhook processing
     });
 
+    // Set global prefix for all routes
+    app.setGlobalPrefix('api');
+
     // Enable global validation pipe
     app.useGlobalPipes(new ValidationPipe({
         whitelist: true, // Strip properties that do not have any decorators
