@@ -7,7 +7,7 @@ import { SendVerificationEmailDto } from './dto/in.send-verification-email.dto';
 import { VerifyEmailDto } from './dto/in.verify-email.dto';
 import { ForgotPasswordDto } from './dto/in.forgot-password.dto';
 import { ResetPasswordDto } from './dto/in.reset-password.dto';
-import { OutTokensDto } from './dto/out.tokens.dto';
+import { OutAuthResponseDto } from './dto/out.auth-response.dto';
 
 @Controller('auth')
 export class AuthController
@@ -18,27 +18,27 @@ export class AuthController
 
     @Post('register/email')
     @HttpCode(HttpStatus.CREATED)
-    async register(@Body() registerUserDto: RegisterEmailDto): Promise<OutTokensDto>
+    async register(@Body() registerUserDto: RegisterEmailDto): Promise<OutAuthResponseDto>
     {
         this.logger.debug(`Registration attempt for user: ${registerUserDto.email}`, 'AuthController#register');
-        const tokens = await this.authService.registerEmail(registerUserDto);
+        const response = await this.authService.registerEmail(registerUserDto);
         this.logger.debug(`User ${registerUserDto.email} registered successfully`, 'AuthController#register');
-        return tokens;
+        return response;
     }
 
     @Post('login/email')
     @HttpCode(HttpStatus.OK)
-    async emailLogin(@Body() loginDto: LoginEmailDto): Promise<OutTokensDto>
+    async emailLogin(@Body() loginDto: LoginEmailDto): Promise<OutAuthResponseDto>
     {
         this.logger.debug(`Login attempt for user: ${loginDto.email}`, 'AuthController#emailLogin');
-        const tokens = await this.authService.loginEmail(loginDto.email, loginDto.password);
+        const response = await this.authService.loginEmail(loginDto.email, loginDto.password);
         this.logger.debug(`User ${loginDto.email} authenticated successfully`, 'AuthController#emailLogin');
-        return tokens;
+        return response;
     }
 
     @Post('refresh-token')
     @HttpCode(HttpStatus.OK)
-    async validateRefreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<OutTokensDto>
+    async validateRefreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<OutAuthResponseDto>
     {
         this.logger.debug('Refresh token attempt', 'AuthController#refreshToken');
         if (!refreshTokenDto.refresh_token)
@@ -46,9 +46,9 @@ export class AuthController
             this.logger.warn('Refresh token is missing', 'AuthController#refreshToken');
             throw new UnauthorizedException('Refresh token is missing');
         }
-        const tokens = await this.authService.validateRefreshToken(refreshTokenDto.refresh_token);
+        const response = await this.authService.validateRefreshToken(refreshTokenDto.refresh_token);
         this.logger.debug('Token refreshed successfully', 'AuthController#refreshToken');
-        return tokens;
+        return response;
     }
 
     @Post('send-verification-email')

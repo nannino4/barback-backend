@@ -187,6 +187,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(result).toBeDefined();
             expect(result.access_token).toBeDefined();
             expect(result.refresh_token).toBeDefined();
+            expect(result.user).toBeDefined();
             expect(typeof result.access_token).toBe('string');
             expect(typeof result.refresh_token).toBe('string');
 
@@ -198,6 +199,14 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(decodedAccess.type).toBe('access');
             expect(decodedRefresh.sub).toBe(createdUser.id);
             expect(decodedRefresh.type).toBe('refresh');
+
+            // Verify user data in response
+            expect(result.user.id).toBe(createdUser.id);
+            expect(result.user.email).toBe(createdUser.email);
+            expect(result.user.firstName).toBe(createdUser.firstName);
+            expect(result.user.lastName).toBe(createdUser.lastName);
+            expect(result.user.phoneNumber).toBe(createdUser.phoneNumber);
+            expect(result.user.isEmailVerified).toBe(createdUser.isEmailVerified);
 
             // Verify the tokens can be verified (are functionally valid)
             expect(() => jwtService.verify(result.access_token, { 
@@ -271,6 +280,13 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(result).toBeDefined();
             expect(result.access_token).toBeDefined();
             expect(result.refresh_token).toBeDefined();
+            expect(result.user).toBeDefined();
+
+            // Verify user data in response
+            expect(result.user.email).toBe(mockUser.email);
+            expect(result.user.firstName).toBe(mockUser.firstName);
+            expect(result.user.lastName).toBe(mockUser.lastName);
+            expect(result.user.phoneNumber).toBe(mockUser.phoneNumber);
         });
 
         it('should throw UnauthorizedException for non-existent user', async () => 
@@ -331,6 +347,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(result).toBeDefined();
             expect(result.access_token).toBeDefined();
             expect(result.refresh_token).toBeDefined();
+            expect(result.user).toBeDefined();
 
             // Verify user was created in database
             const createdUser = await userService.findByEmail(mockRegisterEmailDto.email);
@@ -346,6 +363,14 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(createdUser!.hashedPassword).toBeDefined();
             expect(createdUser!.hashedPassword).not.toBe(mockRegisterEmailDto.password);
             expect(await bcrypt.compare(mockRegisterEmailDto.password, createdUser!.hashedPassword!)).toBe(true);
+
+            // Verify user data in response
+            expect(result.user.id).toBe(createdUser!.id);
+            expect(result.user.email).toBe(createdUser!.email);
+            expect(result.user.firstName).toBe(createdUser!.firstName);
+            expect(result.user.lastName).toBe(createdUser!.lastName);
+            expect(result.user.phoneNumber).toBe(createdUser!.phoneNumber);
+            expect(result.user.isEmailVerified).toBe(createdUser!.isEmailVerified);
         });
 
         it('should create user without phone number when not provided', async () => 
@@ -361,11 +386,17 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(result).toBeDefined();
             expect(result.access_token).toBeDefined();
             expect(result.refresh_token).toBeDefined();
+            expect(result.user).toBeDefined();
 
             const createdUser = await userService.findByEmail(dtoWithoutPhone.email);
             expect(createdUser).toBeDefined();
             expect(createdUser).not.toBeNull();
             expect(createdUser!.phoneNumber).toBeUndefined();
+
+            // Verify user data in response
+            expect(result.user.id).toBe(createdUser!.id);
+            expect(result.user.email).toBe(createdUser!.email);
+            expect(result.user.phoneNumber).toBeUndefined();
         });
 
         it('should throw ConflictException when user already exists', async () => 

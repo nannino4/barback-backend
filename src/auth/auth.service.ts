@@ -10,8 +10,11 @@ import { RefreshTokenPayloadDto } from './dto/refresh-token-payload.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { CreateUserDto } from '../user/dto/in.create-user.dto';
 import { OutTokensDto } from './dto/out.tokens.dto';
+import { OutAuthResponseDto } from './dto/out.auth-response.dto';
+import { OutUserDto } from '../user/dto/out.user.dto';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitations/invitation.service';
+import { plainToClass } from 'class-transformer';
 
 @Injectable()
 export class AuthService
@@ -49,7 +52,23 @@ export class AuthService
         return { access_token: accessToken, refresh_token: refreshToken };
     }
 
-    async validateRefreshToken(refreshTokenString: string) : Promise<OutTokensDto>
+    async generateAuthResponse(user: User): Promise<OutAuthResponseDto>
+    {
+        this.logger.debug(`Generating auth response for user: ${user.email}`, 'AuthService#generateAuthResponse');
+        const tokens = await this.generateTokens(user);
+        const userDto = plainToClass(OutUserDto, user, { excludeExtraneousValues: true });
+        
+        const response: OutAuthResponseDto = {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+            user: userDto,
+        };
+        
+        this.logger.debug(`Auth response generated successfully for user: ${user.email}`, 'AuthService#generateAuthResponse');
+        return response;
+    }
+
+    async validateRefreshToken(refreshTokenString: string) : Promise<OutAuthResponseDto>
     {
         this.logger.debug('Refresh token process started', 'AuthService#validateRefreshToken');
         try
@@ -72,9 +91,9 @@ export class AuthService
                 throw new UnauthorizedException('User not found for refresh token');
             }
             this.logger.debug(`User ${user.email} validated for token refresh`, 'AuthService#validateRefreshToken');
-            const tokens = await this.generateTokens(user);
+            const response = await this.generateAuthResponse(user);
             this.logger.debug(`Tokens refreshed for user: ${user.email}`, 'AuthService#validateRefreshToken');
-            return tokens;
+            return response;
         }
         catch (error)
         {
@@ -90,7 +109,7 @@ export class AuthService
         }
     }
 
-    async loginEmail(email: string, pass: string): Promise<OutTokensDto>
+    async loginEmail(email: string, pass: string): Promise<OutAuthResponseDto>
     {
         this.logger.debug(`Authenticating user: ${email}`, 'AuthService#loginEmail');
         const user = await this.userService.findByEmail(email);
@@ -109,12 +128,12 @@ export class AuthService
             this.logger.warn(`Invalid password for user: ${email}`, 'AuthService#loginEmail');
             throw new UnauthorizedException('Email or password is incorrect');
         }
-        const tokens = await this.generateTokens(user);
+        const response = await this.generateAuthResponse(user);
         this.logger.debug(`User ${email} authenticated successfully`, 'AuthService#loginEmail');
-        return tokens;
+        return response;
     }
 
-    async registerEmail(registerUserDto: RegisterEmailDto): Promise<OutTokensDto>
+    async registerEmail(registerUserDto: RegisterEmailDto): Promise<OutAuthResponseDto>
     {
         this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#registerEmail');
         const existingUserByEmail = await this.userService.findByEmail(registerUserDto.email);
@@ -166,9 +185,9 @@ export class AuthService
             // Don't fail registration if email sending fails
         }
         
-        const tokens = await this.generateTokens(newUser);
-        this.logger.debug(`Tokens generated for new user: ${newUser.email}`, 'AuthService#registerEmail');
-        return tokens;
+        const response = await this.generateAuthResponse(newUser);
+        this.logger.debug(`Auth response generated for new user: ${newUser.email}`, 'AuthService#registerEmail');
+        return response;
     }
 
     async sendVerificationEmail(email: string): Promise<void>

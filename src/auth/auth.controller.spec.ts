@@ -134,11 +134,19 @@ describe('AuthController - Integration Tests', () =>
                 .send(mockRegisterDto)
                 .expect(201);
 
-            // Assert - Verify HTTP response contains valid tokens
+            // Assert - Verify HTTP response contains valid tokens and user data
             expect(response.body).toHaveProperty('access_token');
             expect(response.body).toHaveProperty('refresh_token');
+            expect(response.body).toHaveProperty('user');
             expect(typeof response.body.access_token).toBe('string');
             expect(typeof response.body.refresh_token).toBe('string');
+
+            // Verify user data in response
+            expect(response.body.user).toHaveProperty('id');
+            expect(response.body.user.email).toBe(mockRegisterDto.email);
+            expect(response.body.user.firstName).toBe(mockRegisterDto.firstName);
+            expect(response.body.user.lastName).toBe(mockRegisterDto.lastName);
+            expect(response.body.user.isEmailVerified).toBe(false);
 
             // Verify user was actually created in database with correct data
             const userInDb = await userService.findByEmail(mockRegisterDto.email);
@@ -226,15 +234,23 @@ describe('AuthController - Integration Tests', () =>
                 .send(mockLoginDto)
                 .expect(200);
 
-            // Assert - Verify HTTP response contains valid tokens
+            // Assert - Verify HTTP response contains valid tokens and user data
             expect(response.body).toHaveProperty('access_token');
             expect(response.body).toHaveProperty('refresh_token');
+            expect(response.body).toHaveProperty('user');
             expect(typeof response.body.access_token).toBe('string');
             expect(typeof response.body.refresh_token).toBe('string');
 
             // Verify tokens are non-empty strings
             expect(response.body.access_token.length).toBeGreaterThan(0);
             expect(response.body.refresh_token.length).toBeGreaterThan(0);
+
+            // Verify user data in response
+            expect(response.body.user).toHaveProperty('id');
+            expect(response.body.user.email).toBe(mockLoginDto.email);
+            expect(response.body.user.firstName).toBe(mockRegisterDto.firstName);
+            expect(response.body.user.lastName).toBe(mockRegisterDto.lastName);
+            expect(response.body.user.isEmailVerified).toBe(false);
         });
 
         it('should return 401 for non-existent user', async () => 
@@ -315,9 +331,10 @@ describe('AuthController - Integration Tests', () =>
                 .send(refreshDto)
                 .expect(200);
 
-            // Assert - Verify HTTP response contains valid new tokens
+            // Assert - Verify HTTP response contains valid new tokens and user data
             expect(response.body).toHaveProperty('access_token');
             expect(response.body).toHaveProperty('refresh_token');
+            expect(response.body).toHaveProperty('user');
             expect(typeof response.body.access_token).toBe('string');
             expect(typeof response.body.refresh_token).toBe('string');
             expect(response.body.access_token.length).toBeGreaterThan(0);
@@ -326,6 +343,13 @@ describe('AuthController - Integration Tests', () =>
             // Focus on functional outcome: tokens should be valid and usable
             expect(response.body.access_token).toBeDefined();
             expect(response.body.refresh_token).toBeDefined();
+
+            // Verify user data in response
+            expect(response.body.user).toHaveProperty('id');
+            expect(response.body.user.email).toBe(mockRegisterDto.email);
+            expect(response.body.user.firstName).toBe(mockRegisterDto.firstName);
+            expect(response.body.user.lastName).toBe(mockRegisterDto.lastName);
+            expect(response.body.user.isEmailVerified).toBe(false);
         });
 
         it('should return 401 for invalid refresh token', async () => 
