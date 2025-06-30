@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 
 async function bootstrap() 
@@ -21,6 +22,29 @@ async function bootstrap()
         transform: true, // Automatically transform payloads to DTO instances
         disableErrorMessages: false, // Keep error messages for debugging
     }));
+
+    const configService = app.get(ConfigService);
+    const corsOrigins = configService.get<string>('CORS_ORIGINS');
+
+    if (corsOrigins) 
+    {
+        const allowedOrigins = corsOrigins.split(',');
+        app.enableCors({
+            origin: (origin, callback) => 
+            {
+                if (!origin || allowedOrigins.indexOf(origin) !== -1) 
+                {
+                    callback(null, true);
+                }
+                else 
+                {
+                    callback(new Error('Not allowed by CORS'));
+                }
+            },
+            methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+            credentials: true,
+        });
+    }
     
     await app.listen(3000);
 }
