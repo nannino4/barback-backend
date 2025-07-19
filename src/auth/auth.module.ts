@@ -5,6 +5,7 @@ import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { EmailModule } from '../email/email.module';
 import { InvitationModule } from 'src/invitations/invitation.module';
+import { GoogleService } from './services/google.service';
 
 @Module({
     imports: [
@@ -13,8 +14,8 @@ import { InvitationModule } from 'src/invitations/invitation.module';
         EmailModule,
         InvitationModule,
     ],
-    providers: [AuthService],
+    providers: [AuthService, GoogleService],
     controllers: [AuthController],
-    exports: [AuthService],
+    exports: [AuthService, GoogleService],
 })
 export class AuthModule {}

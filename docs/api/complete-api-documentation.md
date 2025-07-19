@@ -43,6 +43,12 @@ POST /api/auth/login/email        # Login with credentials
 POST /api/auth/refresh-token      # Refresh access token
 ```
 
+### Google OAuth Endpoints
+```http
+GET  /api/auth/oauth/google           # Get Google OAuth URL
+POST /api/auth/oauth/google/callback  # Handle OAuth callback
+```
+
 ### Email Verification
 ```http
 POST /api/auth/send-verification-email  # Send verification email

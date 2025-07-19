@@ -297,3 +297,71 @@ Common error responses:
   "error": "Too Many Requests"
 }
 ```
+
+## Google OAuth Authentication
+
+### GET /api/auth/oauth/google
+Generate Google OAuth authorization URL.
+
+**Authentication**: Not required
+
+**Response** (200 OK):
+```json
+{
+  "authUrl": "https://accounts.google.com/o/oauth2/v2/auth?client_id=...",
+  "state": "random_state_string_for_security"
+}
+```
+
+**Usage**:
+- Frontend calls this endpoint to get the OAuth URL
+- Frontend redirects user to the returned `authUrl`
+- Google redirects to your frontend callback page with authorization code
+- Frontend then calls the callback endpoint with the code
+
+---
+
+### POST /api/auth/oauth/google/callback
+Handle Google OAuth authorization code and authenticate user.
+
+**Authentication**: Not required
+
+**Request Body**:
+```json
+{
+  "code": "authorization_code_from_google",
+  "state": "state_parameter_for_validation"  // Optional
+}
+```
+
+**Response** (200 OK):
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "507f1f77bcf86cd799439011",
+    "email": "user@gmail.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phoneNumber": null,
+    "profilePictureUrl": "https://lh3.googleusercontent.com/...",
+    "isEmailVerified": true
+  }
+}
+```
+
+**Account Linking Behavior**:
+- **New User**: Creates new account with Google authentication
+- **Existing Email User**: Links Google account to existing email/password account
+- **Existing Google User**: Returns authentication for existing user
+- **Email Conflict**: Returns 409 if email exists with different OAuth provider
+
+---
+
+**Google OAuth Integration Notes**:
+- Users authenticated via Google have `authProvider: "google"`
+- Google users cannot change passwords (only available for email users)
+- Profile pictures are automatically synced from Google
+- Email verification is automatic for Google users
+- Supports seamless account linking for existing email users

@@ -95,50 +95,45 @@ Two types of JWTs are used:
     *   User must login again with new password.
     *   Returns 200 OK on success, 401 Unauthorized on invalid/expired token.
 
-## Key Components
+### Google OAuth Flow
 
-*   **`AuthModule` (`src/auth/auth.module.ts`)**: Imports `UserModule`, `ConfigModule`, `EmailModule`, and `JwtModule`. Configures `JwtModule` asynchronously to use secrets and expiration times from `ConfigService`.
-*   **`AuthService` (`src/auth/auth.service.ts`)**: Contains the core logic for user validation, token generation (access and refresh), token refreshing, email verification, and password reset.
-*   **`AuthController` (`src/auth/auth.controller.ts`)**: Exposes authentication endpoints including login, registration, refresh, email verification, and password reset.
-*   **`EmailService` (`src/email/email.service.ts`)**: Handles email sending using Nodemailer with SMTP configuration. Generates verification and password reset emails.
-*   **`JwtAuthGuard` (`src/auth/guards/jwt-auth.guard.ts`)**: A custom NestJS guard used to protect routes. It handles JWT extraction, verification (specifically for access tokens), and attaching the user payload to the request.
-*   **Environment Variables** (e.g., `.env.dev`, `.env.test`):
-    *   `JWT_ACCESS_TOKEN_SECRET`: Secret for signing/verifying access tokens.
-    *   `JWT_ACCESS_TOKEN_EXPIRATION_TIME`: Lifetime for access tokens.
-    *   `JWT_REFRESH_TOKEN_SECRET`: Secret for signing/verifying refresh tokens.
-    *   `JWT_REFRESH_TOKEN_EXPIRATION_TIME`: Lifetime for refresh tokens.
-    *   `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: Email server configuration.
-    *   `EMAIL_FROM`: Sender email address.
-    *   `FRONTEND_URL`: Frontend URL for email links.
-    *   `EMAIL_VERIFICATION_EXPIRY`: Email verification token lifetime (24h default).
-    *   `PASSWORD_RESET_EXPIRY`: Password reset token lifetime (1h default).
-*   **TypeScript Type Augmentation (`src/types/express.d.ts`)**: Extends the `Express.Request` interface to include an optional `user` property, allowing `request.user = payload` without TypeScript errors.
+Google OAuth 2.0 authentication is supported as an alternative to email/password authentication, providing seamless account linking and enhanced user experience.
 
-## API Endpoints
+1.  **Get Authorization URL (`/api/auth/oauth/google`)**:
+    *   Frontend requests Google OAuth authorization URL from backend.
+    *   Backend generates OAuth URL with state parameter for CSRF protection.
+    *   Returns authorization URL and state value to frontend.
 
-### Authentication Endpoints
+2.  **User Authorization at Google**:
+    *   Frontend redirects user to Google authorization URL.
+    *   User authenticates with Google and grants permissions.
+    *   Google redirects back to configured frontend callback URL with authorization code.
 
-| Method | Endpoint | Description | Body | Response |
-|--------|----------|-------------|------|----------|
-| POST | `/api/auth/register/email` | Register new user with email/password | `{email, password, firstName, lastName, phoneNumber?}` | `{access_token, refresh_token}` |
-| POST | `/api/auth/login/email` | Login with email/password | `{email, password}` | `{access_token, refresh_token}` |
-| POST | `/api/auth/refresh-token` | Refresh access token | `{refresh_token}` | `{access_token, refresh_token}` |
+3.  **Handle Authorization Code**:
+    *   Frontend extracts authorization code from URL parameters.
+    *   Frontend sends POST request to backend with authorization code and state.
+    *   Backend exchanges code for Google access token and retrieves user profile.
+    *   System handles account linking scenarios automatically:
+        - **New User**: Creates new account with Google authentication
+        - **Existing Email Account**: Links Google account to existing email-based account  
+        - **Existing Google Account**: Normal authentication flow with profile updates
+    *   Returns access and refresh tokens on successful authentication.
 
-### Email Verification Endpoints
+#### Account Linking Scenarios
 
-| Method | Endpoint | Description | Body | Response |
-|--------|----------|-------------|------|----------|
-| POST | `/api/auth/send-verification-email` | Send/resend verification email | `{email}` | `200 OK` |
-| POST | `/api/auth/verify-email` | Verify email with token | `{token}` | `200 OK` |
-| GET | `/api/auth/verify-email/:token` | Browser-friendly verification link | - | `200 OK` |
+The Google OAuth integration intelligently handles different account scenarios:
 
-### Password Reset Endpoints
+*   **New User Registration**: Creates new account with `authProvider: 'google'` and Google profile information.
+*   **Existing Email User + Google Login**: Automatically links Google account to existing email-based account, allowing authentication via both methods.
+*   **Existing Google User**: Updates profile information (especially profile picture) and provides normal authentication.
+*   **Email Conflict Prevention**: Prevents duplicate accounts by properly linking or rejecting conflicting authentication methods.
 
-| Method | Endpoint | Description | Body | Response |
-|--------|----------|-------------|------|----------|
-| POST | `/api/auth/forgot-password` | Request password reset | `{email}` | `200 OK` |
-| POST | `/api/auth/reset-password` | Reset password with token | `{token, newPassword}` | `200 OK` |
-| GET | `/api/auth/reset-password/:token` | Validate reset token | - | `200 OK` or `401 Unauthorized` |
+#### Security Considerations
+
+*   **State Parameter Validation**: CSRF protection using cryptographically secure random state parameters.
+*   **Frontend-Initiated Flow**: Authorization code is handled by frontend, then securely sent to backend via POST.
+*   **Token Validation**: Google access tokens are validated and user profile information is verified before account creation/linking.
+*   **Email Verification**: Google users are automatically considered email-verified since Google handles email verification.
 
 ## Security Considerations & Choices
 
@@ -167,41 +162,31 @@ Two types of JWTs are used:
 *   ~~**Refresh Token Rotation**: Issuing a new refresh token each time one is used to get a new access token. This can help detect if a refresh token has been stolen and used.~~ ✅ **Implemented**
 *   ~~**Email Verification**: Implementing email verification for new user accounts with secure tokens and automated email sending.~~ ✅ **Implemented**
 *   ~~**Password Reset**: Implementing secure password reset functionality via email with token-based validation.~~ ✅ **Implemented**
-*   **Refresh Token Blacklisting/Revocation**: Implementing a mechanism (e.g., using Redis) to explicitly revoke refresh tokens if a user logs out, changes their password, or a security event occurs. This adds state but increases security for long-lived refresh tokens.
-*   **Google OAuth Integration**: Adding Google OAuth as an alternative authentication method alongside email/password.
+*   ~~**Google OAuth Integration**: Adding Google OAuth as an alternative authentication method alongside email/password.~~ ✅ **Implemented**
 *   **Email Verification Enforcement**: Option to require email verification before allowing access to certain features.
 *   **Advanced Email Templates**: More sophisticated HTML email templates with branding and responsive design.
 *   **Email Rate Limiting**: Implementing rate limiting for email sending to prevent abuse.
 *   **HTTP-only Cookies for Refresh Tokens (Web Clients)**: For web applications, storing refresh tokens in HTTP-only cookies can provide better protection against XSS attacks compared to `localStorage`.
 *   **Multi-factor Authentication (MFA)**: Adding SMS or TOTP-based two-factor authentication for enhanced security.
 
-## Email Service Configuration
+## Environment Variables
 
-The application uses Nodemailer for email delivery with the following configuration:
-
-### Development/Testing
-- Uses Ethereal Email for testing (creates preview URLs)
-- Console logging of email content for debugging
-- Shorter token expiration for faster testing cycles
-
-### Production Recommendations
-- Use a reliable SMTP provider (Gmail, SendGrid, AWS SES, Mailgun)
-- Configure proper DNS records (SPF, DKIM, DMARC) for email deliverability
-- Use environment-specific email templates with proper branding
-- Implement email delivery monitoring and failure handling
-- Set appropriate production token expiration times
-
-### Environment Variables Setup
 ```bash
-# Email Configuration
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-EMAIL_FROM=noreply@barback.app
+# JWT Configuration
+JWT_ACCESS_TOKEN_SECRET=your-access-token-secret
+JWT_ACCESS_TOKEN_EXPIRATION_TIME=15m
+JWT_REFRESH_TOKEN_SECRET=your-refresh-token-secret
+JWT_REFRESH_TOKEN_EXPIRATION_TIME=7d
+
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=your-google-client-id-from-console
+GOOGLE_CLIENT_SECRET=your-google-client-secret-from-console
+GOOGLE_REDIRECT_URI=http://localhost:3001/auth/callback
+
+# Frontend URL
 FRONTEND_URL=http://localhost:3001
 
-# Email Settings
+# Email Settings (see EmailServiceDocumentation.md for full email configuration)
 EMAIL_VERIFICATION_EXPIRY=24h
 PASSWORD_RESET_EXPIRY=1h
 ```

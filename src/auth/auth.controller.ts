@@ -8,13 +8,21 @@ import { VerifyEmailDto } from './dto/in.verify-email.dto';
 import { ForgotPasswordDto } from './dto/in.forgot-password.dto';
 import { ResetPasswordDto } from './dto/in.reset-password.dto';
 import { OutAuthResponseDto } from './dto/out.auth-response.dto';
+import { OutGoogleAuthUrlDto } from './dto/out.google-auth-url.dto';
+import { GoogleCallbackDto } from './dto/in.google-callback.dto';
+import { GoogleService } from './services/google.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController
 {
     private readonly logger = new Logger(AuthController.name);
 
-    constructor(private readonly authService: AuthService) {}
+    constructor(
+        private readonly authService: AuthService,
+        private readonly googleService: GoogleService,
+        private readonly configService: ConfigService,
+    ) {}
 
     @Post('register/email')
     @HttpCode(HttpStatus.CREATED)
@@ -110,5 +118,45 @@ export class AuthController
         this.logger.debug('Password reset token is valid', 'AuthController#validateResetToken');
     }
 
-    // Endpoints for google oauth will be added later
+    // Google OAuth Endpoints
+    @Get('oauth/google')
+    @HttpCode(HttpStatus.OK)
+    getGoogleAuthUrl(): OutGoogleAuthUrlDto
+    {
+        this.logger.debug('Generating Google OAuth URL', 'AuthController#getGoogleAuthUrl');
+        const result = this.googleService.generateAuthUrl();
+        this.logger.debug('Google OAuth URL generated successfully', 'AuthController#getGoogleAuthUrl');
+        return result;
+    }
+
+    @Post('oauth/google/callback')
+    @HttpCode(HttpStatus.OK)
+    async googleCallback(@Body() body: GoogleCallbackDto): Promise<OutAuthResponseDto>
+    {
+        this.logger.debug('Processing Google OAuth POST callback', 'AuthController#googleCallback');
+        
+        try 
+        {
+            // Handle complete OAuth flow through GoogleService
+            // Exchange code for tokens
+            const tokens = await this.googleService.exchangeCodeForTokens(body.code);
+            
+            // Get user info from Google
+            const googleUserInfo = await this.googleService.getUserInfo(tokens.access_token);
+            
+            // Find or create user
+            const user = await this.googleService.findOrCreateUser(googleUserInfo);
+            
+            // Generate and return auth tokens
+            const authResponse = await this.authService.generateAuthResponse(user);
+
+            this.logger.debug('Google OAuth POST callback processed successfully', 'AuthController#googleCallback');
+            return authResponse;
+        } 
+        catch (error) 
+        {
+            this.logger.error('Google OAuth callback failed', error instanceof Error ? error.stack : undefined, 'AuthController#googleCallback');
+            throw error; // Let NestJS handle the error response
+        }
+    }
 }

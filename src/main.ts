@@ -24,27 +24,13 @@ async function bootstrap()
     }));
 
     const configService = app.get(ConfigService);
-    const corsOrigins = configService.get<string>('CORS_ORIGINS');
+    const corsOrigin = configService.get<string>('FRONTEND_URL');
 
-    if (corsOrigins) 
-    {
-        const allowedOrigins = corsOrigins.split(',');
-        app.enableCors({
-            origin: (origin, callback) => 
-            {
-                if (!origin || allowedOrigins.indexOf(origin) !== -1) 
-                {
-                    callback(null, true);
-                }
-                else 
-                {
-                    callback(new Error('Not allowed by CORS'));
-                }
-            },
-            methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-            credentials: true,
-        });
-    }
+    app.enableCors({
+        origin: corsOrigin,
+        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+        credentials: true,
+    });
     
     await app.listen(3000);
 }

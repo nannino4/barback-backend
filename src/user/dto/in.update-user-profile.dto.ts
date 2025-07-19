@@ -20,4 +20,8 @@ export class UpdateUserProfileDto
     @IsNotEmpty()
     @IsMobilePhone('it-IT', { strictMode: true })
     phoneNumber?: string;
+
+    @ValidateIf((o, value) => value !== undefined)
+    @IsString()
+    profilePictureUrl?: string;
 }

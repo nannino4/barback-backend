@@ -368,4 +368,35 @@ export class UserService
         this.logger.debug(`User found with password reset token: ${user.email}`, 'UserService#findByPasswordResetToken');
         return user;
     }
+
+    async linkGoogleAccount(user: User, googleId: string, googleProfilePicture?: string): Promise<User>
+    {
+        this.logger.debug(`Linking Google account to user: ${user.email}`, 'UserService#linkGoogleAccount');
+        
+        const updateData: any = {
+            googleId: googleId,
+            isEmailVerified: true, // Google accounts are always email verified
+        };
+
+        // Only update profile picture if Google has one and user doesn't have one
+        if (googleProfilePicture && !user.profilePictureUrl) 
+        {
+            updateData.profilePictureUrl = googleProfilePicture;
+        }
+
+        const updatedUser = await this.userModel.findByIdAndUpdate(
+            user._id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).exec();
+
+        if (!updatedUser) 
+        {
+            this.logger.warn(`User with ID "${user._id}" not found for Google account linking`, 'UserService#linkGoogleAccount');
+            throw new NotFoundException(`User with ID "${user._id}" not found`);
+        }
+
+        this.logger.debug(`Google account linked successfully for user: ${updatedUser.email}`, 'UserService#linkGoogleAccount');
+        return updatedUser;
+    }
 }
