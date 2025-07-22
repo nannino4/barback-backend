@@ -16,6 +16,7 @@ import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitations/invitation.service';
+import { GoogleService } from './services/google.service';
 
 describe('AuthController - Integration Tests', () => 
 {
@@ -62,6 +63,7 @@ describe('AuthController - Integration Tests', () =>
             controllers: [AuthController],
             providers: [
                 AuthService,
+                GoogleService,
                 UserService,
                 {
                     provide: EmailService,
