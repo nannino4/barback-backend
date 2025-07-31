@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -15,11 +15,27 @@ import { OutUserDto } from '../user/dto/out.user.dto';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitations/invitation.service';
 import { plainToClass } from 'class-transformer';
+import {
+    JwtConfigurationException,
+    TokenGenerationException,
+    InvalidRefreshTokenException,
+    InvalidCredentialsException,
+    WrongAuthProviderException,
+    PasswordHashingException,
+} from './exceptions/auth.exceptions';
+import { 
+    UserNotFoundByEmailException, 
+    EmailAlreadyVerifiedException,
+} from '../user/exceptions/user.exceptions';
 
 @Injectable()
 export class AuthService
 {
     private readonly logger = new Logger(AuthService.name);
+    private readonly jwtAccessTokenSecret: string;
+    private readonly jwtAccessTokenExpiration: string;
+    private readonly jwtRefreshTokenSecret: string;
+    private readonly jwtRefreshTokenExpiration: string;
 
     constructor(
         private readonly userService: UserService,
@@ -27,29 +43,74 @@ export class AuthService
         private readonly configService: ConfigService,
         private readonly emailService: EmailService,
         private readonly invitationService: InvitationService,
-    ) {}
+    )
+    {
+        // Validate JWT configuration on startup
+        const accessSecret = this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET');
+        if (!accessSecret)
+        {
+            throw new JwtConfigurationException('JWT_ACCESS_TOKEN_SECRET');
+        }
+        this.jwtAccessTokenSecret = accessSecret;
+
+        const accessExpiration = this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME');
+        if (!accessExpiration)
+        {
+            throw new JwtConfigurationException('JWT_ACCESS_TOKEN_EXPIRATION_TIME');
+        }
+        this.jwtAccessTokenExpiration = accessExpiration;
+
+        const refreshSecret = this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET');
+        if (!refreshSecret)
+        {
+            throw new JwtConfigurationException('JWT_REFRESH_TOKEN_SECRET');
+        }
+        this.jwtRefreshTokenSecret = refreshSecret;
+
+        const refreshExpiration = this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION_TIME');
+        if (!refreshExpiration)
+        {
+            throw new JwtConfigurationException('JWT_REFRESH_TOKEN_EXPIRATION_TIME');
+        }
+        this.jwtRefreshTokenExpiration = refreshExpiration;
+
+        this.logger.debug('AuthService initialized with valid JWT configuration', 'AuthService#constructor');
+    }
 
     async generateTokens(user: User): Promise<OutTokensDto>
     {
         this.logger.debug(`Generating tokens for user: ${user.email}`, 'AuthService#generateTokens');
-        const accessTokenPayload: AccessTokenPayloadDto = {
-            sub: user.id,
-            type: 'access',
-        };
-        const refreshTokenPayload: RefreshTokenPayloadDto = {
-            sub: user.id,
-            type: 'refresh',
-        };
-        const accessToken = this.jwtService.sign(accessTokenPayload, {
-            secret: this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_ACCESS_TOKEN_EXPIRATION_TIME'),
-        });
-        const refreshToken = this.jwtService.sign(refreshTokenPayload, {
-            secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
-            expiresIn: this.configService.get<string>('JWT_REFRESH_TOKEN_EXPIRATION_TIME'),
-        });
-        this.logger.debug(`Tokens generated successfully for user: ${user.email}`, 'AuthService#generateTokens');
-        return { access_token: accessToken, refresh_token: refreshToken };
+        
+        try
+        {
+            const accessTokenPayload: AccessTokenPayloadDto = {
+                sub: user.id,
+                type: 'access',
+            };
+            const refreshTokenPayload: RefreshTokenPayloadDto = {
+                sub: user.id,
+                type: 'refresh',
+            };
+            
+            const accessToken = this.jwtService.sign(accessTokenPayload, {
+                secret: this.jwtAccessTokenSecret,
+                expiresIn: this.jwtAccessTokenExpiration,
+            });
+            
+            const refreshToken = this.jwtService.sign(refreshTokenPayload, {
+                secret: this.jwtRefreshTokenSecret,
+                expiresIn: this.jwtRefreshTokenExpiration,
+            });
+            
+            this.logger.debug(`Tokens generated successfully for user: ${user.email}`, 'AuthService#generateTokens');
+            return { access_token: accessToken, refresh_token: refreshToken };
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Token generation failed for user ${user.email}: ${errorMessage}`, 'AuthService#generateTokens');
+            throw new TokenGenerationException(errorMessage);
+        }
     }
 
     async generateAuthResponse(user: User): Promise<OutAuthResponseDto>
@@ -76,19 +137,19 @@ export class AuthService
             const payload = await this.jwtService.verifyAsync<RefreshTokenPayloadDto>(
                 refreshTokenString,
                 {
-                    secret: this.configService.get<string>('JWT_REFRESH_TOKEN_SECRET'),
+                    secret: this.jwtRefreshTokenSecret,
                 },
             );
             if (payload.type !== 'refresh')
             {
                 this.logger.warn('Invalid token type for refresh', 'AuthService#validateRefreshToken');
-                throw new UnauthorizedException('Invalid token type for refresh');
+                throw new InvalidRefreshTokenException();
             }
             const user = await this.userService.findById(new Types.ObjectId(payload.sub));
             if (!user)
             {
                 this.logger.warn(`User not found for refresh token. User ID: ${payload.sub}`, 'AuthService#validateRefreshToken');
-                throw new UnauthorizedException('User not found for refresh token');
+                throw new InvalidRefreshTokenException();
             }
             this.logger.debug(`User ${user.email} validated for token refresh`, 'AuthService#validateRefreshToken');
             const response = await this.generateAuthResponse(user);
@@ -97,15 +158,14 @@ export class AuthService
         }
         catch (error)
         {
-            if (error instanceof Error)
+            if (error instanceof InvalidRefreshTokenException)
             {
-                this.logger.error(`Refresh Token Error: ${error.message}`, error.stack, 'AuthService#validateRefreshToken');
+                throw error; // Re-throw our custom exception
             }
-            else
-            {
-                this.logger.error('Refresh Token Error: An unknown error occurred', 'AuthService#validateRefreshToken');
-            }
-            throw new UnauthorizedException('Invalid or expired refresh token');
+            
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            this.logger.error(`Refresh Token Error: ${errorMessage}`, error instanceof Error ? error.stack : undefined, 'AuthService#validateRefreshToken');
+            throw new InvalidRefreshTokenException();
         }
     }
 
@@ -116,17 +176,17 @@ export class AuthService
         if (!user)
         {
             this.logger.warn(`User not found: ${email}`, 'AuthService#loginEmail');
-            throw new UnauthorizedException('Email or password is incorrect');
+            throw new InvalidCredentialsException();
         }
         if (user.authProvider !== AuthProvider.EMAIL)
         {
             this.logger.warn(`User ${email} is not using EMAIL authentication`, 'AuthService#loginEmail');
-            throw new UnauthorizedException(`The user did not emailRegister with EMAIL authentication, but with ${user.authProvider}`);
+            throw new WrongAuthProviderException(user.authProvider);
         }
         if (!pass || !user.hashedPassword || !(await bcrypt.compare(pass, user.hashedPassword)))
         {
             this.logger.warn(`Invalid password for user: ${email}`, 'AuthService#loginEmail');
-            throw new UnauthorizedException('Email or password is incorrect');
+            throw new InvalidCredentialsException();
         }
         const response = await this.generateAuthResponse(user);
         this.logger.debug(`User ${email} authenticated successfully`, 'AuthService#loginEmail');
@@ -136,15 +196,22 @@ export class AuthService
     async registerEmail(registerUserDto: RegisterEmailDto): Promise<OutAuthResponseDto>
     {
         this.logger.debug(`Registration process started for user: ${registerUserDto.email}`, 'AuthService#registerEmail');
-        const existingUserByEmail = await this.userService.findByEmail(registerUserDto.email);
-        if (existingUserByEmail)
-        {
-            this.logger.warn(`User with email ${registerUserDto.email} already exists.`, 'AuthService#registerEmail');
-            throw new ConflictException('Another user with this email already exists.');
-        }
+        
+        // Prepare user data
         const userData: CreateUserDto = new CreateUserDto();
-        const saltOrRounds = 10;
-        userData.hashedPassword = await bcrypt.hash(registerUserDto.password, saltOrRounds);
+        
+        // Hash password with error handling
+        try
+        {
+            const saltOrRounds = 10;
+            userData.hashedPassword = await bcrypt.hash(registerUserDto.password, saltOrRounds);
+        }
+        catch (error)
+        {
+            this.logger.error('Password hashing failed during registration', 'AuthService#registerEmail');
+            throw new PasswordHashingException();
+        }
+        
         userData.email = registerUserDto.email;
         userData.firstName = registerUserDto.firstName;
         userData.lastName = registerUserDto.lastName;
@@ -152,6 +219,7 @@ export class AuthService
         {
             userData.phoneNumber = registerUserDto.phoneNumber;
         }
+        
         const newUser = await this.userService.create(userData);
         this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#registerEmail');
         
@@ -197,13 +265,13 @@ export class AuthService
         if (!user)
         {
             this.logger.warn(`User not found for email verification: ${email}`, 'AuthService#sendVerificationEmail');
-            throw new BadRequestException('User not found');
+            throw new UserNotFoundByEmailException(email);
         }
 
         if (user.isEmailVerified)
         {
             this.logger.debug(`User ${email} is already verified`, 'AuthService#sendVerificationEmail');
-            throw new BadRequestException('Email is already verified');
+            throw new EmailAlreadyVerifiedException(email);
         }
 
         const token = await this.userService.generateEmailVerificationToken(new Types.ObjectId(user.id));

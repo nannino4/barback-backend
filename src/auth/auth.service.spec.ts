@@ -3,7 +3,6 @@ import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { User, UserSchema, UserRole, AuthProvider } from '../user/schemas/user.schema';
@@ -12,6 +11,18 @@ import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitations/invitation.service';
 import * as bcrypt from 'bcrypt';
+import {
+    InvalidRefreshTokenException,
+    InvalidCredentialsException,
+    WrongAuthProviderException,
+} from './exceptions/auth.exceptions';
+import {
+    EmailAlreadyExistsException,
+    UserNotFoundByEmailException,
+    EmailAlreadyVerifiedException,
+    InvalidEmailVerificationTokenException,
+    InvalidPasswordResetTokenException,
+} from '../user/exceptions/user.exceptions';
 
 describe('AuthService - Service Tests (Unit-style)', () => 
 {
@@ -217,16 +228,16 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             })).not.toThrow();
         });
 
-        it('should throw UnauthorizedException for invalid refresh token', async () => 
+        it('should throw InvalidRefreshTokenException for invalid refresh token', async () => 
         {
             // Arrange
             const invalidToken = 'invalid.token.here';
 
             // Act & Assert
-            await expect(service.validateRefreshToken(invalidToken)).rejects.toThrow(UnauthorizedException);
+            await expect(service.validateRefreshToken(invalidToken)).rejects.toThrow(InvalidRefreshTokenException);
         });
 
-        it('should throw UnauthorizedException for access token instead of refresh token', async () => 
+        it('should throw InvalidRefreshTokenException for access token instead of refresh token', async () => 
         {
             // Arrange
             const createdUser = await userService.create({
@@ -242,16 +253,16 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             const tokens = await service.generateTokens(createdUser);
 
             // Act & Assert
-            await expect(service.validateRefreshToken(tokens.access_token)).rejects.toThrow(UnauthorizedException);
+            await expect(service.validateRefreshToken(tokens.access_token)).rejects.toThrow(InvalidRefreshTokenException);
         });
 
-        it('should throw UnauthorizedException for refresh token of non-existent user', async () => 
+        it('should throw InvalidRefreshTokenException for refresh token of non-existent user', async () => 
         {
             // Arrange
             const tokens = await service.generateTokens(mockUser);
 
             // Act & Assert
-            await expect(service.validateRefreshToken(tokens.refresh_token)).rejects.toThrow(UnauthorizedException);
+            await expect(service.validateRefreshToken(tokens.refresh_token)).rejects.toThrow(InvalidRefreshTokenException);
         });
     });
 
@@ -289,21 +300,21 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(result.user.phoneNumber).toBe(mockUser.phoneNumber);
         });
 
-        it('should throw UnauthorizedException for non-existent user', async () => 
+        it('should throw InvalidCredentialsException for non-existent user', async () => 
         {
             // Act & Assert
             await expect(service.loginEmail('nonexistent@example.com', 'password123'))
-                .rejects.toThrow(UnauthorizedException);
+                .rejects.toThrow(InvalidCredentialsException);
         });
 
-        it('should throw UnauthorizedException for incorrect password', async () => 
+        it('should throw InvalidCredentialsException for incorrect password', async () => 
         {
             // Act & Assert
             await expect(service.loginEmail(mockUser.email, 'wrongpassword'))
-                .rejects.toThrow(UnauthorizedException);
+                .rejects.toThrow(InvalidCredentialsException);
         });
 
-        it('should throw UnauthorizedException for user with non-EMAIL auth provider', async () => 
+        it('should throw WrongAuthProviderException for user with non-EMAIL auth provider', async () => 
         {
             // Arrange
             await userService.create({
@@ -316,10 +327,10 @@ describe('AuthService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.loginEmail('oauth@example.com', 'password123'))
-                .rejects.toThrow(UnauthorizedException);
+                .rejects.toThrow(WrongAuthProviderException);
         });
 
-        it('should throw UnauthorizedException for user without password', async () => 
+        it('should throw InvalidCredentialsException for user without password', async () => 
         {
             // Arrange
             await userService.create({
@@ -332,7 +343,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.loginEmail('nopass@example.com', 'password123'))
-                .rejects.toThrow(UnauthorizedException);
+                .rejects.toThrow(InvalidCredentialsException);
         });
     });
 
@@ -399,16 +410,16 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(result.user.phoneNumber).toBeUndefined();
         });
 
-        it('should throw ConflictException when user already exists', async () => 
+        it('should throw EmailAlreadyExistsException when user already exists', async () => 
         {
             // Arrange
             await service.registerEmail(mockRegisterEmailDto);
 
             // Act & Assert
-            await expect(service.registerEmail(mockRegisterEmailDto)).rejects.toThrow(ConflictException);
+            await expect(service.registerEmail(mockRegisterEmailDto)).rejects.toThrow(EmailAlreadyExistsException);
         });
 
-        it('should throw ConflictException when user exists with different auth provider', async () => 
+        it('should throw EmailAlreadyExistsException when user exists with different auth provider', async () => 
         {
             // Arrange
             await userService.create({
@@ -420,7 +431,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             });
 
             // Act & Assert
-            await expect(service.registerEmail(mockRegisterEmailDto)).rejects.toThrow(ConflictException);
+            await expect(service.registerEmail(mockRegisterEmailDto)).rejects.toThrow(EmailAlreadyExistsException);
         });
     });
 
@@ -454,13 +465,13 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(mockEmailService.sendEmail).toHaveBeenCalled();
         });
 
-        it('should throw BadRequestException when user not found', async () => 
+        it('should throw UserNotFoundByEmailException when user not found', async () => 
         {
             // Act & Assert
-            await expect(service.sendVerificationEmail('nonexistent@example.com')).rejects.toThrow(BadRequestException);
+            await expect(service.sendVerificationEmail('nonexistent@example.com')).rejects.toThrow(UserNotFoundByEmailException);
         });
 
-        it('should throw BadRequestException when user is already verified', async () => 
+        it('should throw EmailAlreadyVerifiedException when user is already verified', async () => 
         {
             // Arrange
             await userService.create({
@@ -474,7 +485,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             });
 
             // Act & Assert
-            await expect(service.sendVerificationEmail('verified@example.com')).rejects.toThrow(BadRequestException);
+            await expect(service.sendVerificationEmail('verified@example.com')).rejects.toThrow(EmailAlreadyVerifiedException);
         });
     });
 
@@ -504,10 +515,10 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(updatedUser.emailVerificationToken).toBeUndefined();
         });
 
-        it('should throw UnauthorizedException with invalid token', async () => 
+        it('should throw InvalidEmailVerificationTokenException with invalid token', async () => 
         {
             // Act & Assert
-            await expect(service.verifyEmail('invalid-token')).rejects.toThrow(UnauthorizedException);
+            await expect(service.verifyEmail('invalid-token')).rejects.toThrow(InvalidEmailVerificationTokenException);
         });
     });
 
@@ -592,10 +603,10 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             expect(await bcrypt.compare(newPassword, updatedUser.hashedPassword!)).toBe(true);
         });
 
-        it('should throw UnauthorizedException with invalid token', async () => 
+        it('should throw InvalidPasswordResetTokenException with invalid token', async () => 
         {
             // Act & Assert
-            await expect(service.resetPassword('invalid-token', 'newPassword')).rejects.toThrow(UnauthorizedException);
+            await expect(service.resetPassword('invalid-token', 'newPassword')).rejects.toThrow(InvalidPasswordResetTokenException);
         });
     });
 });

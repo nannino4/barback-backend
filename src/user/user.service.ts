@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserRole, AuthProvider } from './schemas/user.schema';
@@ -6,6 +6,11 @@ import { CreateUserDto } from './dto/in.create-user.dto';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { 
+    EmailAlreadyExistsException,
+    InvalidEmailVerificationTokenException,
+    InvalidPasswordResetTokenException,
+} from './exceptions/user.exceptions';
 
 @Injectable()
 export class UserService
@@ -24,7 +29,7 @@ export class UserService
         if (existingUser)
         {
             this.logger.warn(`User with email "${user.email}" already exists`, 'UserService#create');
-            throw new ConflictException(`User with email "${user.email}" already exists`);
+            throw new EmailAlreadyExistsException(user.email);
         }
         const createdUser = new this.userModel(user);
         await createdUser.save();
@@ -229,7 +234,7 @@ export class UserService
         if (!user)
         {
             this.logger.warn('Invalid or expired email verification token', 'UserService#verifyEmail');
-            throw new UnauthorizedException('Invalid or expired verification token');
+            throw new InvalidEmailVerificationTokenException();
         }
 
         const updatedUser = await this.userModel.findByIdAndUpdate(
@@ -321,7 +326,7 @@ export class UserService
         if (!user)
         {
             this.logger.warn('Invalid or expired password reset token', 'UserService#resetPassword');
-            throw new UnauthorizedException('Invalid or expired reset token');
+            throw new InvalidPasswordResetTokenException();
         }
 
         const saltOrRounds = 10;
