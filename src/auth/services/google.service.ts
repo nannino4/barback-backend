@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as crypto from 'crypto';
@@ -9,11 +9,11 @@ import { UserService } from '../../user/user.service';
 import { InvitationService } from '../../invitations/invitation.service';
 import { Types } from 'mongoose';
 import { OutGoogleAuthUrlDto } from '../dto/out.google-auth-url.dto';
+import { CustomLogger } from 'src/common/logger/custom.logger';
 
 @Injectable()
 export class GoogleService 
 {
-    private readonly logger = new Logger(GoogleService.name);
     private readonly googleOauthUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
     private readonly clientId: string;
     private readonly clientSecret: string;
@@ -23,6 +23,7 @@ export class GoogleService
         private readonly configService: ConfigService,
         private readonly userService: UserService,
         private readonly invitationService: InvitationService,
+        private readonly logger : CustomLogger,
     ) 
     {
         this.clientId = this.configService.get<string>('GOOGLE_CLIENT_ID')!;
@@ -181,7 +182,6 @@ export class GoogleService
         {
             this.logger.warn(
                 `Failed to process pending invitations for Google user: ${user.email}`,
-                error instanceof Error ? error.stack : undefined,
                 'GoogleService#findOrCreateUser',
             );
             // Don't fail authentication if invitation processing fails

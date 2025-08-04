@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus, Logger, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus, Get, Param } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
@@ -11,17 +11,16 @@ import { OutAuthResponseDto } from './dto/out.auth-response.dto';
 import { OutGoogleAuthUrlDto } from './dto/out.google-auth-url.dto';
 import { GoogleCallbackDto } from './dto/in.google-callback.dto';
 import { GoogleService } from './services/google.service';
-import { ConfigService } from '@nestjs/config';
+import { CustomLogger } from 'src/common/logger/custom.logger';
 
 @Controller('auth')
 export class AuthController
 {
-    private readonly logger = new Logger(AuthController.name);
 
     constructor(
         private readonly authService: AuthService,
         private readonly googleService: GoogleService,
-        private readonly configService: ConfigService,
+        private readonly logger: CustomLogger,
     ) {}
 
     @Post('register/email')
