@@ -3,7 +3,7 @@
 ## Overview
 The Authentication module handles user registration, login, email verification, password reset, and token management. It provides secure JWT-based authentication with access and refresh tokens.
 
-## Endpoints
+## Core Endpoints
 
 ### POST /api/auth/register/email
 Register a new user with email and password.
@@ -234,69 +234,6 @@ Validate reset token (for frontend form display).
 - `400 Bad Request`: Invalid or expired token
 
 ---
-
-## Token Information
-
-### Access Tokens
-- **Lifetime**: 15 minutes
-- **Usage**: Include in `Authorization: Bearer <token>` header
-- **Payload**: Contains user ID, email, and roles
-
-### Refresh Tokens
-- **Lifetime**: 7 days
-- **Usage**: Used to obtain new access tokens
-- **Security**: Stored securely, single-use (new refresh token issued on each refresh)
-
-### Token Payload Structure
-```json
-{
-  "sub": "user_id",
-  "email": "user@example.com",
-  "roles": ["USER"],
-  "iat": 1640995200,
-  "exp": 1640996100
-}
-```
-
-## Security Features
-
-1. **Password Hashing**: bcrypt with salt
-2. **Rate Limiting**: Applied to sensitive endpoints
-3. **Token Rotation**: New refresh token on each use
-4. **Email Verification**: Required for full account activation
-5. **Secure Password Requirements**: Strong password validation
-6. **Token Expiration**: Short-lived access tokens
-
-## Error Handling
-
-Common error responses:
-
-**Invalid Request Data** (400):
-```json
-{
-  "statusCode": 400,
-  "message": ["password must be stronger"],
-  "error": "Bad Request"
-}
-```
-
-**Authentication Failed** (401):
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid credentials",
-  "error": "Unauthorized"
-}
-```
-
-**Rate Limited** (429):
-```json
-{
-  "statusCode": 429,
-  "message": "Too Many Requests",
-  "error": "Too Many Requests"
-}
-```
 
 ## Google OAuth Authentication
 
