@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { CommonModule } from './common/common.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
@@ -8,6 +10,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import { OrgModule } from './org/org.module';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
+import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
 
 @Module({
     imports: [
@@ -22,6 +25,7 @@ import { ProductModule } from './product/product.module';
             }),
             inject: [ConfigService],
         }),
+        CommonModule,
         UserModule,
         AuthModule,
         AdminModule,
@@ -32,7 +36,11 @@ import { ProductModule } from './product/product.module';
     ],
     controllers: [],
     providers: [
-        // No global interceptors needed - using manual plainToInstance transformation in controllers
+        // Global interceptor for correlation ID tracking
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: CorrelationIdInterceptor,
+        },
     ],
 })
 export class AppModule {}

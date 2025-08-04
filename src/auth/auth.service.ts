@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -27,11 +27,11 @@ import {
     UserNotFoundByEmailException, 
     EmailAlreadyVerifiedException,
 } from '../user/exceptions/user.exceptions';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class AuthService
 {
-    private readonly logger = new Logger(AuthService.name);
     private readonly jwtAccessTokenSecret: string;
     private readonly jwtAccessTokenExpiration: string;
     private readonly jwtRefreshTokenSecret: string;
@@ -43,8 +43,10 @@ export class AuthService
         private readonly configService: ConfigService,
         private readonly emailService: EmailService,
         private readonly invitationService: InvitationService,
+        private readonly logger: CustomLogger,
     )
     {
+        
         // Validate JWT configuration on startup
         const accessSecret = this.configService.get<string>('JWT_ACCESS_TOKEN_SECRET');
         if (!accessSecret)
@@ -108,7 +110,7 @@ export class AuthService
         catch (error)
         {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            this.logger.error(`Token generation failed for user ${user.email}: ${errorMessage}`, 'AuthService#generateTokens');
+            this.logger.error(`Token generation failed for user ${user.email}: ${errorMessage}`, undefined, 'AuthService#generateTokens');
             throw new TokenGenerationException(errorMessage);
         }
     }
@@ -235,9 +237,7 @@ export class AuthService
         catch (error) 
         {
             this.logger.warn(
-                `Failed to process pending invitations for user: ${newUser.email}`,
-                error instanceof Error ? error.stack : undefined,
-                'AuthService#registerEmail',
+                `Failed to process pending invitations for user: ${newUser.email}`, 'AuthService#registerEmail',
             );
             // Don't fail registration if invitation processing fails
         }

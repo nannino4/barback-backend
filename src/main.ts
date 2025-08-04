@@ -6,9 +6,7 @@ import { AppModule } from './app.module';
 async function bootstrap() 
 {
     const app = await NestFactory.create(AppModule, {
-        logger: new ConsoleLogger("", {
-            timestamp: true,
-        }),
+        logger: new ConsoleLogger(),
         rawBody: true, // Enable raw body for webhook processing
     });
 

@@ -1,9 +1,19 @@
 import { Module, Global } from '@nestjs/common';
-import { CorrelationIdService } from './services/correlation-id.service';
+import { CorrelationIdInterceptor } from './interceptors/correlation-id.interceptor';
+import { CustomLogger } from './logger/custom.logger';
+import { CorrelationService } from './services/correlation.service';
 
-@Global()
+@Global() // Makes this module available globally without importing
 @Module({
-    providers: [CorrelationIdService],
-    exports: [CorrelationIdService],
+    providers: [
+        CorrelationIdInterceptor,
+        CustomLogger,
+        CorrelationService,
+    ],
+    exports: [
+        CorrelationIdInterceptor,
+        CustomLogger,
+        CorrelationService,
+    ],
 })
 export class CommonModule {}

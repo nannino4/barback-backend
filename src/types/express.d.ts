@@ -7,7 +7,8 @@ declare global
     {
         interface Request
         {
-            user?: User; // Or your specific user payload type
+            user?: User; // For authenticated requests
+            barback_correlation_id?: string; // Correlation ID for request tracing
         }
     }
 }
