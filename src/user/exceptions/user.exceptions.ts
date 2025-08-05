@@ -89,3 +89,33 @@ export class EmailAlreadyVerifiedException extends BadRequestException
         });
     }
 }
+
+/**
+ * Custom exception thrown when password change is not allowed for the user's auth provider
+ */
+export class PasswordChangeNotAllowedException extends BadRequestException
+{
+    constructor(authProvider: string)
+    {
+        super({
+            message: `Password change is not available for ${authProvider} authentication. Please use the appropriate method to change your password.`,
+            error: 'PASSWORD_CHANGE_NOT_ALLOWED',
+            statusCode: 400,
+        });
+    }
+}
+
+/**
+ * Custom exception thrown when user account deletion is blocked due to business constraints
+ */
+export class UserDeletionConflictException extends ConflictException
+{
+    constructor(reason: string)
+    {
+        super({
+            message: `Cannot delete user account: ${reason}`,
+            error: 'USER_DELETION_CONFLICT',
+            statusCode: 409,
+        });
+    }
+}

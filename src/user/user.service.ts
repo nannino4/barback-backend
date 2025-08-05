@@ -11,6 +11,8 @@ import {
     InvalidEmailVerificationTokenException,
     InvalidPasswordResetTokenException,
     EmailAlreadyVerifiedException,
+    PasswordChangeNotAllowedException,
+    UserNotFoundByIdException,
 } from './exceptions/user.exceptions';
 import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
 import { PasswordHashingException } from '../auth/exceptions/auth.exceptions';
@@ -69,12 +71,26 @@ export class UserService
     async findById(id: Types.ObjectId): Promise<User>
     {
         this.logger.debug(`Attempting to find user by ID: ${id}`, 'UserService#findById');
-        const user = await this.userModel.findById(id).exec();
+        
+        let user: User | null;
+        try 
+        {
+            user = await this.userModel.findById(id).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error while finding user by ID: ${id}`, errorStack, 'UserService#findById');
+            throw new DatabaseOperationException('user lookup by ID', errorMessage);
+        }
+        
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found`, 'UserService#findById');
-            throw new NotFoundException(`User with ID "${id}" not found`);
+            throw new UserNotFoundByIdException(id.toString());
         }
+        
         this.logger.debug(`User found: ${user.email} with ID: ${id}`, 'UserService#findById');
         return user;
     }
@@ -108,18 +124,44 @@ export class UserService
     async updateProfile(id: Types.ObjectId, updateData: UpdateUserProfileDto): Promise<User>
     {
         this.logger.debug(`Attempting to update profile for user ID: ${id}`, 'UserService#updateProfile');
-        const user = await this.userModel.findByIdAndUpdate(
-            id,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        ).exec();
-        if (!user)
+        
+        try 
         {
-            this.logger.warn(`User with ID "${id}" not found for profile update`, 'UserService#updateProfile');
-            throw new NotFoundException(`User with ID "${id}" not found`);
+            const user = await this.userModel.findByIdAndUpdate(
+                id,
+                { $set: updateData },
+                { new: true, runValidators: true }
+            ).exec();
+            
+            if (!user)
+            {
+                this.logger.warn(`User with ID "${id}" not found for profile update`, 'UserService#updateProfile');
+                throw new UserNotFoundByIdException(id.toString());
+            }
+            
+            this.logger.debug(`Profile updated successfully for user: ${user.email}`, 'UserService#updateProfile');
+            return user;
         }
-        this.logger.debug(`Profile updated successfully for user: ${user.email}`, 'UserService#updateProfile');
-        return user;
+        catch (error)
+        {
+            if (error instanceof UserNotFoundByIdException)
+            {
+                throw error;
+            }
+            
+            // Handle MongoDB validation errors
+            if (error instanceof Error && error.name === 'ValidationError')
+            {
+                this.logger.warn(`Profile validation failed for user ID: ${id} - ${error.message}`, 'UserService#updateProfile');
+                throw new DatabaseOperationException('profile update validation', error.message);
+            }
+            
+            // Handle other database errors
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database operation failed for profile update: ${id}`, errorStack, 'UserService#updateProfile');
+            throw new DatabaseOperationException('profile update', errorMessage);
+        }
     }
 
     async updateRole(id: Types.ObjectId, role: UserRole): Promise<User>
@@ -161,42 +203,88 @@ export class UserService
     async remove(id: Types.ObjectId): Promise<void>
     {
         this.logger.debug(`Attempting to remove user with ID: ${id}`, 'UserService#remove');
-        const result = await this.userModel.deleteOne({ _id: id }).exec();
-        if (result.deletedCount === 0)
+        
+        
+        // TODO: Add business logic validations here when org/subscription modules are implemented
+        // Example validations:
+        // - Check if user is the sole owner of any organizations
+        // - Check if user has active subscriptions
+        // - Check if user has pending payments
+        // For now, we'll proceed with deletion
+        
+        try 
         {
-            this.logger.warn(`User with ID "${id}" not found for removal`, 'UserService#remove');
-            throw new NotFoundException(`User with ID "${id}" not found`);
+            const result = await this.userModel.deleteOne({ _id: id }).exec();
+            if (result.deletedCount === 0)
+            {
+                this.logger.warn(`No user was deleted for ID: ${id}`, 'UserService#remove');
+                throw new UserNotFoundByIdException(id.toString());
+            }
         }
+        catch (error)
+        {
+            if (error instanceof UserNotFoundByIdException)
+            {
+                throw error;
+            }
+            
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error while deleting user: ${id}`, errorStack, 'UserService#remove');
+            throw new DatabaseOperationException('user deletion', errorMessage);
+        }
+        
         this.logger.debug(`User with ID "${id}" successfully deleted`, 'UserService#remove');
-        return ;
+        return;
     }
 
     async changePassword(userId: Types.ObjectId, currentPassword: string, newPassword: string): Promise<void>
     {
         this.logger.debug(`Attempting to change password for user ID: ${userId}`, 'UserService#changePassword');
-        const user = await this.userModel.findById(userId).exec();
-        if (!user)
-        {
-            this.logger.warn(`User with ID "${userId}" not found for password change`, 'UserService#changePassword');
-            throw new NotFoundException(`User with ID "${userId}" not found`);
-        }
+        
+        // Use findById to get user and handle not found error
+        const user = await this.findById(userId);
+        
         if (user.authProvider !== AuthProvider.EMAIL)
         {
             this.logger.warn(`User ${user.email} is not using EMAIL authentication`, 'UserService#changePassword');
-            throw new UnauthorizedException('Password change is only available for email-authenticated users');
+            throw new PasswordChangeNotAllowedException(user.authProvider);
         }
+        
         if (!user.hashedPassword || !(await bcrypt.compare(currentPassword, user.hashedPassword)))
         {
             this.logger.warn(`Invalid current password for user: ${user.email}`, 'UserService#changePassword');
             throw new UnauthorizedException('Current password is incorrect');
         }
-        const saltOrRounds = 10;
-        const hashedNewPassword = await bcrypt.hash(newPassword, saltOrRounds);
-        await this.userModel.findByIdAndUpdate(
-            userId,
-            { $set: { hashedPassword: hashedNewPassword } },
-            { new: true, runValidators: true }
-        ).exec();
+        
+        let hashedNewPassword: string;
+        try 
+        {
+            const saltOrRounds = 10;
+            hashedNewPassword = await bcrypt.hash(newPassword, saltOrRounds);
+        }
+        catch (error)
+        {
+            this.logger.error('Password hashing failed during password change', error instanceof Error ? error.stack : undefined, 'UserService#changePassword');
+            throw new PasswordHashingException();
+        }
+        
+        try 
+        {
+            await this.userModel.findByIdAndUpdate(
+                userId,
+                { $set: { hashedPassword: hashedNewPassword } },
+                { new: true, runValidators: true }
+            ).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error while updating password for user: ${user.email}`, errorStack, 'UserService#changePassword');
+            throw new DatabaseOperationException('password update', errorMessage);
+        }
+        
         this.logger.debug(`Password changed successfully for user: ${user.email}`, 'UserService#changePassword');
         return;
     }

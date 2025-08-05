@@ -18,10 +18,8 @@ Get current user's profile information.
   "firstName": "John",
   "lastName": "Doe",
   "phoneNumber": "+393331234567",
-  "emailVerified": true,
-  "role": "USER",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "isEmailVerified": true,
+  "profilePictureUrl": null
 }
 ```
 
@@ -31,10 +29,31 @@ Get current user's profile information.
 - `firstName`: User's first name
 - `lastName`: User's last name
 - `phoneNumber`: Optional phone number
-- `emailVerified`: Whether email has been verified
-- `role`: User role (USER, ADMIN)
-- `createdAt`: Account creation timestamp
-- `updatedAt`: Last update timestamp
+- `isEmailVerified`: Whether email has been verified
+- `profilePictureUrl`: Optional profile picture URL
+
+**Error Responses**:
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**500 Internal Server Error** - DTO Transformation Failed:
+```json
+{
+  "message": "Internal server error",
+  "statusCode": 500
+}
+```
+
+**Notes**:
+- This endpoint uses JWT authentication via `JwtAuthGuard`
+- User data is automatically transformed to exclude sensitive fields
+- The response format is controlled by `OutUserDto`
 
 ---
 
@@ -48,9 +67,16 @@ Update current user's profile information.
 {
   "firstName": "John",
   "lastName": "Smith",
-  "phoneNumber": "+393331234567"  // Optional
+  "phoneNumber": "+393331234567",  // Optional
+  "profilePictureUrl": "https://example.com/profile.jpg"  // Optional
 }
 ```
+
+**Validation Rules**:
+- `firstName`: Optional, string, min 1 char, max 100 chars
+- `lastName`: Optional, string, min 1 char, max 100 chars  
+- `phoneNumber`: Optional, must be valid Italian mobile format (strict mode)
+- `profilePictureUrl`: Optional, string
 
 **Response** (200 OK):
 ```json
@@ -60,22 +86,65 @@ Update current user's profile information.
   "firstName": "John",
   "lastName": "Smith",
   "phoneNumber": "+393331234567",
-  "emailVerified": true,
-  "role": "USER",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T12:30:00.000Z"
+  "isEmailVerified": true,
+  "profilePictureUrl": "https://example.com/profile.jpg"
 }
 ```
 
-**Validation Rules**:
-- `firstName`: Required, max 50 characters
-- `lastName`: Required, max 50 characters
-- `phoneNumber`: Optional, must be valid Italian mobile format if provided
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "firstName must be longer than or equal to 1 characters",
+    "phoneNumber must be a valid phone number"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**404 Not Found** - User Not Found:
+```json
+{
+  "message": "User with ID \"64a1b2c3d4e5f6789abc123\" not found",
+  "error": "USER_NOT_FOUND_BY_ID",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: profile update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Validation Error:
+```json
+{
+  "message": "Database operation failed: profile update validation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 **Notes**:
+- All fields are optional - only send fields you want to update
 - Email cannot be changed through this endpoint
 - Password changes require separate endpoint
-- Partial updates are supported (only send fields to update)
+- Phone number validation uses Italian mobile format (IT-IT) in strict mode
 
 ---
 
@@ -92,25 +161,97 @@ Change current user's password.
 }
 ```
 
+**Validation Rules**:
+- `currentPassword`: Required, non-empty string
+- `newPassword`: Required, max 20 characters, must be strong password:
+  - Min 8 characters
+  - At least 1 uppercase letter (A-Z)
+  - At least 1 lowercase letter (a-z)
+  - At least 1 number (0-9)
+  - At least 1 symbol (!@#$%^&*()_+-=[]{}|;:,.<>?)
+
 **Response** (200 OK): Empty response
 
-**Validation Rules**:
-- `currentPassword`: Required, must match user's current password
-- `newPassword`: Same strength requirements as registration
-  - Min 8 characters
-  - At least 1 uppercase letter
-  - At least 1 lowercase letter
-  - At least 1 number
-  - At least 1 symbol
+**Error Responses**:
 
-**Errors**:
-- `400 Bad Request`: Current password incorrect or new password validation failed
-- `401 Unauthorized`: Invalid authentication
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "currentPassword should not be empty",
+    "newPassword is not strong enough"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Wrong Authentication Provider:
+```json
+{
+  "message": "Password change is not available for google authentication. Please use the appropriate method to change your password.",
+  "error": "PASSWORD_CHANGE_NOT_ALLOWED",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**401 Unauthorized** - Incorrect Current Password:
+```json
+{
+  "message": "Current password is incorrect",
+  "statusCode": 401
+}
+```
+
+**404 Not Found** - User Not Found:
+```json
+{
+  "message": "User with ID \"64a1b2c3d4e5f6789abc123\" not found",
+  "error": "USER_NOT_FOUND_BY_ID",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: password change user lookup - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Password Hashing Failed:
+```json
+{
+  "message": "Password hashing failed",
+  "error": "PASSWORD_HASHING_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Password Update Failed:
+```json
+{
+  "message": "Database operation failed: password update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 **Security Notes**:
-- Requires current password verification
+- Only available for users with email authentication (not OAuth users)
+- Requires current password verification to prevent unauthorized changes
 - All active sessions remain valid after password change
-- Consider implementing session invalidation for enhanced security
+- Password hashing uses bcrypt with salt rounds of 10
 
 ---
 
@@ -121,41 +262,91 @@ Delete current user's account.
 
 **Response** (200 OK): Empty response
 
+**Error Responses**:
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**404 Not Found** - User Not Found:
+```json
+{
+  "message": "User with ID \"64a1b2c3d4e5f6789abc123\" not found",
+  "error": "USER_NOT_FOUND_BY_ID",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Deletion Blocked (Future Implementation):
+```json
+{
+  "message": "Cannot delete user account: User is the sole owner of active organizations",
+  "error": "USER_DELETION_CONFLICT",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: user deletion lookup - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Database Deletion Failed:
+```json
+{
+  "message": "Database operation failed: user deletion - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
 **Data Handling**:
-- User account is permanently deleted
+- User account is permanently deleted from the database
 - All associated data is handled according to data retention policies
-- Organizations where user is the only owner may need special handling
+- Future implementations will prevent deletion if user has business constraints
 
-**Errors**:
-- `409 Conflict`: Cannot delete account due to active subscriptions or organization ownership
+**Business Logic Constraints (Future Implementation)**:
+- Cannot delete if user is the sole owner of any organizations
+- Cannot delete if user has active subscriptions requiring attention
+- Cannot delete if user has pending financial obligations
 
-**Notes**:
+**Security Notes**:
 - This is a destructive operation and cannot be undone
-- Consider implementing a "soft delete" with grace period in production
-- User should be warned about data loss before deletion
+- User authentication is verified before deletion
+- All user sessions become invalid after successful deletion
 
 ---
 
 ## User Data Structure
 
-### User Profile Object
+### User Profile Object (API Response)
 ```json
 {
-  "id": "string",           // MongoDB ObjectId
-  "email": "string",        // Unique email address
-  "firstName": "string",    // First name (max 50 chars)
-  "lastName": "string",     // Last name (max 50 chars)
-  "phoneNumber": "string",  // Optional Italian mobile number
-  "emailVerified": "boolean", // Email verification status
-  "role": "USER|ADMIN",     // User role
-  "createdAt": "string",    // ISO timestamp
-  "updatedAt": "string"     // ISO timestamp
+  "id": "string",               // MongoDB ObjectId as string
+  "email": "string",            // User's email address
+  "firstName": "string",        // First name (max 100 chars)
+  "lastName": "string",         // Last name (max 100 chars)
+  "phoneNumber": "string",      // Optional Italian mobile number
+  "profilePictureUrl": "string", // Optional profile picture URL
+  "isEmailVerified": "boolean"  // Email verification status
 }
 ```
 
-### User Roles
+**Note**: The API response is controlled by `OutUserDto` and excludes sensitive fields like passwords, tokens, and internal timestamps.
+
+### User Roles (Internal Schema)
 - **USER**: Standard user role, default for all registered users
 - **ADMIN**: Administrative role with access to admin endpoints
+
+**Note**: User roles are not exposed in the public API responses for security reasons.
 
 ## Validation Rules
 
@@ -165,66 +356,48 @@ Delete current user's account.
 - Follows ITU-T E.164 international format
 
 ### Name Fields
-- First and last names are required
-- Maximum 50 characters each
+- First and last names are optional for updates
+- Maximum 100 characters each (updated from 50)
+- Minimum 1 character when provided
 - No special validation beyond length
 
 ### Password Requirements
 - Minimum 8 characters
+- Maximum 20 characters  
 - At least 1 uppercase letter (A-Z)
 - At least 1 lowercase letter (a-z)
 - At least 1 number (0-9)
 - At least 1 symbol (!@#$%^&*()_+-=[]{}|;:,.<>?)
 
+### Profile Picture URL
+- Optional field for user profile pictures
+- No specific format validation beyond string type
+- Typically used for external image URLs
+
 ## Error Handling
 
-**Validation Errors** (400):
-```json
-{
-  "statusCode": 400,
-  "message": [
-    "firstName should not be empty",
-    "phoneNumber must be a valid phone number"
-  ],
-  "error": "Bad Request"
-}
-```
+The User Management API follows consistent error response patterns:
 
-**Authentication Required** (401):
-```json
-{
-  "statusCode": 401,
-  "message": "Unauthorized",
-  "error": "Unauthorized"
-}
-```
+### Authentication Errors (401)
+- Invalid or missing JWT tokens
+- Incorrect current password during password changes
 
-**Current Password Incorrect** (400):
-```json
-{
-  "statusCode": 400,
-  "message": "Current password is incorrect",
-  "error": "Bad Request"
-}
-```
+### Validation Errors (400)  
+- DTO validation failures (handled by global validation pipes)
+- Business logic violations (wrong auth provider, etc.)
 
-## Security Considerations
+### Not Found Errors (404)
+- User not found by ID (typically shouldn't happen with valid JWTs)
 
-1. **Profile Updates**: Only authenticated users can update their own profiles
-2. **Password Changes**: Require current password verification
-3. **Account Deletion**: Permanent and irreversible
-4. **Data Privacy**: Sensitive fields are excluded from responses
-5. **Rate Limiting**: Applied to prevent abuse
+### Conflict Errors (409)
+- Future: User deletion blocked by business constraints
 
-## Integration Notes
+### Server Errors (500)
+- Database operation failures
+- Password hashing failures  
+- DTO transformation errors
 
-### Frontend Integration
-- Use `/users/me` to populate user profile forms
-- Implement proper form validation matching API requirements
-- Handle password change separately from profile updates
-- Confirm account deletion with user before API call
-
-### Mobile App Integration
-- Profile endpoint suitable for account settings screens
-- Phone number validation should match backend format
-- Consider offline caching of user profile data
+All error responses include:
+- `message`: Human-readable error description
+- `error`: Machine-readable error code (when applicable)
+- `statusCode`: HTTP status code

@@ -7,7 +7,7 @@ import { JwtModule } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import { User, UserSchema } from './schemas/user.schema';
+import { User, UserSchema, AuthProvider } from './schemas/user.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { ChangePasswordDto } from './dto/in.change-password.dto';
@@ -248,6 +248,42 @@ describe('UserController (Integration)', () =>
                     })
                     .expect(400);
             }
+        });
+
+        it('should reject password change for Google OAuth users', async () =>
+        {
+            // Create a Google OAuth user
+            const googleUser = await userService.create({
+                email: 'google@example.com',
+                firstName: 'Google',
+                lastName: 'User',
+                hashedPassword: undefined,
+                authProvider: AuthProvider.GOOGLE, // Override default EMAIL provider
+                googleId: 'google-123',
+            });
+
+            // Override guard to use the Google user
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) =>
+            {
+                const request = context.switchToHttp().getRequest();
+                request.user = googleUser;
+                return true;
+            });
+
+            const changePasswordDto: ChangePasswordDto = {
+                currentPassword: 'anyPassword',
+                newPassword: 'NewPassword123!',
+            };
+
+            const response = await request(app.getHttpServer())
+                .put('/api/users/me/password')
+                .send(changePasswordDto)
+                .expect(400);
+
+            expect(response.body).toHaveProperty('statusCode', 400);
+            expect(response.body).toHaveProperty('error', 'PASSWORD_CHANGE_NOT_ALLOWED');
+            expect(response.body.message).toContain('google authentication');
         });
     });
 
