@@ -90,7 +90,9 @@ describe('OrgController (Integration)', () =>
 
             .compile();
 
-        app = moduleFixture.createNestApplication();
+        app = moduleFixture.createNestApplication({
+            logger: false, // Disable logging for tests
+        });
         app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe({
             whitelist: true,

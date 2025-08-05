@@ -105,7 +105,9 @@ describe('AuthController - Integration Tests', () =>
             ],
         }).compile();
 
-        app = module.createNestApplication();
+        app = module.createNestApplication({
+            logger: false, // Disable logging for tests
+        });
         app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe());
         await app.init();

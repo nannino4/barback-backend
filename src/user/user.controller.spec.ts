@@ -58,7 +58,9 @@ describe('UserController (Integration)', () =>
             })
             .compile();
 
-        app = moduleFixture.createNestApplication();
+        app = moduleFixture.createNestApplication({
+            logger: false, // Disable logging for tests
+        });
         app.setGlobalPrefix('api');
         app.useGlobalPipes(new ValidationPipe({
             whitelist: true,
@@ -319,7 +321,9 @@ describe('UserController (Integration)', () =>
                 })
                 .compile();
 
-            const unauthenticatedApp = moduleWithoutAuth.createNestApplication();
+            const unauthenticatedApp = moduleWithoutAuth.createNestApplication({
+                logger: false, // Disable logging for tests
+            });
             unauthenticatedApp.setGlobalPrefix('api');
             await unauthenticatedApp.init();
 
