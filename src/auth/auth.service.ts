@@ -26,6 +26,7 @@ import {
 import { 
     UserNotFoundByEmailException, 
     EmailAlreadyVerifiedException,
+    InvalidPasswordResetTokenException,
 } from '../user/exceptions/user.exceptions';
 import { CustomLogger } from '../common/logger/custom.logger';
 
@@ -294,17 +295,29 @@ export class AuthService
     async forgotPassword(email: string): Promise<void>
     {
         this.logger.debug(`Processing forgot password request for: ${email}`, 'AuthService#forgotPassword');
-        const token = await this.userService.generatePasswordResetToken(email);
         
-        if (token)
+        try 
         {
-            const emailOptions = this.emailService.generatePasswordResetEmail(email, token);
-            await this.emailService.sendEmail(emailOptions);
-            this.logger.debug(`Password reset email sent to: ${email}`, 'AuthService#forgotPassword');
+            const token = await this.userService.generatePasswordResetToken(email);
+            
+            if (token)
+            {
+                const emailOptions = this.emailService.generatePasswordResetEmail(email, token);
+                await this.emailService.sendEmail(emailOptions);
+                this.logger.debug(`Password reset email sent to: ${email}`, 'AuthService#forgotPassword');
+            }
+            else
+            {
+                this.logger.debug(`No valid user found for password reset: ${email}`, 'AuthService#forgotPassword');
+            }
         }
-        else
+        catch (error)
         {
-            this.logger.debug(`No valid user found for password reset: ${email}`, 'AuthService#forgotPassword');
+            // Log the error but don't expose details to prevent information leakage
+            this.logger.error(`Failed to process password reset request for: ${email}`, error instanceof Error ? error.stack : undefined, 'AuthService#forgotPassword');
+            
+            // For security, we still return success even if email sending fails
+            // This prevents enumeration attacks but logs the actual error for debugging
         }
         
         // Always return success to prevent email enumeration
@@ -315,5 +328,19 @@ export class AuthService
         this.logger.debug('Processing password reset', 'AuthService#resetPassword');
         await this.userService.resetPassword(token, newPassword);
         this.logger.debug('Password reset completed successfully', 'AuthService#resetPassword');
+    }
+
+    async validatePasswordResetToken(token: string): Promise<void>
+    {
+        this.logger.debug('Validating password reset token', 'AuthService#validatePasswordResetToken');
+        const user = await this.userService.findByPasswordResetToken(token);
+        
+        if (!user)
+        {
+            this.logger.warn('Invalid or expired password reset token', 'AuthService#validatePasswordResetToken');
+            throw new InvalidPasswordResetTokenException();
+        }
+        
+        this.logger.debug('Password reset token is valid', 'AuthService#validatePasswordResetToken');
     }
 }

@@ -17,16 +17,16 @@ import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitations/invitation.service';
 import { GoogleService } from './services/google.service';
-import { CommonModule } from '../common/common.module';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('AuthController - Integration Tests', () => 
 {
     let app: INestApplication;
-    let authService: AuthService;
     let userService: UserService;
     let connection: Connection;
     let module: TestingModule;
     let mockEmailService: jest.Mocked<EmailService>;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockRegisterDto: RegisterEmailDto = {
         email: 'test@example.com',
@@ -48,6 +48,14 @@ describe('AuthController - Integration Tests', () =>
             generatePasswordResetEmail: jest.fn(),
         } as any;
 
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -60,7 +68,7 @@ describe('AuthController - Integration Tests', () =>
                     envFilePath: '.env.test',
                     isGlobal: true,
                 }),
-                CommonModule, // Add CommonModule to provide CustomLogger
+                // CommonModule, // Remove CommonModule to avoid real logger
             ],
             controllers: [AuthController],
             providers: [
@@ -70,6 +78,10 @@ describe('AuthController - Integration Tests', () =>
                 {
                     provide: EmailService,
                     useValue: mockEmailService,
+                },
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
                 },
                 {
                     provide: InvitationService,
@@ -98,7 +110,6 @@ describe('AuthController - Integration Tests', () =>
         app.useGlobalPipes(new ValidationPipe());
         await app.init();
 
-        authService = module.get<AuthService>(AuthService);
         userService = module.get<UserService>(UserService);
         connection = module.get<Connection>(getConnectionToken());
     });
@@ -226,8 +237,11 @@ describe('AuthController - Integration Tests', () =>
     {
         beforeEach(async () => 
         {
-            // Create a user for login tests
-            await authService.registerEmail(mockRegisterDto);
+            // Create a user for login tests using HTTP endpoint
+            await request(app.getHttpServer())
+                .post('/api/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
         });
 
         it('should login with valid credentials and return tokens', async () => 
@@ -434,13 +448,13 @@ describe('AuthController - Integration Tests', () =>
             expect(mockEmailService.sendEmail).toHaveBeenCalled();
         });
 
-        it('should return 400 for non-existent user', async () => 
+        it('should return 404 for non-existent user', async () => 
         {
             // Act & Assert
             await request(app.getHttpServer())
                 .post('/api/auth/send-verification-email')
                 .send({ email: 'nonexistent@example.com' })
-                .expect(400);
+                .expect(404);
 
             expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
         });
@@ -652,13 +666,13 @@ describe('AuthController - Integration Tests', () =>
             expect(loginResponse.body).toHaveProperty('access_token');
         });
 
-        it('should return 401 for invalid token', async () => 
+        it('should return 400 for invalid token', async () => 
         {
             // Act & Assert
             await request(app.getHttpServer())
                 .post('/api/auth/reset-password')
                 .send({ token: 'invalid-token', newPassword: 'NewPassword123!' })
-                .expect(401);
+                .expect(400);
         });
 
         it('should validate new password strength', async () => 
@@ -675,6 +689,36 @@ describe('AuthController - Integration Tests', () =>
             await request(app.getHttpServer())
                 .post('/api/auth/reset-password')
                 .send({ token, newPassword: 'weak' })
+                .expect(400);
+        });
+    });
+
+    describe('/auth/reset-password/:token (GET)', () => 
+    {
+        it('should validate reset token', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/api/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            const token = await userService.generatePasswordResetToken(mockRegisterDto.email);
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .get(`/api/auth/reset-password/${token}`)
+                .expect(200);
+
+            // Assert
+            expect(response.body).toEqual({});
+        });
+
+        it('should return 400 for invalid token', async () => 
+        {
+            // Act & Assert
+            await request(app.getHttpServer())
+                .get('/api/auth/reset-password/invalid-token')
                 .expect(400);
         });
     });

@@ -108,12 +108,7 @@ export class AuthController
     async validateResetToken(@Param('token') token: string): Promise<void>
     {
         this.logger.debug('Validating password reset token', 'AuthController#validateResetToken');
-        const user = await this.authService['userService'].findByPasswordResetToken(token);
-        if (!user)
-        {
-            this.logger.warn('Invalid password reset token', 'AuthController#validateResetToken');
-            throw new UnauthorizedException('Invalid or expired reset token');
-        }
+        await this.authService.validatePasswordResetToken(token);
         this.logger.debug('Password reset token is valid', 'AuthController#validateResetToken');
     }
 

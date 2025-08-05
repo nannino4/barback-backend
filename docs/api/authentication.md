@@ -437,12 +437,38 @@ Request password reset email.
 }
 ```
 
+**Validation Rules**:
+- `email`: Must be valid email format, required, non-empty
+
 **Response** (200 OK): Empty response
 
-**Notes**:
-- Always returns 200 even if email doesn't exist (security)
+**Error Responses**:
+
+**400 Bad Request** - Validation Error:
+```json
+{
+  "message": ["email should not be empty", "email must be an email"],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "error": "Database Operation Failed",
+  "message": "Database operation failed during password reset user lookup",
+  "details": "[error details]",
+  "statusCode": 500
+}
+```
+
+**Security Notes**:
+- Always returns 200 even if email doesn't exist (prevents user enumeration)
+- Email sending failures are logged but don't affect the response (security)
+- Only users with email authentication provider can request password reset
 - Reset token expires in 1 hour
-- Rate limited to 1 request per minute per email
+- Rate limiting should be applied (1 request per minute per email)
 
 ---
 
@@ -459,13 +485,54 @@ Reset password using reset token.
 }
 ```
 
+**Validation Rules**:
+- `token`: Required, non-empty string
+- `newPassword`: Must be strong password (8+ chars, uppercase, lowercase, number, symbol), max 20 chars
+
 **Response** (200 OK): Empty response
 
-**Validation Rules**:
-- New password: Same rules as registration password
-
 **Errors**:
-- `400 Bad Request`: Invalid token or password validation failed
+
+**400 Bad Request** - Validation Error:
+```json
+{
+  "message": ["token should not be empty", "newPassword is not strong enough"],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid/Expired Token:
+```json
+{
+  "message": "Invalid or expired password reset token",
+  "error": "INVALID_PASSWORD_RESET_TOKEN",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Password Hashing Failed:
+```json
+{
+  "message": "Password hashing failed",
+  "error": "PASSWORD_HASHING_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "error": "Database Operation Failed",
+  "message": "Database operation failed during password reset update",
+  "details": "[error details]",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
+- Token validation includes expiration check
+- Token is automatically invalidated after successful reset
 
 ---
 
@@ -480,7 +547,29 @@ Validate reset token (for frontend form display).
 **Response** (200 OK): Empty response (token is valid)
 
 **Errors**:
-- `400 Bad Request`: Invalid or expired token
+
+**400 Bad Request** - Invalid/Expired Token:
+```json
+{
+  "message": "Invalid or expired password reset token",
+  "error": "INVALID_PASSWORD_RESET_TOKEN",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "error": "Database Operation Failed",
+  "message": "Database operation failed during password reset token lookup",
+  "details": "[error details]",
+  "statusCode": 500
+}
+```
+
+**Usage Notes**:
+- Used by frontend to validate token before showing password reset form
+- Checks both token validity and expiration
 
 ---
 

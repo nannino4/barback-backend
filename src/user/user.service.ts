@@ -13,6 +13,7 @@ import {
     EmailAlreadyVerifiedException,
 } from './exceptions/user.exceptions';
 import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
+import { PasswordHashingException } from '../auth/exceptions/auth.exceptions';
 
 @Injectable()
 export class UserService
@@ -333,7 +334,18 @@ export class UserService
     async generatePasswordResetToken(email: string): Promise<string | null>
     {
         this.logger.debug(`Generating password reset token for email: ${email}`, 'UserService#generatePasswordResetToken');
-        const user = await this.userModel.findOne({ email }).exec();
+        
+        let user: User | null;
+        try 
+        {
+            user = await this.userModel.findOne({ email }).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Database error while finding user for password reset: ${email}`, error instanceof Error ? error.stack : undefined, 'UserService#generatePasswordResetToken');
+            throw new DatabaseOperationException('password reset user lookup', errorMessage);
+        }
         
         if (!user)
         {
@@ -351,16 +363,25 @@ export class UserService
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour from now
 
-        await this.userModel.findByIdAndUpdate(
-            user.id,
-            { 
-                $set: { 
-                    passwordResetToken: token,
-                    passwordResetExpires: expiresAt,
+        try 
+        {
+            await this.userModel.findByIdAndUpdate(
+                user.id,
+                { 
+                    $set: { 
+                        passwordResetToken: token,
+                        passwordResetExpires: expiresAt,
+                    },
                 },
-            },
-            { new: true, runValidators: true }
-        ).exec();
+                { new: true, runValidators: true }
+            ).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Database error while updating password reset token for user: ${user.email}`, error instanceof Error ? error.stack : undefined, 'UserService#generatePasswordResetToken');
+            throw new DatabaseOperationException('password reset token update', errorMessage);
+        }
 
         this.logger.debug(`Password reset token generated for user: ${user.email}`, 'UserService#generatePasswordResetToken');
         return token;
@@ -369,10 +390,21 @@ export class UserService
     async resetPassword(token: string, newPassword: string): Promise<User>
     {
         this.logger.debug('Attempting to reset password with token', 'UserService#resetPassword');
-        const user = await this.userModel.findOne({
-            passwordResetToken: token,
-            passwordResetExpires: { $gt: new Date() },
-        }).exec();
+        
+        let user: User | null;
+        try 
+        {
+            user = await this.userModel.findOne({
+                passwordResetToken: token,
+                passwordResetExpires: { $gt: new Date() },
+            }).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error('Database error while finding user by password reset token', error instanceof Error ? error.stack : undefined, 'UserService#resetPassword');
+            throw new DatabaseOperationException('password reset token lookup', errorMessage);
+        }
 
         if (!user)
         {
@@ -380,22 +412,41 @@ export class UserService
             throw new InvalidPasswordResetTokenException();
         }
 
-        const saltOrRounds = 10;
-        const hashedPassword = await bcrypt.hash(newPassword, saltOrRounds);
+        let hashedPassword: string;
+        try 
+        {
+            const saltOrRounds = 10;
+            hashedPassword = await bcrypt.hash(newPassword, saltOrRounds);
+        }
+        catch (error)
+        {
+            this.logger.error('Password hashing failed during reset', error instanceof Error ? error.stack : undefined, 'UserService#resetPassword');
+            throw new PasswordHashingException();
+        }
 
-        const updatedUser = await this.userModel.findByIdAndUpdate(
-            user.id,
-            { 
-                $set: { 
-                    hashedPassword,
+        let updatedUser: User | null;
+        try 
+        {
+            updatedUser = await this.userModel.findByIdAndUpdate(
+                user.id,
+                { 
+                    $set: { 
+                        hashedPassword,
+                    },
+                    $unset: { 
+                        passwordResetToken: 1,
+                        passwordResetExpires: 1,
+                    },
                 },
-                $unset: { 
-                    passwordResetToken: 1,
-                    passwordResetExpires: 1,
-                },
-            },
-            { new: true, runValidators: true }
-        ).exec();
+                { new: true, runValidators: true }
+            ).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Database error while updating password for user ID: ${user.id}`, error instanceof Error ? error.stack : undefined, 'UserService#resetPassword');
+            throw new DatabaseOperationException('password reset update', errorMessage);
+        }
 
         if (!updatedUser)
         {
@@ -410,10 +461,21 @@ export class UserService
     async findByPasswordResetToken(token: string): Promise<User | null>
     {
         this.logger.debug('Attempting to find user by password reset token', 'UserService#findByPasswordResetToken');
-        const user = await this.userModel.findOne({
-            passwordResetToken: token,
-            passwordResetExpires: { $gt: new Date() },
-        }).exec();
+        
+        let user: User | null;
+        try 
+        {
+            user = await this.userModel.findOne({
+                passwordResetToken: token,
+                passwordResetExpires: { $gt: new Date() },
+            }).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error('Database error while finding user by password reset token', error instanceof Error ? error.stack : undefined, 'UserService#findByPasswordResetToken');
+            throw new DatabaseOperationException('password reset token lookup', errorMessage);
+        }
 
         if (!user)
         {
