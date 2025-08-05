@@ -1,19 +1,19 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Org } from './schemas/org.schema';
 import { UserOrgRelation } from './schemas/user-org-relation.schema';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { CreateOrgDto } from './dto/in.create-org.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class OrgService 
 {
-    private readonly logger = new Logger(OrgService.name);
-
     constructor(
         @InjectModel(Org.name) private readonly orgModel: Model<Org>,
         @InjectModel(UserOrgRelation.name) private readonly relationshipModel: Model<UserOrgRelation>,
+        private readonly logger: CustomLogger,
     ) {}
 
     async create(createData: CreateOrgDto, ownerId: Types.ObjectId, subscriptionId: Types.ObjectId): Promise<Org>

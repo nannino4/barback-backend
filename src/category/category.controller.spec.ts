@@ -12,12 +12,14 @@ import { OrgRolesGuard } from '../org/guards/org-roles.guard';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { InCreateCategoryDto } from './dto/in.create-category.dto';
 import { InUpdateCategoryDto } from './dto/in.update-category.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('CategoryController (Integration)', () =>
 {
     let app: INestApplication;
     let mongoServer: MongoMemoryServer;
     let categoryService: CategoryService;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockOrgId = new Types.ObjectId();
     const mockOrgId2 = new Types.ObjectId();
@@ -27,13 +29,28 @@ describe('CategoryController (Integration)', () =>
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
 
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         const moduleFixture: TestingModule = await Test.createTestingModule({
             imports: [
                 MongooseModule.forRoot(mongoUri),
                 MongooseModule.forFeature([{ name: Category.name, schema: CategorySchema }]),
             ],
             controllers: [CategoryController],
-            providers: [CategoryService, ObjectIdValidationPipe],
+            providers: [
+                CategoryService, 
+                ObjectIdValidationPipe,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         })
             .overrideGuard(JwtAuthGuard)
             .useValue({

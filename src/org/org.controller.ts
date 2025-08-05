@@ -5,7 +5,6 @@ import {
     Put,
     Query,
     UseGuards,
-    Logger,
     ConflictException,
     NotFoundException,
     Param,
@@ -33,18 +32,18 @@ import { OrgRoles } from './decorators/org-roles.decorator';
 import { UserService } from '../user/user.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { SubscriptionStatus } from '../subscription/schemas/subscription.schema';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('orgs')
 @UseGuards(JwtAuthGuard)
 export class OrgController
 {
-    private readonly logger = new Logger(OrgController.name);
-
     constructor(
         private readonly orgService: OrgService,
         private readonly userOrgRelationService: UserOrgRelationService,
         private readonly userService: UserService,
         private readonly subscriptionService: SubscriptionService,
+        private readonly logger: CustomLogger,
     ) { }
 
     @Post()

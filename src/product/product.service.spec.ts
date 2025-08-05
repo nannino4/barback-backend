@@ -9,6 +9,7 @@ import { CategoryService } from '../category/category.service';
 import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('ProductService - Service Tests (Unit-style)', () => 
 {
@@ -17,6 +18,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
     let module: TestingModule;
     let productModel: any;
     let categoryModel: any;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockOrgId = new Types.ObjectId();
     const mockOrgId2 = new Types.ObjectId();
@@ -42,6 +44,14 @@ describe('ProductService - Service Tests (Unit-style)', () =>
 
     beforeAll(async () => 
     {
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -50,7 +60,14 @@ describe('ProductService - Service Tests (Unit-style)', () =>
                     { name: Category.name, schema: CategorySchema },
                 ]),
             ],
-            providers: [ProductService, CategoryService],
+            providers: [
+                ProductService, 
+                CategoryService,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         }).compile();
 
         service = module.get<ProductService>(ProductService);

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Logger, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
@@ -7,14 +7,16 @@ import { InAddPaymentMethodDto } from './dto/in.add-payment-method.dto';
 import { InSetDefaultPaymentMethodDto } from './dto/in.set-default-payment-method.dto';
 import { OutPaymentMethodDto } from './dto/out.payment-method.dto';
 import { plainToInstance } from 'class-transformer';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('payment')
 @UseGuards(JwtAuthGuard)
 export class PaymentController 
 {
-    private readonly logger = new Logger(PaymentController.name);
-
-    constructor(private readonly paymentService: PaymentService) {}
+    constructor(
+        private readonly paymentService: PaymentService,
+        private readonly logger: CustomLogger,
+    ) {}
 
     @Get('methods')
     async getPaymentMethods(@CurrentUser() user: User): Promise<OutPaymentMethodDto[]> 

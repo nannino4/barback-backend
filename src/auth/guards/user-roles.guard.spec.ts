@@ -3,11 +3,13 @@ import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserRolesGuard } from './user-roles.guard';
 import { UserRole } from '../../user/schemas/user.schema';
+import { CustomLogger } from '../../common/logger/custom.logger';
 
 describe('UserRolesGuard - Output-Focused Tests', () => 
 {
     let guard: UserRolesGuard;
     let reflector: Reflector;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const createMockContext = (user: any): Partial<ExecutionContext> => ({
         switchToHttp: jest.fn().mockReturnValue({
@@ -19,6 +21,14 @@ describe('UserRolesGuard - Output-Focused Tests', () =>
 
     beforeEach(async () => 
     {
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 UserRolesGuard,
@@ -27,6 +37,10 @@ describe('UserRolesGuard - Output-Focused Tests', () =>
                     useValue: {
                         getAllAndOverride: jest.fn(),
                     },
+                },
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
                 },
             ],
         }).compile();

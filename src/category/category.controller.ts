@@ -7,7 +7,6 @@ import {
     Body, 
     Param, 
     UseGuards,
-    Logger,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CategoryService } from './category.service';
@@ -20,14 +19,16 @@ import { OrgRoles } from '../org/decorators/org-roles.decorator';
 import { OrgRole } from '../org/schemas/user-org-relation.schema';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('orgs/:orgId/categories')
 @UseGuards(JwtAuthGuard, OrgRolesGuard)
 export class CategoryController 
 {
-    private readonly logger = new Logger(CategoryController.name);
-
-    constructor(private readonly categoryService: CategoryService) {}
+    constructor(
+        private readonly categoryService: CategoryService,
+        private readonly logger: CustomLogger,
+    ) {}
 
     @Get()
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)

@@ -11,6 +11,7 @@ import { User, UserSchema } from './schemas/user.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { ChangePasswordDto } from './dto/in.change-password.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('UserController (Integration)', () =>
 {
@@ -18,11 +19,20 @@ describe('UserController (Integration)', () =>
     let mongoServer: MongoMemoryServer;
     let userService: UserService;
     let testUser: User;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     beforeAll(async () =>
     {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
+
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
 
         const moduleFixture: TestingModule = await Test.createTestingModule({
             imports: [
@@ -34,7 +44,13 @@ describe('UserController (Integration)', () =>
                 }),
             ],
             controllers: [UserController],
-            providers: [UserService],
+            providers: [
+                UserService,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         })
             .overrideGuard(JwtAuthGuard)
             .useValue({
@@ -289,7 +305,13 @@ describe('UserController (Integration)', () =>
                     }),
                 ],
                 controllers: [UserController],
-                providers: [UserService],
+                providers: [
+                    UserService,
+                    {
+                        provide: CustomLogger,
+                        useValue: mockLogger,
+                    },
+                ],
             })
                 .overrideGuard(JwtAuthGuard)
                 .useValue({

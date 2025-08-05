@@ -8,7 +8,6 @@ import {
     Param, 
     Query,
     UseGuards,
-    Logger,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { ProductService } from './product.service';
@@ -26,16 +25,16 @@ import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('orgs/:orgId/products')
 @UseGuards(JwtAuthGuard, OrgRolesGuard)
 export class ProductController 
 {
-    private readonly logger = new Logger(ProductController.name);
-
     constructor(
         private readonly productService: ProductService,
         private readonly inventoryService: InventoryService,
+        private readonly logger: CustomLogger,
     ) {}
 
     @Get()

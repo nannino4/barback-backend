@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
@@ -7,17 +7,17 @@ import { UserOrgRelation, OrgRole } from '../org/schemas/user-org-relation.schem
 import { UserService } from '../user/user.service';
 import { EmailService } from '../email/email.service';
 import { InCreateInvitationDto } from './dto/in.create-invitation.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class InvitationService 
 {
-    private readonly logger = new Logger(InvitationService.name);
-
     constructor(
         @InjectModel(Invitation.name) private readonly invitationModel: Model<Invitation>,
         @InjectModel(UserOrgRelation.name) private readonly userOrgRelationModel: Model<UserOrgRelation>,
         private readonly userService: UserService,
         private readonly emailService: EmailService,
+        private readonly logger: CustomLogger,
     ) {}
 
     async createInvitation(

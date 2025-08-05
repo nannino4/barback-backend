@@ -6,12 +6,14 @@ import { Org, OrgSchema } from './schemas/org.schema';
 import { UserOrgRelation, UserOrgRelationSchema } from './schemas/user-org-relation.schema';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { CreateOrgDto } from './dto/in.create-org.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('OrgService - Service Tests (Unit-style)', () => 
 {
     let service: OrgService;
     let connection: Connection;
     let module: TestingModule;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockUserId = new Types.ObjectId();
     const mockSubscriptionId = new Types.ObjectId();
@@ -26,6 +28,14 @@ describe('OrgService - Service Tests (Unit-style)', () =>
 
     beforeAll(async () => 
     {
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -34,7 +44,13 @@ describe('OrgService - Service Tests (Unit-style)', () =>
                     { name: UserOrgRelation.name, schema: UserOrgRelationSchema },
                 ]),
             ],
-            providers: [OrgService],
+            providers: [
+                OrgService,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         }).compile();
 
         service = module.get<OrgService>(OrgService);

@@ -7,6 +7,7 @@ import { User, UserSchema, UserRole, AuthProvider } from './schemas/user.schema'
 import { CreateUserDto } from './dto/in.create-user.dto';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
+import { CustomLogger } from '../common/logger/custom.logger';
 import * as bcrypt from 'bcrypt';
 
 describe('UserService - Service Tests (Unit-style)', () => 
@@ -14,6 +15,7 @@ describe('UserService - Service Tests (Unit-style)', () =>
     let service: UserService;
     let connection: Connection;
     let module: TestingModule;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockCreateUserDto: CreateUserDto = {
         email: 'test@example.com',
@@ -33,12 +35,26 @@ describe('UserService - Service Tests (Unit-style)', () =>
 
     beforeAll(async () => 
     {
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
                 MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
             ],
-            providers: [UserService],
+            providers: [
+                UserService,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         }).compile();
 
         service = module.get<UserService>(UserService);

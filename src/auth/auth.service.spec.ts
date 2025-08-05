@@ -10,6 +10,7 @@ import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitations/invitation.service';
+import { CustomLogger } from '../common/logger/custom.logger';
 import * as bcrypt from 'bcrypt';
 import {
     InvalidRefreshTokenException,
@@ -32,6 +33,7 @@ describe('AuthService - Service Tests (Unit-style)', () =>
     let connection: Connection;
     let module: TestingModule;
     let mockEmailService: jest.Mocked<EmailService>;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockUser = {
         _id: '507f1f77bcf86cd799439011',
@@ -65,6 +67,14 @@ describe('AuthService - Service Tests (Unit-style)', () =>
             generatePasswordResetEmail: jest.fn(),
         } as any;
 
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -88,6 +98,10 @@ describe('AuthService - Service Tests (Unit-style)', () =>
                 {
                     provide: InvitationService,
                     useValue: {},
+                },
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
                 },
                 {
                     provide: ConfigService,

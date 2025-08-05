@@ -1,19 +1,19 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Product } from './schemas/product.schema';
 import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
 import { CategoryService } from '../category/category.service';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class ProductService 
 {
-    private readonly logger = new Logger(ProductService.name);
-
     constructor(
         @InjectModel(Product.name) private readonly productModel: Model<Product>,
         private readonly categoryService: CategoryService,
+        private readonly logger: CustomLogger,
     ) {}
 
     async createProduct(orgId: Types.ObjectId, createProductDto: InCreateProductDto): Promise<Product> 

@@ -1,18 +1,19 @@
-import { Controller, Post, RawBodyRequest, Req, Headers, Logger, BadRequestException } from '@nestjs/common';
+import { Controller, Post, RawBodyRequest, Req, Headers, BadRequestException } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('webhooks')
 export class WebhookController 
 {
-    private readonly logger = new Logger(WebhookController.name);
     private readonly stripe: Stripe;
     private readonly webhookSecret: string;
 
     constructor(
         private readonly subscriptionService: SubscriptionService,
         private readonly configService: ConfigService,
+        private readonly logger: CustomLogger,
     ) 
     {
         const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');

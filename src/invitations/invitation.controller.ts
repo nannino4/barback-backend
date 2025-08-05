@@ -6,7 +6,6 @@ import {
     Body,
     Param,
     UseGuards,
-    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -23,6 +22,7 @@ import { User } from '../user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
 import { Types } from 'mongoose';
 import { OutInvitationPublicDto } from './dto/out.invitation-public.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 /**
  * Controller for organization owners and managers to manage invitations.
@@ -33,11 +33,10 @@ import { OutInvitationPublicDto } from './dto/out.invitation-public.dto';
 @UseGuards(JwtAuthGuard, OrgRolesGuard)
 export class InvitationController 
 {
-    private readonly logger = new Logger(InvitationController.name);
-
     constructor(
         private readonly invitationService: InvitationService,
         private readonly orgService: OrgService,
+        private readonly logger: CustomLogger,
     ) {}
 
     /**

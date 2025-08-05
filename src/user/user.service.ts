@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserRole, AuthProvider } from './schemas/user.schema';
@@ -14,13 +14,15 @@ import {
 } from './exceptions/user.exceptions';
 import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
 import { PasswordHashingException } from '../auth/exceptions/auth.exceptions';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class UserService
 {
-    private readonly logger = new Logger(UserService.name);
-
-    constructor(@InjectModel(User.name) private readonly userModel: Model<User>)
+    constructor(
+        @InjectModel(User.name) private readonly userModel: Model<User>,
+        private readonly logger: CustomLogger,
+    )
     {
         this.logger.debug('UserService initialized', 'UserService#constructor');
     }
@@ -46,7 +48,8 @@ export class UserService
         catch (error) 
         {
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            this.logger.error(`Database operation failed for user creation: ${user.email}`, error, 'UserService#create');
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database operation failed for user creation: ${user.email}`, errorStack, 'UserService#create');
             throw new DatabaseOperationException('user creation', errorMessage);
         }
     }

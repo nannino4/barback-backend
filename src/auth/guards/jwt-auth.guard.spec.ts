@@ -9,6 +9,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserService } from '../../user/user.service';
 import { User, UserSchema, UserRole, AuthProvider } from '../../user/schemas/user.schema';
 import { DatabaseTestHelper } from '../../../test/utils/database.helper';
+import { CustomLogger } from '../../common/logger/custom.logger';
 
 describe('JwtAuthGuard - Unit Tests', () => 
 {
@@ -17,6 +18,7 @@ describe('JwtAuthGuard - Unit Tests', () =>
     let userService: UserService;
     let connection: Connection;
     let module: TestingModule;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockUser = {
         _id: '507f1f77bcf86cd799439011',
@@ -45,6 +47,14 @@ describe('JwtAuthGuard - Unit Tests', () =>
 
     beforeAll(async () => 
     {
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -64,6 +74,10 @@ describe('JwtAuthGuard - Unit Tests', () =>
                     useValue: {
                         get: jest.fn().mockReturnValue('test-secret'),
                     },
+                },
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
                 },
             ],
         }).compile();

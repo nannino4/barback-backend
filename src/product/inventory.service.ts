@@ -1,18 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { InventoryLog } from './schemas/inventory-log.schema';
 import { Product } from './schemas/product.schema';
 import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class InventoryService 
 {
-    private readonly logger = new Logger(InventoryService.name);
-
     constructor(
         @InjectModel(InventoryLog.name) private readonly inventoryLogModel: Model<InventoryLog>,
         @InjectModel(Product.name) private readonly productModel: Model<Product>,
+        private readonly logger: CustomLogger,
     ) {}
 
     async adjustStock(

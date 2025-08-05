@@ -17,12 +17,14 @@ import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
 import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('ProductController (Integration)', () =>
 {
     let app: INestApplication;
     let mongoServer: MongoMemoryServer;
     let productService: ProductService;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockOrgId = new Types.ObjectId();
     const mockOrgId2 = new Types.ObjectId();
@@ -40,6 +42,14 @@ describe('ProductController (Integration)', () =>
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
 
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         const moduleFixture: TestingModule = await Test.createTestingModule({
             imports: [
                 MongooseModule.forRoot(mongoUri),
@@ -50,7 +60,16 @@ describe('ProductController (Integration)', () =>
                 ]),
             ],
             controllers: [ProductController],
-            providers: [ProductService, InventoryService, CategoryService, ObjectIdValidationPipe],
+            providers: [
+                ProductService, 
+                InventoryService, 
+                CategoryService, 
+                ObjectIdValidationPipe,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         })
             .overrideGuard(JwtAuthGuard)
             .useValue({

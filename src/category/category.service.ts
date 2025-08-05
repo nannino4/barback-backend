@@ -1,17 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Category } from './schemas/category.schema';
 import { InCreateCategoryDto } from './dto/in.create-category.dto';
 import { InUpdateCategoryDto } from './dto/in.update-category.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class CategoryService 
 {
-    private readonly logger = new Logger(CategoryService.name);
-
     constructor(
         @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
+        private readonly logger: CustomLogger,
     ) {}
 
     async createCategory(orgId: Types.ObjectId, createCategoryDto: InCreateCategoryDto): Promise<Category> 

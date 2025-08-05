@@ -7,6 +7,7 @@ import { Category, CategorySchema } from './schemas/category.schema';
 import { InCreateCategoryDto } from './dto/in.create-category.dto';
 import { InUpdateCategoryDto } from './dto/in.update-category.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('CategoryService - Service Tests (Unit-style)', () => 
 {
@@ -14,6 +15,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
     let connection: Connection;
     let module: TestingModule;
     let categoryModel: any;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockOrgId = new Types.ObjectId();
     const mockOrgId2 = new Types.ObjectId();
@@ -30,12 +32,26 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
 
     beforeAll(async () => 
     {
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
                 MongooseModule.forFeature([{ name: Category.name, schema: CategorySchema }]),
             ],
-            providers: [CategoryService],
+            providers: [
+                CategoryService,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         }).compile();
 
         service = module.get<CategoryService>(CategoryService);

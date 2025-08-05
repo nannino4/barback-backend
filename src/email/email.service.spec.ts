@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from './email.service';
+import { CustomLogger } from '../common/logger/custom.logger';
 import * as nodemailer from 'nodemailer';
 
 // Mock nodemailer
@@ -11,6 +12,7 @@ describe('EmailService', () =>
 {
     let service: EmailService;
     let mockTransporter: jest.Mocked<any>;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     beforeEach(async () => 
     {
@@ -20,6 +22,14 @@ describe('EmailService', () =>
 
         mockedNodemailer.createTransport.mockReturnValue(mockTransporter);
         mockedNodemailer.getTestMessageUrl.mockReturnValue('https://ethereal.email/message/test');
+
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
 
         const mockConfigService = {
             get: jest.fn((key: string) => 
@@ -50,6 +60,10 @@ describe('EmailService', () =>
                 {
                     provide: ConfigService,
                     useValue: mockConfigService,
+                },
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
                 },
             ],
         }).compile();

@@ -1,21 +1,22 @@
-import { Injectable, Logger, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Subscription, SubscriptionStatus } from './schemas/subscription.schema';
 import { UserService } from '../user/user.service';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Injectable()
 export class SubscriptionService 
 {
-    private readonly logger = new Logger(SubscriptionService.name);
     private readonly stripe: Stripe;
 
     constructor(
         @InjectModel(Subscription.name) private readonly subscriptionModel: Model<Subscription>,
         private readonly userService: UserService,
         private readonly configService: ConfigService,
+        private readonly logger: CustomLogger,
     ) 
     {
         const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');

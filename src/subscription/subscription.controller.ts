@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Delete, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Delete, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
@@ -8,16 +8,17 @@ import { OutSubscriptionPlanDto } from './dto/out.subscription-plan.dto';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { plainToInstance } from 'class-transformer';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('subscription')
 export class SubscriptionController 
 {
-    private readonly logger = new Logger(SubscriptionController.name);
     private readonly stripe: Stripe;
 
     constructor(
         private readonly subscriptionService: SubscriptionService,
         private readonly configService: ConfigService,
+        private readonly logger: CustomLogger,
     ) 
     {
         const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');

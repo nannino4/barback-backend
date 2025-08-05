@@ -1,20 +1,20 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { UserOrgRelationService } from '../user-org-relation.service';
 import { OrgRole } from '../schemas/user-org-relation.schema';
 import { ORG_ROLES_KEY } from '../decorators/org-roles.decorator';
 import { Types } from 'mongoose';
+import { CustomLogger } from '../../common/logger/custom.logger';
 
 @Injectable()
 export class OrgRolesGuard implements CanActivate 
 {
-    private readonly logger = new Logger(OrgRolesGuard.name);
-
     constructor(
         private readonly reflector: Reflector,
         private readonly userOrgService: UserOrgRelationService,
-    ) {}
+        private readonly logger: CustomLogger,
+    ) {} 
 
     async canActivate(context: ExecutionContext): Promise<boolean> 
     {

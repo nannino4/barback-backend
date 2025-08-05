@@ -19,6 +19,7 @@ import { SubscriptionService } from '../subscription/subscription.service';
 import { Types } from 'mongoose';
 import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('OrgController (Integration)', () => 
 {
@@ -28,6 +29,7 @@ describe('OrgController (Integration)', () =>
     let testUser: User;
     let testUser2: User; // Second user to own Organization 2
     let testOrgs: Org[];
+    let mockLogger: jest.Mocked<CustomLogger>;
     
     // Define models in root scope for accessibility across tests
     let userModel: any;
@@ -39,6 +41,14 @@ describe('OrgController (Integration)', () =>
     {
         mongoServer = await MongoMemoryServer.create();
         const mongoUri = mongoServer.getUri();
+
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
 
         const moduleFixture: TestingModule = await Test.createTestingModule({
             imports: [
@@ -66,6 +76,10 @@ describe('OrgController (Integration)', () =>
                     useValue: {
                         get: jest.fn().mockReturnValue('test-stripe-key'),
                     },
+                },
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
                 },
             ],
         })

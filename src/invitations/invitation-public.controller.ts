@@ -3,12 +3,12 @@ import {
     Get,
     Post,
     Param,
-    Logger,
     NotFoundException,
 } from '@nestjs/common';
 import { InvitationService } from './invitation.service';
 import { plainToInstance } from 'class-transformer';
 import { OutInvitationPublicDto } from './dto/out.invitation-public.dto';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 /**
  * Public controller for anonymous users to interact with invitations.
@@ -18,9 +18,10 @@ import { OutInvitationPublicDto } from './dto/out.invitation-public.dto';
 @Controller('public/invitations')
 export class InvitationPublicController 
 {
-    private readonly logger = new Logger(InvitationPublicController.name);
-
-    constructor(private readonly orgInviteService: InvitationService) {}
+    constructor(
+        private readonly orgInviteService: InvitationService,
+        private readonly logger: CustomLogger,
+    ) {}
 
     /**
      * Get invitation details by token for display to anonymous users.

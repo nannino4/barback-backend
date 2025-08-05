@@ -9,7 +9,6 @@ import {
     UseGuards,
     HttpCode,
     HttpStatus,
-    Logger,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { UserService } from '../user/user.service';
@@ -23,15 +22,17 @@ import { UpdateUserStatusDto } from './dto/in.update-user-status.dto';
 import { OutAdminUserDto } from './dto/out.admin-user.dto';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, UserRolesGuard)
 @UserRoles(UserRole.ADMIN)
 export class AdminController
 {
-    private readonly logger = new Logger(AdminController.name);
-
-    constructor(private readonly userService: UserService)
+    constructor(
+        private readonly userService: UserService,
+        private readonly logger: CustomLogger,
+    )
     {
         this.logger.debug('AdminController initialized', 'AdminController#constructor');
     }

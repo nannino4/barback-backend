@@ -7,6 +7,7 @@ import { InventoryLog, InventoryLogSchema, InventoryLogType } from './schemas/in
 import { Product, ProductSchema } from './schemas/product.schema';
 import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
+import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('InventoryService - Service Tests (Unit-style)', () => 
 {
@@ -15,6 +16,7 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
     let module: TestingModule;
     let productModel: any;
     let inventoryLogModel: any;
+    let mockLogger: jest.Mocked<CustomLogger>;
 
     const mockOrgId = new Types.ObjectId();
     const mockOrgId2 = new Types.ObjectId();
@@ -38,6 +40,14 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
 
     beforeAll(async () => 
     {
+        mockLogger = {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
+        } as any;
+
         module = await Test.createTestingModule({
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
@@ -46,7 +56,13 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
                     { name: Product.name, schema: ProductSchema },
                 ]),
             ],
-            providers: [InventoryService],
+            providers: [
+                InventoryService,
+                {
+                    provide: CustomLogger,
+                    useValue: mockLogger,
+                },
+            ],
         }).compile();
 
         service = module.get<InventoryService>(InventoryService);
