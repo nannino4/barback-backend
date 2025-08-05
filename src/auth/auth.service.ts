@@ -277,7 +277,7 @@ export class AuthService
             throw new EmailAlreadyVerifiedException(email);
         }
 
-        const token = await this.userService.generateEmailVerificationToken(new Types.ObjectId(user.id));
+        const token = await this.userService.generateEmailVerificationToken(user._id as Types.ObjectId);
         const emailOptions = this.emailService.generateVerificationEmail(email, token);
         
         await this.emailService.sendEmail(emailOptions);

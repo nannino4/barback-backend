@@ -262,7 +262,58 @@ Send or resend email verification.
 
 **Response** (200 OK): Empty response
 
-**Rate Limiting**: 1 email per minute per email address
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "email must be an email"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Email Already Verified:
+```json
+{
+  "message": "Email \"user@example.com\" is already verified",
+  "error": "EMAIL_ALREADY_VERIFIED",
+  "statusCode": 400
+}
+```
+
+**404 Not Found** - User Not Found:
+```json
+{
+  "message": "User with email \"user@example.com\" not found",
+  "error": "USER_NOT_FOUND_BY_EMAIL",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: email verification token generation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Email Sending Failed:
+```json
+{
+  "message": "Failed to send email: [details]",
+  "error": "EMAIL_SENDING_FAILED",
+  "statusCode": 500
+}
+```
+
+**Notes**:
+- Rate limiting: 1 email per minute per email address
+- Verification token expires in 24 hours
 
 ---
 

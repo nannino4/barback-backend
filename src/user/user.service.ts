@@ -216,23 +216,33 @@ export class UserService
     async generateEmailVerificationToken(userId: Types.ObjectId): Promise<string>
     {
         this.logger.debug(`Generating email verification token for user ID: ${userId}`, 'UserService#generateEmailVerificationToken');
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
+        
+        try 
+        {
+            const token = crypto.randomBytes(32).toString('hex');
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + 24); // 24 hours from now
 
-        await this.userModel.findByIdAndUpdate(
-            userId,
-            { 
-                $set: { 
-                    emailVerificationToken: token,
-                    emailVerificationExpires: expiresAt,
+            await this.userModel.findByIdAndUpdate(
+                userId,
+                { 
+                    $set: { 
+                        emailVerificationToken: token,
+                        emailVerificationExpires: expiresAt,
+                    },
                 },
-            },
-            { new: true, runValidators: true }
-        ).exec();
+                { new: true, runValidators: true }
+            ).exec();
 
-        this.logger.debug(`Email verification token generated for user ID: ${userId}`, 'UserService#generateEmailVerificationToken');
-        return token;
+            this.logger.debug(`Email verification token generated for user ID: ${userId}`, 'UserService#generateEmailVerificationToken');
+            return token;
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Failed to generate email verification token for user ID: ${userId}`, error instanceof Error ? error.stack : undefined, 'UserService#generateEmailVerificationToken');
+            throw new DatabaseOperationException('email verification token generation', errorMessage);
+        }
     }
 
     async verifyEmail(token: string): Promise<User>

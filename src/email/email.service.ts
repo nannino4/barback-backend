@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
+import { EmailConfigurationException, EmailSendingException } from './exceptions/email.exceptions';
+import { CustomLogger } from 'src/common/logger/custom.logger';
 
 export interface EmailOptions 
 {
@@ -14,12 +16,29 @@ export interface EmailOptions
 @Injectable()
 export class EmailService 
 {
-    private readonly logger = new Logger(EmailService.name);
     private transporter: Transporter | null = null;
+    
+    // Store validated configuration values
+    private readonly emailFrom: string;
+    private readonly frontendUrl: string;
 
-    constructor(private readonly configService: ConfigService) 
+    constructor(
+        private readonly configService: ConfigService,
+        private readonly logger: CustomLogger,
+    ) 
     {
         this.initializeTransporter();
+        
+        // Validate and store FRONTEND_URL
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+        if (!frontendUrl) 
+        {
+            throw new EmailConfigurationException('FRONTEND_URL');
+        }
+        this.frontendUrl = frontendUrl;
+        
+        // Store EMAIL_FROM (already validated in initializeTransporter)
+        this.emailFrom = this.configService.get<string>('EMAIL_FROM')!;
     }
 
     private initializeTransporter(): void 
@@ -28,11 +47,28 @@ export class EmailService
         const smtpPort = this.configService.get<number>('SMTP_PORT');
         const smtpUser = this.configService.get<string>('SMTP_USER');
         const smtpPass = this.configService.get<string>('SMTP_PASS');
+        const emailFrom = this.configService.get<string>('EMAIL_FROM');
 
-        if (!smtpHost || !smtpPort || !smtpUser || !smtpPass) 
+        // Validate required configuration
+        if (!smtpHost) 
         {
-            this.logger.warn('SMTP configuration incomplete, email service will not work properly', 'EmailService#initializeTransporter');
-            return;
+            throw new EmailConfigurationException('SMTP_HOST');
+        }
+        if (!smtpPort) 
+        {
+            throw new EmailConfigurationException('SMTP_PORT');
+        }
+        if (!smtpUser) 
+        {
+            throw new EmailConfigurationException('SMTP_USER');
+        }
+        if (!smtpPass) 
+        {
+            throw new EmailConfigurationException('SMTP_PASS');
+        }
+        if (!emailFrom) 
+        {
+            throw new EmailConfigurationException('EMAIL_FROM');
         }
 
         this.transporter = nodemailer.createTransport({
@@ -50,18 +86,11 @@ export class EmailService
 
     async sendEmail(options: EmailOptions): Promise<void> 
     {
-        if (!this.transporter) 
-        {
-            this.logger.error('Email transporter not initialized, cannot send email', 'EmailService#sendEmail');
-            throw new Error('Email service not properly configured');
-        }
-
-        const emailFrom = this.configService.get<string>('EMAIL_FROM');
-        
+        // transporter is guaranteed to exist due to constructor validation
         try 
         {
-            const info = await this.transporter.sendMail({
-                from: emailFrom,
+            const info = await this.transporter!.sendMail({
+                from: this.emailFrom,
                 to: options.to,
                 subject: options.subject,
                 text: options.text,
@@ -79,16 +108,14 @@ export class EmailService
         catch (error) 
         {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Failed to send email to ${options.to}: ${errorMessage}`, errorStack, 'EmailService#sendEmail');
-            throw new Error('Failed to send email');
+            this.logger.error(`Failed to send email to ${options.to}: ${errorMessage}`, error instanceof Error ? error.stack : undefined, 'EmailService#sendEmail');
+            throw new EmailSendingException(errorMessage);
         }
     }
 
     generateVerificationEmail(email: string, token: string): EmailOptions 
     {
-        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-        const verificationUrl = `${frontendUrl}/auth/verify-email?token=${token}`;
+        const verificationUrl = `${this.frontendUrl}/auth/verify-email?token=${token}`;
 
         return {
             to: email,
@@ -112,8 +139,7 @@ export class EmailService
 
     generatePasswordResetEmail(email: string, token: string): EmailOptions 
     {
-        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-        const resetUrl = `${frontendUrl}/auth/reset-password?token=${token}`;
+        const resetUrl = `${this.frontendUrl}/auth/reset-password?token=${token}`;
 
         return {
             to: email,
@@ -142,9 +168,8 @@ export class EmailService
         role: string,
     ): EmailOptions 
     {
-        const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-        const acceptUrl = `${frontendUrl}/invitations/accept?token=${token}`;
-        const declineUrl = `${frontendUrl}/invitations/decline?token=${token}`;
+        const acceptUrl = `${this.frontendUrl}/invitations/accept?token=${token}`;
+        const declineUrl = `${this.frontendUrl}/invitations/decline?token=${token}`;
 
         const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1).toLowerCase();
 
