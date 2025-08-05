@@ -329,10 +329,49 @@ Verify email with token (for API calls).
 }
 ```
 
+**Validation Rules**:
+- `token`: Required, non-empty string
+
 **Response** (200 OK): Empty response
 
-**Errors**:
-- `400 Bad Request`: Invalid or expired token
+**Error Responses**:
+
+**400 Bad Request** - Validation Error:
+```json
+{
+  "message": ["token should not be empty", "token must be a string"],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid/Expired Token:
+```json
+{
+  "message": "Invalid or expired email verification token",
+  "error": "INVALID_EMAIL_VERIFICATION_TOKEN",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Email Already Verified:
+```json
+{
+  "message": "Email \"user@example.com\" is already verified",
+  "error": "EMAIL_ALREADY_VERIFIED",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "error": "Database Operation Failed",
+  "message": "Database operation failed during email verification lookup",
+  "details": "[error details]",
+  "statusCode": 500
+}
+```
 
 ---
 
@@ -344,10 +383,43 @@ Browser-friendly email verification link.
 **Parameters**:
 - `token` (path): Email verification token
 
-**Response** (200 OK): HTML confirmation page
+**Response** (200 OK): Empty response
 
-**Errors**:
-- `400 Bad Request`: Invalid or expired token
+**Error Responses**:
+
+**400 Bad Request** - Invalid/Expired Token:
+```json
+{
+  "message": "Invalid or expired email verification token",
+  "error": "INVALID_EMAIL_VERIFICATION_TOKEN",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Email Already Verified:
+```json
+{
+  "message": "Email \"user@example.com\" is already verified",
+  "error": "EMAIL_ALREADY_VERIFIED",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "error": "Database Operation Failed",
+  "message": "Database operation failed during email verification update",
+  "details": "[error details]",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
+- Both routes use the same underlying verification logic
+- Database operations are wrapped in try-catch blocks for proper error handling
+- Business logic validation prevents verification of already verified emails
+- Security consideration: Invalid tokens return 400, not 404, to avoid token enumeration
 
 ---
 

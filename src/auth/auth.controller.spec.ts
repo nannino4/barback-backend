@@ -17,6 +17,7 @@ import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitations/invitation.service';
 import { GoogleService } from './services/google.service';
+import { CommonModule } from '../common/common.module';
 
 describe('AuthController - Integration Tests', () => 
 {
@@ -59,6 +60,7 @@ describe('AuthController - Integration Tests', () =>
                     envFilePath: '.env.test',
                     isGlobal: true,
                 }),
+                CommonModule, // Add CommonModule to provide CustomLogger
             ],
             controllers: [AuthController],
             providers: [
@@ -470,13 +472,103 @@ describe('AuthController - Integration Tests', () =>
             expect(updatedUser!.isEmailVerified).toBe(true);
         });
 
-        it('should return 401 for invalid token', async () => 
+        it('should return 400 for invalid token', async () => 
         {
             // Act & Assert
             await request(app.getHttpServer())
                 .post('/api/auth/verify-email')
                 .send({ token: 'invalid-token' })
-                .expect(401);
+                .expect(400);
+        });
+
+        it('should return 400 for already verified email', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/api/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            const user = await userService.findByEmail(mockRegisterDto.email);
+            const token = await userService.generateEmailVerificationToken(user!._id as any);
+
+            // First verification should succeed
+            await request(app.getHttpServer())
+                .post('/api/auth/verify-email')
+                .send({ token })
+                .expect(200);
+
+            // Second verification with same token should fail
+            await request(app.getHttpServer())
+                .post('/api/auth/verify-email')
+                .send({ token })
+                .expect(400);
+        });
+
+        it('should return 400 for missing token', async () => 
+        {
+            // Act & Assert
+            await request(app.getHttpServer())
+                .post('/api/auth/verify-email')
+                .send({})
+                .expect(400);
+        });
+    });
+
+    describe('/auth/verify-email/:token (GET)', () => 
+    {
+        it('should verify email with valid token via GET', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/api/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            const user = await userService.findByEmail(mockRegisterDto.email);
+            const token = await userService.generateEmailVerificationToken(user!._id as any);
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .get(`/api/auth/verify-email/${token}`)
+                .expect(200);
+
+            // Assert
+            expect(response.body).toEqual({});
+            
+            const updatedUser = await userService.findByEmail(mockRegisterDto.email);
+            expect(updatedUser!.isEmailVerified).toBe(true);
+        });
+
+        it('should return 400 for invalid token via GET', async () => 
+        {
+            // Act & Assert
+            await request(app.getHttpServer())
+                .get('/api/auth/verify-email/invalid-token')
+                .expect(400);
+        });
+
+        it('should return 400 for already verified email via GET', async () => 
+        {
+            // Arrange
+            await request(app.getHttpServer())
+                .post('/api/auth/register/email')
+                .send(mockRegisterDto)
+                .expect(201);
+
+            const user = await userService.findByEmail(mockRegisterDto.email);
+            const token = await userService.generateEmailVerificationToken(user!._id as any);
+
+            // First verification should succeed
+            await request(app.getHttpServer())
+                .get(`/api/auth/verify-email/${token}`)
+                .expect(200);
+
+            // Generate new token and attempt verification - should fail because email already verified
+            const newToken = await userService.generateEmailVerificationToken(user!._id as any);
+            await request(app.getHttpServer())
+                .get(`/api/auth/verify-email/${newToken}`)
+                .expect(400);
         });
     });
 

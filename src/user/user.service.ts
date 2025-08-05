@@ -10,6 +10,7 @@ import {
     EmailAlreadyExistsException,
     InvalidEmailVerificationTokenException,
     InvalidPasswordResetTokenException,
+    EmailAlreadyVerifiedException,
 } from './exceptions/user.exceptions';
 import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
 
@@ -248,10 +249,21 @@ export class UserService
     async verifyEmail(token: string): Promise<User>
     {
         this.logger.debug('Attempting to verify email with token', 'UserService#verifyEmail');
-        const user = await this.userModel.findOne({
-            emailVerificationToken: token,
-            emailVerificationExpires: { $gt: new Date() },
-        }).exec();
+        
+        let user: User | null;
+        try 
+        {
+            user = await this.userModel.findOne({
+                emailVerificationToken: token,
+                emailVerificationExpires: { $gt: new Date() },
+            }).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error('Database error while finding user by verification token', error instanceof Error ? error.stack : undefined, 'UserService#verifyEmail');
+            throw new DatabaseOperationException('email verification lookup', errorMessage);
+        }
 
         if (!user)
         {
@@ -259,19 +271,36 @@ export class UserService
             throw new InvalidEmailVerificationTokenException();
         }
 
-        const updatedUser = await this.userModel.findByIdAndUpdate(
-            user.id,
-            { 
-                $set: { 
-                    isEmailVerified: true,
+        // Check if email is already verified (business logic validation)
+        if (user.isEmailVerified)
+        {
+            this.logger.warn(`Email already verified for user: ${user.email}`, 'UserService#verifyEmail');
+            throw new EmailAlreadyVerifiedException(user.email);
+        }
+
+        let updatedUser: User | null;
+        try 
+        {
+            updatedUser = await this.userModel.findByIdAndUpdate(
+                user.id,
+                { 
+                    $set: { 
+                        isEmailVerified: true,
+                    },
+                    $unset: { 
+                        emailVerificationToken: 1,
+                        emailVerificationExpires: 1,
+                    },
                 },
-                $unset: { 
-                    emailVerificationToken: 1,
-                    emailVerificationExpires: 1,
-                },
-            },
-            { new: true, runValidators: true }
-        ).exec();
+                { new: true, runValidators: true }
+            ).exec();
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Database error while updating user verification status for user ID: ${user.id}`, error instanceof Error ? error.stack : undefined, 'UserService#verifyEmail');
+            throw new DatabaseOperationException('email verification update', errorMessage);
+        }
 
         if (!updatedUser)
         {
