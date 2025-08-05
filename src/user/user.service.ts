@@ -11,6 +11,7 @@ import {
     InvalidEmailVerificationTokenException,
     InvalidPasswordResetTokenException,
 } from './exceptions/user.exceptions';
+import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
 
 @Injectable()
 export class UserService
@@ -31,10 +32,21 @@ export class UserService
             this.logger.warn(`User with email "${user.email}" already exists`, 'UserService#create');
             throw new EmailAlreadyExistsException(user.email);
         }
-        const createdUser = new this.userModel(user);
-        await createdUser.save();
-        this.logger.debug(`User created successfully: ${createdUser.email}`, 'UserService#create');
-        return createdUser;
+        
+        // Database operation with error handling
+        try 
+        {
+            const createdUser = new this.userModel(user);
+            await createdUser.save();
+            this.logger.debug(`User created successfully: ${createdUser.email}`, 'UserService#create');
+            return createdUser;
+        }
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Database operation failed for user creation: ${user.email}`, error, 'UserService#create');
+            throw new DatabaseOperationException('user creation', errorMessage);
+        }
     }
 
     async findAll(limit: number, offset: number): Promise<User[]>

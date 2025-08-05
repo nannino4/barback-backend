@@ -134,41 +134,44 @@ export class AuthService
     async validateRefreshToken(refreshTokenString: string) : Promise<OutAuthResponseDto>
     {
         this.logger.debug('Refresh token process started', 'AuthService#validateRefreshToken');
+        
+        let user: User;
         try
         {
+            // Verify JWT token
             const payload = await this.jwtService.verifyAsync<RefreshTokenPayloadDto>(
                 refreshTokenString,
                 {
                     secret: this.jwtRefreshTokenSecret,
                 },
             );
+            
+            // Validate token type
             if (payload.type !== 'refresh')
             {
-                this.logger.warn('Invalid token type for refresh', 'AuthService#validateRefreshToken');
-                throw new InvalidRefreshTokenException();
+                throw new Error('Invalid token type');
             }
-            const user = await this.userService.findById(new Types.ObjectId(payload.sub));
+            
+            // Find user (throws if not found)
+            user = await this.userService.findById(new Types.ObjectId(payload.sub));
             if (!user)
             {
-                this.logger.warn(`User not found for refresh token. User ID: ${payload.sub}`, 'AuthService#validateRefreshToken');
-                throw new InvalidRefreshTokenException();
+                throw new Error('User not found');
             }
-            this.logger.debug(`User ${user.email} validated for token refresh`, 'AuthService#validateRefreshToken');
-            const response = await this.generateAuthResponse(user);
-            this.logger.debug(`Tokens refreshed for user: ${user.email}`, 'AuthService#validateRefreshToken');
-            return response;
         }
         catch (error)
         {
-            if (error instanceof InvalidRefreshTokenException)
-            {
-                throw error; // Re-throw our custom exception
-            }
-            
+            // Convert all token validation errors to InvalidRefreshTokenException for security
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             this.logger.error(`Refresh Token Error: ${errorMessage}`, error instanceof Error ? error.stack : undefined, 'AuthService#validateRefreshToken');
             throw new InvalidRefreshTokenException();
         }
+        
+        // Generate response (outside try block - let TokenGenerationException bubble up)
+        this.logger.debug(`User ${user.email} validated for token refresh`, 'AuthService#validateRefreshToken');
+        const response = await this.generateAuthResponse(user);
+        this.logger.debug(`Tokens refreshed for user: ${user.email}`, 'AuthService#validateRefreshToken');
+        return response;
     }
 
     async loginEmail(email: string, pass: string): Promise<OutAuthResponseDto>

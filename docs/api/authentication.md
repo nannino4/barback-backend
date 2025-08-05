@@ -44,10 +44,62 @@ Register a new user with email and password.
 - FirstName/LastName: Max 50 characters each
 - PhoneNumber: Optional, must be valid Italian mobile format
 
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "email must be an email",
+    "password must be longer than or equal to 8 characters",
+    "firstName should not be empty"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**409 Conflict** - Email Already Exists:
+```json
+{
+  "message": "User with email \"user@example.com\" already exists",
+  "error": "EMAIL_ALREADY_EXISTS",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Password Hashing Failed:
+```json
+{
+  "message": "Password hashing failed",
+  "error": "PASSWORD_HASHING_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: user creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Token Generation Failed:
+```json
+{
+  "message": "Token generation failed: [details]",
+  "error": "TOKEN_GENERATION_FAILED",
+  "statusCode": 500
+}
+```
+
 **Notes**:
 - Automatically sends email verification after registration
 - User can use the app immediately but should verify email
 - Email verification token expires in 24 hours
+- Invitation processing and email sending failures don't block registration
 
 ---
 
@@ -81,8 +133,50 @@ Login with email and password.
 }
 ```
 
-**Errors**:
-- `401 Unauthorized`: Invalid credentials
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "email must be an email",
+    "password should not be empty"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid Credentials:
+```json
+{
+  "message": "Email or password is incorrect",
+  "error": "INVALID_CREDENTIALS",
+  "statusCode": 401
+}
+```
+
+**401 Unauthorized** - Wrong Authentication Provider:
+```json
+{
+  "message": "This account uses google authentication. Please use the correct sign-in method.",
+  "error": "WRONG_AUTH_PROVIDER",
+  "statusCode": 401
+}
+```
+
+**500 Internal Server Error** - Token Generation Failed:
+```json
+{
+  "message": "Token generation failed: [details]",
+  "error": "TOKEN_GENERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Security Notes**:
+- Invalid email and wrong password return the same error to prevent user enumeration
+- Rate limiting may apply to prevent brute force attacks
 
 ---
 
@@ -115,8 +209,40 @@ Refresh an expired access token using a valid refresh token.
 }
 ```
 
-**Errors**:
-- `401 Unauthorized`: Invalid or expired refresh token
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "refresh_token should not be empty"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Expired Refresh Token:
+```json
+{
+  "message": "Invalid or expired refresh token",
+  "error": "INVALID_REFRESH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**500 Internal Server Error** - Token Generation Failed:
+```json
+{
+  "message": "Token generation failed: [details]",
+  "error": "TOKEN_GENERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Security Notes**:
+- All invalid refresh token scenarios return the same 401 error to prevent information disclosure
+- This includes cases where the user no longer exists, token is expired, or token is malformed
 
 ---
 
