@@ -97,6 +97,10 @@ describe('AuthController - Integration Tests', () =>
                                 JWT_REFRESH_TOKEN_SECRET: 'test-refresh-secret',
                                 JWT_ACCESS_TOKEN_EXPIRATION_TIME: '15m',
                                 JWT_REFRESH_TOKEN_EXPIRATION_TIME: '7d',
+                                // Google OAuth configuration for tests
+                                GOOGLE_CLIENT_ID: 'test-google-client-id',
+                                GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
+                                GOOGLE_REDIRECT_URI: 'http://localhost:3000/oauth/callback',
                             };
                             return config[key];
                         }),
@@ -782,6 +786,59 @@ describe('AuthController - Integration Tests', () =>
             expect(initialPayload.type).toBe('access');
             expect(loginPayload.type).toBe('access');
             expect(refreshPayload.type).toBe('access');
+        });
+    });
+
+    describe('OAuth Endpoints', () => 
+    {
+        describe('GET /auth/oauth/google', () => 
+        {
+            it('should generate Google OAuth URL successfully', async () => 
+            {
+                const response = await request(app.getHttpServer())
+                    .get('/api/auth/oauth/google')
+                    .expect(200);
+
+                expect(response.body).toHaveProperty('authUrl');
+                expect(response.body).toHaveProperty('state');
+                expect(response.body.authUrl).toContain('https://accounts.google.com/o/oauth2/v2/auth');
+                expect(response.body.state).toHaveLength(64);
+            });
+        });
+
+        describe('POST /auth/oauth/google/callback', () => 
+        {
+            it('should handle invalid authorization code (validation errors)', async () => 
+            {
+                // Test empty code - should be caught by validation pipe
+                await request(app.getHttpServer())
+                    .post('/api/auth/oauth/google/callback')
+                    .send({ code: '' })
+                    .expect(400);
+
+                // Test missing code - should be caught by validation pipe
+                await request(app.getHttpServer())
+                    .post('/api/auth/oauth/google/callback')
+                    .send({})
+                    .expect(400);
+
+                // Test non-string code - should be caught by validation pipe
+                await request(app.getHttpServer())
+                    .post('/api/auth/oauth/google/callback')
+                    .send({ code: 123 })
+                    .expect(400);
+
+                // Test whitespace-only code - should be caught by validation pipe
+                await request(app.getHttpServer())
+                    .post('/api/auth/oauth/google/callback')
+                    .send({ code: '   ' })
+                    .expect(400);
+            });
+
+            // Note: Testing the full OAuth flow with external API calls would require
+            // mocking axios calls in the GoogleService. This is better tested in unit tests
+            // for the GoogleService itself, where we can control the external dependencies.
+            // Integration tests here focus on the controller-level behavior and validation.
         });
     });
 });

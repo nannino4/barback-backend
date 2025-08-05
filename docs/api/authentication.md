@@ -588,6 +588,17 @@ Generate Google OAuth authorization URL.
 }
 ```
 
+**Error Responses**:
+
+**500 Internal Server Error** - Google OAuth Configuration Missing:
+```json
+{
+  "message": "Google OAuth configuration error: GOOGLE_CLIENT_ID is not configured",
+  "error": "GOOGLE_CONFIGURATION_ERROR",
+  "statusCode": 500
+}
+```
+
 **Usage**:
 - Frontend calls this endpoint to get the OAuth URL
 - Frontend redirects user to the returned `authUrl`
@@ -609,6 +620,9 @@ Handle Google OAuth authorization code and authenticate user.
 }
 ```
 
+**Validation Rules**:
+- Code: Required, non-empty string
+
 **Response** (200 OK):
 ```json
 {
@@ -626,11 +640,88 @@ Handle Google OAuth authorization code and authenticate user.
 }
 ```
 
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "code should not be empty",
+    "code must be a string"
+  ],
+  "error": "Bad Request", 
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Token Exchange Failed:
+```json
+{
+  "message": "Failed to exchange authorization code for tokens",
+  "error": "GOOGLE_TOKEN_EXCHANGE_FAILED",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - User Info Retrieval Failed:
+```json
+{
+  "message": "Failed to fetch user information from Google",
+  "error": "GOOGLE_USER_INFO_FAILED",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid Google Token:
+```json
+{
+  "message": "Invalid or expired Google access token",
+  "error": "GOOGLE_TOKEN_INVALID",
+  "statusCode": 401
+}
+```
+
+**401 Unauthorized** - Google Email Not Verified:
+```json
+{
+  "message": "Google account email must be verified",
+  "error": "GOOGLE_EMAIL_NOT_VERIFIED",
+  "statusCode": 401
+}
+```
+
+**409 Conflict** - Account Linking Conflict:
+```json
+{
+  "message": "An account with this email already exists using facebook authentication",
+  "error": "GOOGLE_ACCOUNT_LINKING_CONFLICT",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Token Generation Failed:
+```json
+{
+  "message": "Token generation failed: [details]",
+  "error": "TOKEN_GENERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: user creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
 **Account Linking Behavior**:
 - **New User**: Creates new account with Google authentication
 - **Existing Email User**: Links Google account to existing email/password account
 - **Existing Google User**: Returns authentication for existing user
-- **Email Conflict**: Returns 409 if email exists with different OAuth provider
+- **Email Conflict**: Returns 409 if email exists with different OAuth provider (non-email)
 
 ---
 
@@ -640,3 +731,4 @@ Handle Google OAuth authorization code and authenticate user.
 - Profile pictures are automatically synced from Google
 - Email verification is automatic for Google users
 - Supports seamless account linking for existing email users
+- Pending organization invitations are automatically processed for new Google users

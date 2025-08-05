@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as crypto from 'crypto';
@@ -10,6 +10,14 @@ import { InvitationService } from '../../invitations/invitation.service';
 import { Types } from 'mongoose';
 import { OutGoogleAuthUrlDto } from '../dto/out.google-auth-url.dto';
 import { CustomLogger } from 'src/common/logger/custom.logger';
+import {
+    GoogleConfigurationException,
+    GoogleTokenExchangeException,
+    GoogleUserInfoException,
+    GoogleTokenInvalidException,
+    GoogleEmailNotVerifiedException,
+    GoogleAccountLinkingException,
+} from '../exceptions/oauth.exceptions';
 
 @Injectable()
 export class GoogleService 
@@ -30,10 +38,26 @@ export class GoogleService
         this.clientSecret = this.configService.get<string>('GOOGLE_CLIENT_SECRET')!;
         this.redirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI')!;
 
-        if (!this.clientId || !this.clientSecret || !this.redirectUri) 
+        // Validate configuration and throw specific exceptions
+        if (!this.clientId) 
         {
-            this.logger.error('Google OAuth configuration missing. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI');
+            this.logger.error('Google OAuth configuration missing: GOOGLE_CLIENT_ID', 'GoogleService#constructor');
+            throw new GoogleConfigurationException('GOOGLE_CLIENT_ID');
         }
+        
+        if (!this.clientSecret) 
+        {
+            this.logger.error('Google OAuth configuration missing: GOOGLE_CLIENT_SECRET', 'GoogleService#constructor');
+            throw new GoogleConfigurationException('GOOGLE_CLIENT_SECRET');
+        }
+        
+        if (!this.redirectUri) 
+        {
+            this.logger.error('Google OAuth configuration missing: GOOGLE_REDIRECT_URI', 'GoogleService#constructor');
+            throw new GoogleConfigurationException('GOOGLE_REDIRECT_URI');
+        }
+
+        this.logger.debug('GoogleService initialized with valid configuration', 'GoogleService#constructor');
     }
 
     generateAuthUrl(): OutGoogleAuthUrlDto
@@ -80,7 +104,7 @@ export class GoogleService
         catch (error) 
         {
             this.logger.error('Failed to exchange authorization code for tokens', error instanceof Error ? error.stack : undefined, 'GoogleService#exchangeCodeForTokens');
-            throw new BadRequestException('Invalid authorization code');
+            throw new GoogleTokenExchangeException();
         }
     }
 
@@ -88,6 +112,8 @@ export class GoogleService
     {
         this.logger.debug('Fetching user info from Google', 'GoogleService#getUserInfo');
 
+        let userInfo: GoogleUserInfoDto;
+        
         try 
         {
             const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -96,28 +122,29 @@ export class GoogleService
                 },
             });
 
-            const userInfo = response.data as GoogleUserInfoDto;
-            
-            if (!userInfo.verified_email) 
-            {
-                this.logger.warn('Google user email is not verified', 'GoogleService#getUserInfo');
-                throw new UnauthorizedException('Google account email must be verified');
-            }
-
+            userInfo = response.data as GoogleUserInfoDto;
             this.logger.debug(`Successfully fetched user info for: ${userInfo.email}`, 'GoogleService#getUserInfo');
-            return userInfo;
         } 
         catch (error) 
         {
             if (axios.isAxiosError(error) && error.response?.status === 401) 
             {
                 this.logger.warn('Invalid or expired Google access token', 'GoogleService#getUserInfo');
-                throw new UnauthorizedException('Invalid or expired Google access token');
+                throw new GoogleTokenInvalidException();
             }
             
             this.logger.error('Failed to fetch user info from Google', error instanceof Error ? error.stack : undefined, 'GoogleService#getUserInfo');
-            throw new BadRequestException('Failed to fetch user information from Google');
+            throw new GoogleUserInfoException();
         }
+
+        // Business validation - separate from HTTP error handling
+        if (!userInfo.verified_email) 
+        {
+            this.logger.warn('Google user email is not verified', 'GoogleService#getUserInfo');
+            throw new GoogleEmailNotVerifiedException();
+        }
+
+        return userInfo;
     }
 
     async findOrCreateUser(googleUserInfo: GoogleUserInfoDto): Promise<User> 
@@ -141,7 +168,7 @@ export class GoogleService
             if (existingUserByEmail.authProvider !== AuthProvider.EMAIL) 
             {
                 this.logger.warn(`User ${googleUserInfo.email} exists with different auth provider: ${existingUserByEmail.authProvider}`, 'GoogleService#findOrCreateUser');
-                throw new ConflictException(`An account with this email already exists using ${existingUserByEmail.authProvider} authentication`);
+                throw new GoogleAccountLinkingException(existingUserByEmail.authProvider);
             }
 
             // Link Google account to existing email user
