@@ -29,7 +29,7 @@ export class CustomLogger implements LoggerService
         {
             // Try to get correlation ID from request-scoped service
             const correlationId = this.correlationService?.getCorrelationId();
-            return correlationId ? `[${correlationId}] ${messageStr}` : messageStr;
+            return correlationId ? `[${correlationId}] ${messageStr}` : `[-] ${messageStr}`;
         }
         catch (error)
         {
