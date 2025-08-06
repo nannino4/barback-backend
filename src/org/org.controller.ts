@@ -5,11 +5,9 @@ import {
     Put,
     Query,
     UseGuards,
-    ConflictException,
     NotFoundException,
     Param,
     Body,
-    BadRequestException,
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -33,6 +31,14 @@ import { UserService } from '../user/user.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { SubscriptionStatus } from '../subscription/schemas/subscription.schema';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { 
+    OrganizationNotFoundException, 
+    SubscriptionNotActiveException, 
+    SubscriptionOwnershipException,
+    OwnerRoleAssignmentException,
+    OwnerRoleModificationException,
+    CorruptedUserOrgRelationException,
+} from './exceptions/org.exceptions';
 
 @Controller('orgs')
 @UseGuards(JwtAuthGuard)
@@ -61,16 +67,17 @@ export class OrgController
             this.logger.error(`Subscription not found: ${createData.subscriptionId}`, 'OrgController#createOrganization');
             throw new NotFoundException('Subscription not found');
         }
-        if (subscription.status !== SubscriptionStatus.ACTIVE && subscription.status !== SubscriptionStatus.TRIALING)
-        {
-            this.logger.error(`Subscription is not active: ${createData.subscriptionId}`, 'OrgController#createOrganization');
-            throw new ConflictException('Subscription is not active');
-        }
         
         if (subscription.userId.toString() !== (user._id as Types.ObjectId).toString())
         {
             this.logger.error(`Subscription ${createData.subscriptionId} does not belong to user: ${user.email}`, 'OrgController#createOrganization');
-            throw new ConflictException('Subscription does not belong to the current user');
+            throw new SubscriptionOwnershipException(createData.subscriptionId.toString());
+        }
+        
+        if (subscription.status !== SubscriptionStatus.ACTIVE && subscription.status !== SubscriptionStatus.TRIALING)
+        {
+            this.logger.error(`Subscription is not active: ${createData.subscriptionId}`, 'OrgController#createOrganization');
+            throw new SubscriptionNotActiveException(createData.subscriptionId.toString());
         }
         
         // Create the organization
@@ -99,7 +106,7 @@ export class OrgController
             if (!org) 
             {
                 this.logger.warn(`Organization not found for relation: ${relation.id}`, 'OrgController#getUserOrgs');
-                throw new ConflictException(`Organization not found for relation: ${relation.id}`);
+                throw new CorruptedUserOrgRelationException(relation.id, 'organization');
             }
             result.push(
                 plainToInstance(OutUserOrgRelationDto, {
@@ -128,7 +135,7 @@ export class OrgController
         if (!org) 
         {
             this.logger.warn(`Organization not found: ${orgId}`, 'OrgController#getOrgMembers');
-            throw new NotFoundException(`Organization not found: ${orgId}`);
+            throw new OrganizationNotFoundException(orgId.toString());
         }
         
         // Get all user-org relations for this organization
@@ -141,7 +148,7 @@ export class OrgController
             if (!relationUser) 
             {
                 this.logger.warn(`User not found for relation: ${relation.id}`, 'OrgController#getOrgMembers');
-                throw new ConflictException(`User not found for relation: ${relation.id}`);
+                throw new CorruptedUserOrgRelationException(relation.id, 'user');
             }
             
             result.push(
@@ -188,7 +195,7 @@ export class OrgController
         if (updateData.role === OrgRole.OWNER)
         {
             this.logger.warn(`Attempt to assign OWNER role to user: ${userId} in org: ${orgId} by user: ${user.email}`, 'OrgController#updateMemberRole');
-            throw new BadRequestException('Cannot assign OWNER role through role updates');
+            throw new OwnerRoleAssignmentException();
         }
         
         // Verify the target user is a member of the organization
@@ -203,7 +210,7 @@ export class OrgController
         if (targetMember.orgRole === OrgRole.OWNER)
         {
             this.logger.warn(`Attempt to modify OWNER role of user: ${userId} in org: ${orgId} by user: ${user.email}`, 'OrgController#updateMemberRole');
-            throw new BadRequestException('Cannot modify the role of an organization owner');
+            throw new OwnerRoleModificationException();
         }
         
         // Update the role
@@ -216,7 +223,7 @@ export class OrgController
         if (!org || !targetUser)
         {
             this.logger.error(`Failed to get organization or user data for response - org: ${!!org}, user: ${!!targetUser}`, 'OrgController#updateMemberRole');
-            throw new ConflictException('Failed to retrieve updated member information');
+            throw new CorruptedUserOrgRelationException('unknown', !org ? 'organization' : 'user');
         }
         
         this.logger.debug(`Member role updated successfully for user: ${userId} in org: ${orgId} to role: ${updateData.role}`, 'OrgController#updateMemberRole');

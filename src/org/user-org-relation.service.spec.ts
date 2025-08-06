@@ -476,7 +476,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.updateRole(nonExistentUserId, mockOrgId1, OrgRole.MANAGER))
                 .rejects
-                .toThrow('User is not a member of this organization');
+                .toThrow('is not a member of organization');
         });
 
         it('should throw NotFoundException when organization not found', async () => 
@@ -487,7 +487,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.updateRole(mockUserId1, nonExistentOrgId, OrgRole.MANAGER))
                 .rejects
-                .toThrow('User is not a member of this organization');
+                .toThrow('is not a member of organization');
         });
 
         it('should handle all valid OrgRole values', async () => 

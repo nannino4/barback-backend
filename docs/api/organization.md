@@ -27,6 +27,11 @@ Create a new organization.
 }
 ```
 
+**Validation Rules**:
+- `name`: Required, string, max 100 characters
+- `subscriptionId`: Required, must be valid ObjectId format
+- `settings.defaultCurrency`: Optional, string, defaults to "EUR"
+
 **Response** (201 Created):
 ```json
 {
@@ -40,19 +45,79 @@ Create a new organization.
 }
 ```
 
-**Validation Rules**:
-- `name`: Required, max 100 characters
-- `subscriptionId`: Required, must be user's active subscription
-- `settings.defaultCurrency`: Optional, defaults to "EUR"
+**Error Responses**:
 
-**Errors**:
-- `404 Not Found`: Subscription not found
-- `409 Conflict`: Subscription not active or already used for another organization
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "name should not be empty",
+    "subscriptionId must be a mongodb id"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
 
-**Notes**:
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**404 Not Found** - Subscription Not Found:
+```json
+{
+  "message": "Subscription not found",
+  "error": "Not Found",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Organization Name Already Exists (for this user):
+```json
+{
+  "message": "Organization with name \"My Bar Organization\" already exists",
+  "error": "ORGANIZATION_NAME_EXISTS",
+  "statusCode": 409
+}
+```
+
+**409 Conflict** - Subscription Not Active:
+```json
+{
+  "message": "Subscription \"64a1b2c3d4e5f6789abc123\" is not active",
+  "error": "SUBSCRIPTION_NOT_ACTIVE",
+  "statusCode": 409
+}
+```
+
+**409 Conflict** - Subscription Ownership Mismatch:
+```json
+{
+  "message": "Subscription \"64a1b2c3d4e5f6789abc123\" does not belong to the current user",
+  "error": "SUBSCRIPTION_OWNERSHIP_MISMATCH",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: organization creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
 - User becomes the organization owner automatically
-- Subscription must be active or trialing
-- One organization per subscription
+- Subscription must be active or trialing status
+- Organization names must be unique per owner (different owners can have organizations with the same name)
+- One organization per subscription limitation
+- All database operations are wrapped in error handling
 
 ---
 
@@ -62,15 +127,22 @@ Get organizations user is a member of.
 **Authentication**: Required (JWT)
 
 **Query Parameters**:
-- `orgRole` (optional): Filter by user's role in organizations
+- `orgRole` (optional): Filter by user's role in organizations (`OWNER`, `MANAGER`, `STAFF`)
 
 **Response** (200 OK):
 ```json
 [
   {
-    "id": "64a1b2c3d4e5f6789def456",
-    "organizationId": "64a1b2c3d4e5f6789def456",
-    "organization": {
+    "user": {
+      "id": "64a1b2c3d4e5f6789abc123",
+      "email": "user@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "phoneNumber": "+393331234567",
+      "profilePictureUrl": null,
+      "isEmailVerified": true
+    },
+    "org": {
       "id": "64a1b2c3d4e5f6789def456",
       "name": "My Bar Organization",
       "settings": {
@@ -79,16 +151,59 @@ Get organizations user is a member of.
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
     },
-    "orgRole": "OWNER",
-    "joinedAt": "2024-01-01T00:00:00.000Z"
+    "role": "OWNER"
   }
 ]
 ```
 
-**Role Filter Examples**:
+**Error Responses**:
+
+**400 Bad Request** - Invalid Role Filter:
+```json
+{
+  "message": [
+    "orgRole must be one of the following values: OWNER, MANAGER, STAFF"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**409 Conflict** - Corrupted User-Organization Relationship:
+```json
+{
+  "message": "Corrupted relationship \"relation_id\": organization not found",
+  "error": "CORRUPTED_USER_ORG_RELATION",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: user-org relations lookup - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Usage Examples**:
 - `GET /api/orgs?orgRole=OWNER` - Organizations where user is owner
 - `GET /api/orgs?orgRole=MANAGER` - Organizations where user is manager
 - `GET /api/orgs` - All organizations user is member of
+
+**Implementation Notes**:
+- Returns relationships in order of creation
+- Data consistency checks prevent corrupted relationships
+- Empty array returned if user has no organization memberships
 
 ---
 
@@ -99,39 +214,127 @@ Get organization members.
 **Authorization**: Must be organization member (Owner, Manager, or Staff)
 
 **Parameters**:
-- `id` (path): Organization ID
+- `id` (path): Organization ID (must be valid ObjectId format)
 
 **Response** (200 OK):
 ```json
 [
   {
-    "id": "64a1b2c3d4e5f6789abc123",
     "user": {
       "id": "64a1b2c3d4e5f6789abc123",
+      "email": "john@example.com",
       "firstName": "John",
       "lastName": "Doe",
-      "email": "john@example.com"
+      "phoneNumber": "+393331234567",
+      "profilePictureUrl": null,
+      "isEmailVerified": true
     },
-    "orgRole": "OWNER",
-    "joinedAt": "2024-01-01T00:00:00.000Z"
+    "org": {
+      "id": "64a1b2c3d4e5f6789def456",
+      "name": "My Bar Organization",
+      "settings": {
+        "defaultCurrency": "EUR"
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "role": "OWNER"
   },
   {
-    "id": "64a1b2c3d4e5f6789abc124",
     "user": {
       "id": "64a1b2c3d4e5f6789abc124",
+      "email": "jane@example.com",
       "firstName": "Jane",
       "lastName": "Smith",
-      "email": "jane@example.com"
+      "phoneNumber": null,
+      "profilePictureUrl": "https://example.com/jane.jpg",
+      "isEmailVerified": true
     },
-    "orgRole": "MANAGER",
-    "joinedAt": "2024-01-01T12:00:00.000Z"
+    "org": {
+      "id": "64a1b2c3d4e5f6789def456",
+      "name": "My Bar Organization",
+      "settings": {
+        "defaultCurrency": "EUR"
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "role": "MANAGER"
   }
 ]
 ```
 
-**Notes**:
-- Returns all members with their roles and basic user information
-- Sensitive user data (phone numbers, etc.) is excluded
+**Error Responses**:
+
+**400 Bad Request** - Invalid Organization ID:
+```json
+{
+  "message": [
+    "Validation failed (ObjectId is expected)"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for organization access",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Organization Not Found:
+```json
+{
+  "message": "Organization with ID \"64a1b2c3d4e5f6789def456\" not found",
+  "error": "ORGANIZATION_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Corrupted User-Organization Relationship:
+```json
+{
+  "message": "Corrupted relationship \"relation_id\": user not found",
+  "error": "CORRUPTED_USER_ORG_RELATION",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: user-org relations lookup - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - User Lookup Failed:
+```json
+{
+  "message": "Database operation failed: user lookup by ID - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
+- Returns all members with their roles and complete user information
+- Data consistency checks prevent corrupted relationships
+- Organization access is verified through role-based guard
+- Empty array returned if organization has no members (should not happen in practice)
 
 ---
 
@@ -142,7 +345,7 @@ Update organization details.
 **Authorization**: Owner only
 
 **Parameters**:
-- `id` (path): Organization ID
+- `id` (path): Organization ID (must be valid ObjectId format)
 
 **Request Body**:
 ```json
@@ -153,6 +356,11 @@ Update organization details.
   }
 }
 ```
+
+**Validation Rules**:
+- `name`: Optional, string, max 100 characters if provided
+- `settings`: Optional object with configuration
+- At least one field must be provided for update
 
 **Response** (200 OK):
 ```json
@@ -167,12 +375,79 @@ Update organization details.
 }
 ```
 
-**Validation Rules**:
-- `name`: Optional, max 100 characters if provided
-- `settings`: Optional object with configuration
+**Error Responses**:
 
-**Errors**:
-- `403 Forbidden`: Only owners can update organization details
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "name must be shorter than or equal to 100 characters"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid Organization ID:
+```json
+{
+  "message": [
+    "Validation failed (ObjectId is expected)"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for organization access",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Organization Not Found:
+```json
+{
+  "message": "Organization with ID \"64a1b2c3d4e5f6789def456\" not found",
+  "error": "ORGANIZATION_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Organization Name Already Exists:
+```json
+{
+  "message": "Organization with name \"Updated Bar Name\" already exists",
+  "error": "ORGANIZATION_NAME_EXISTS",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: organization update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
+- Only organization owners can update organization details
+- Organization names must be unique per owner (different owners can have organizations with the same name)
+- Partial updates are supported - only provided fields are updated
+- Database validation ensures data integrity
 
 ---
 
@@ -183,45 +458,165 @@ Update member role in organization.
 **Authorization**: Owner or Manager only
 
 **Parameters**:
-- `id` (path): Organization ID
-- `userId` (path): User ID of member to update
+- `id` (path): Organization ID (must be valid ObjectId format)
+- `userId` (path): User ID of member to update (must be valid ObjectId format)
 
 **Request Body**:
 ```json
 {
-  "orgRole": "MANAGER"
+  "role": "MANAGER"
 }
 ```
+
+**Validation Rules**:
+- `role`: Required, must be one of: `MANAGER`, `STAFF`
+- Cannot assign `OWNER` role through this endpoint
 
 **Response** (200 OK):
 ```json
 {
-  "id": "64a1b2c3d4e5f6789abc124",
   "user": {
     "id": "64a1b2c3d4e5f6789abc124",
+    "email": "jane@example.com",
     "firstName": "Jane",
     "lastName": "Smith",
-    "email": "jane@example.com"
+    "phoneNumber": null,
+    "profilePictureUrl": "https://example.com/jane.jpg",
+    "isEmailVerified": true
   },
-  "orgRole": "MANAGER",
-  "joinedAt": "2024-01-01T12:00:00.000Z"
+  "org": {
+    "id": "64a1b2c3d4e5f6789def456",
+    "name": "My Bar Organization",
+    "settings": {
+      "defaultCurrency": "EUR"
+    },
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  "role": "MANAGER"
 }
 ```
 
-**Valid Role Values**:
-- `MANAGER`: Manager role
-- `STAFF`: Staff role
+**Error Responses**:
 
-**Restrictions**:
-- Cannot change owner role (use ownership transfer process)
-- Cannot change your own role
-- Managers cannot promote users to owner
-- At least one owner must remain
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "role must be one of the following values: MANAGER, STAFF"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
 
-**Errors**:
-- `400 Bad Request`: Invalid role or attempting to change owner role
-- `403 Forbidden`: Insufficient permissions
-- `404 Not Found`: User not found or not a member
+**400 Bad Request** - Invalid Object IDs:
+```json
+{
+  "message": [
+    "Validation failed (ObjectId is expected)"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Owner Role Assignment Attempt:
+```json
+{
+  "message": "Cannot assign OWNER role through role updates",
+  "error": "OWNER_ROLE_ASSIGNMENT_NOT_ALLOWED",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Owner Role Modification Attempt:
+```json
+{
+  "message": "Cannot modify the role of an organization owner",
+  "error": "OWNER_ROLE_MODIFICATION_NOT_ALLOWED",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for organization access",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - User Not Organization Member:
+```json
+{
+  "message": "User is not a member of this organization",
+  "error": "Not Found",
+  "statusCode": 404
+}
+```
+
+**404 Not Found** - User Not Found by ID:
+```json
+{
+  "message": "User \"64a1b2c3d4e5f6789abc124\" is not a member of organization \"64a1b2c3d4e5f6789def456\"",
+  "error": "USER_NOT_MEMBER",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Corrupted User-Organization Relationship:
+```json
+{
+  "message": "Corrupted relationship \"unknown\": user not found",
+  "error": "CORRUPTED_USER_ORG_RELATION",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: user-org role update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - User Lookup Failed:
+```json
+{
+  "message": "Database operation failed: user lookup by ID - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Role Management Rules**:
+- **OWNER**: Cannot be modified or assigned through this endpoint
+- **MANAGER**: Can manage staff members and organization resources
+- **STAFF**: Basic organization access with limited permissions
+- **Hierarchy**: OWNER > MANAGER > STAFF
+- **Restrictions**: 
+  - Cannot modify owner roles
+  - Cannot assign owner roles
+  - Managers can only modify staff roles
+  - Owners can modify any non-owner role
+
+**Implementation Notes**:
+- Role changes are immediately effective
+- Data consistency checks prevent corrupted relationships
+- Organization access is verified through role-based guard
+- Complete user and organization data returned for client state updates
 
 ---
 
@@ -240,35 +635,62 @@ Update member role in organization.
 }
 ```
 
-### User-Organization Relationship Object
+**Role Management Rules**:
+- **OWNER**: Cannot be modified or assigned through this endpoint
+- **MANAGER**: Can manage staff members and organization resources
+- **STAFF**: Basic organization access with limited permissions
+- **Hierarchy**: OWNER > MANAGER > STAFF
+- **Restrictions**: 
+  - Cannot modify owner roles
+  - Cannot assign owner roles
+  - Managers can only modify staff roles
+  - Owners can modify any non-owner role
+
+**Implementation Notes**:
+- Role changes are immediately effective
+- Data consistency checks prevent corrupted relationships
+- Organization access is verified through role-based guard
+- Complete user and organization data returned for client state updates
+
+---
+
+## Data Structures
+
+### Organization Object (API Response)
 ```json
 {
-  "id": "string",           // Relationship ID
-  "organizationId": "string", // Organization ID
-  "organization": {         // Organization details (when populated)
-    "id": "string",
-    "name": "string",
-    "settings": {},
-    "createdAt": "string",
-    "updatedAt": "string"
+  "id": "string",           // Organization ID
+  "name": "string",         // Organization name
+  "settings": {             // Organization settings
+    "defaultCurrency": "string"
   },
-  "orgRole": "OWNER|MANAGER|STAFF", // User's role in organization
-  "joinedAt": "string"      // When user joined organization
+  "createdAt": "string",    // ISO timestamp
+  "updatedAt": "string"     // ISO timestamp
 }
 ```
 
-### Organization Member Object
+### User-Organization Relationship Object
 ```json
 {
-  "id": "string",           // Relationship ID
-  "user": {                 // User details (public info only)
+  "user": {                 // Complete user public information
     "id": "string",
+    "email": "string",
     "firstName": "string",
     "lastName": "string",
-    "email": "string"
+    "phoneNumber": "string|null",
+    "profilePictureUrl": "string|null",
+    "isEmailVerified": "boolean"
   },
-  "orgRole": "OWNER|MANAGER|STAFF", // User's role
-  "joinedAt": "string"      // When user joined organization
+  "org": {                  // Complete organization information
+    "id": "string",
+    "name": "string",
+    "settings": {
+      "defaultCurrency": "string"
+    },
+    "createdAt": "string",
+    "updatedAt": "string"
+  },
+  "role": "OWNER|MANAGER|STAFF" // User's role in organization
 }
 ```
 
@@ -302,43 +724,6 @@ All organization-scoped endpoints use the `@OrgRoles()` decorator:
 @OrgRoles(OrgRole.OWNER)                                 // Owners only
 ```
 
-## Error Handling
-
-**Insufficient Permissions** (403):
-```json
-{
-  "statusCode": 403,
-  "message": "Insufficient permissions for this organization",
-  "error": "Forbidden"
-}
-```
-
-**Organization Not Found** (404):
-```json
-{
-  "statusCode": 404,
-  "message": "Organization not found",
-  "error": "Not Found"
-}
-```
-
-**Invalid Subscription** (409):
-```json
-{
-  "statusCode": 409,
-  "message": "Subscription is not active",
-  "error": "Conflict"
-}
-```
-
-**Role Update Violation** (400):
-```json
-{
-  "statusCode": 400,
-  "message": "Cannot change owner role through this endpoint",
-  "error": "Bad Request"
-}
-```
 
 ## Integration Notes
 
@@ -346,34 +731,13 @@ All organization-scoped endpoints use the `@OrgRoles()` decorator:
 1. User must have an active subscription first
 2. Use subscription ID in organization creation request
 3. User automatically becomes organization owner
+4. Organization names must be unique per owner
 
 ### Member Management
 1. Use invitation system to add new members (see Invitation Management API)
 2. Role updates are immediate and affect access permissions
-3. Removing owner requires ownership transfer process
-
-### Frontend Implementation
-```javascript
-// Check user's organizations
-const orgs = await fetch('/api/orgs', {
-  headers: { 'Authorization': `Bearer ${token}` }
-});
-
-// Get organization members
-const members = await fetch(`/api/orgs/${orgId}/members`, {
-  headers: { 'Authorization': `Bearer ${token}` }
-});
-
-// Update member role
-await fetch(`/api/orgs/${orgId}/members/${userId}/role`, {
-  method: 'PUT',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ orgRole: 'MANAGER' })
-});
-```
+3. Owner role cannot be changed through role update endpoints
+4. Data consistency is validated across all operations
 
 ## Business Rules
 
@@ -383,3 +747,4 @@ await fetch(`/api/orgs/${orgId}/members/${userId}/role`, {
 4. **Ownership Protection**: Owner role cannot be changed through normal role updates
 5. **Minimum Ownership**: At least one owner must remain in organization
 6. **Access Inheritance**: Higher roles inherit lower role permissions
+8. **Unique Names**: Organization names must be unique per owner (different owners can have organizations with the same name)

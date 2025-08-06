@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery, Types } from 'mongoose';
 import { OrgRole, UserOrgRelation } from './schemas/user-org-relation.schema';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
+import { UserNotMemberException } from './exceptions/org.exceptions';
 
 @Injectable()
 export class UserOrgRelationService 
@@ -15,80 +17,128 @@ export class UserOrgRelationService
     async create(userId: Types.ObjectId, orgId: Types.ObjectId, orgRole: OrgRole): Promise<UserOrgRelation>
     {
         this.logger.debug(`Creating user-org relationship for user: ${userId} in org: ${orgId} with role: ${orgRole}`, 'UserOrgRelationService#create');
-        const relationship = new this.userOrgRelationModel({
-            userId: userId,
-            orgId: orgId,
-            orgRole: orgRole,
-        });
         
-        await relationship.save();
-        this.logger.debug(`User-org relationship created successfully for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#create');
-        return relationship;
+        try 
+        {
+            const relationship = new this.userOrgRelationModel({
+                userId: userId,
+                orgId: orgId,
+                orgRole: orgRole,
+            });
+            
+            await relationship.save();
+            this.logger.debug(`User-org relationship created successfully for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#create');
+            return relationship;
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error during user-org relationship creation: user ${userId} in org ${orgId}`, errorStack, 'UserOrgRelationService#create');
+            throw new DatabaseOperationException('user-org relationship creation', errorMessage);
+        }
     }
 
     async findAll(userId?: Types.ObjectId, orgRole?: OrgRole, orgId?: Types.ObjectId): Promise<UserOrgRelation[]>
     {
         this.logger.debug(`Finding user-org relations with userId: ${userId}, orgRole: ${orgRole}, orgId: ${orgId}`, 'UserOrgRelationService#findAll');
-        const query: FilterQuery<UserOrgRelation> = {};
         
-        if (userId !== null && userId !== undefined)
+        try 
         {
-            query.userId = userId;
+            const query: FilterQuery<UserOrgRelation> = {};
+            
+            if (userId !== null && userId !== undefined)
+            {
+                query.userId = userId;
+            }
+            
+            if (orgRole !== null && orgRole !== undefined)
+            {
+                query.orgRole = orgRole;
+            }
+            
+            if (orgId !== null && orgId !== undefined)
+            {
+                query.orgId = orgId;
+            }
+            
+            const userOrgRelations = await this.userOrgRelationModel
+                .find(query)
+                .exec();
+            this.logger.debug(`Found ${userOrgRelations.length} user-org relations`, 'UserOrgRelationService#findAll');
+            return userOrgRelations;
         }
-        
-        if (orgRole !== null && orgRole !== undefined)
+        catch (error)
         {
-            query.orgRole = orgRole;
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error during user-org relations lookup`, errorStack, 'UserOrgRelationService#findAll');
+            throw new DatabaseOperationException('user-org relations lookup', errorMessage);
         }
-        
-        if (orgId !== null && orgId !== undefined)
-        {
-            query.orgId = orgId;
-        }
-        
-        const userOrgRelations = await this.userOrgRelationModel
-            .find(query)
-            .exec();
-        this.logger.debug(`Found ${userOrgRelations.length} user-org relations`, 'UserOrgRelationService#findAll');
-        return userOrgRelations;
     }
 
     async findOne(userId: Types.ObjectId, orgId: Types.ObjectId): Promise<UserOrgRelation | null>
     {
         this.logger.debug(`Finding user-org relationship for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
-        const relationship = await this.userOrgRelationModel
-            .findOne({ 
-                userId: userId, 
-                orgId: orgId, 
-            })
-            .exec();
-        if (!relationship) 
+        
+        try 
         {
-            this.logger.warn(`No relationship found for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
+            const relationship = await this.userOrgRelationModel
+                .findOne({ 
+                    userId: userId, 
+                    orgId: orgId, 
+                })
+                .exec();
+            if (!relationship) 
+            {
+                this.logger.warn(`No relationship found for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
+            }
+            else 
+            {
+                this.logger.debug(`Found relationship: ${relationship.orgRole} for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
+            }
+            return relationship;
         }
-        else 
+        catch (error)
         {
-            this.logger.debug(`Found relationship: ${relationship.orgRole} for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#findOne');
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error during user-org relationship lookup: user ${userId} in org ${orgId}`, errorStack, 'UserOrgRelationService#findOne');
+            throw new DatabaseOperationException('user-org relationship lookup', errorMessage);
         }
-        return relationship;
     }
 
     async updateRole(userId: Types.ObjectId, orgId: Types.ObjectId, newRole: OrgRole): Promise<UserOrgRelation>
     {
         this.logger.debug(`Attempting to update role for user: ${userId} in org: ${orgId} to role: ${newRole}`, 'UserOrgRelationService#updateRole');
-        const relationship = await this.userOrgRelationModel.findOneAndUpdate(
-            { userId: userId, orgId: orgId },
-            { $set: { orgRole: newRole } },
-            { new: true, runValidators: true }
-        ).exec();
         
-        if (!relationship)
+        try 
         {
-            this.logger.warn(`User-org relationship not found for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#updateRole');
-            throw new NotFoundException(`User is not a member of this organization`);
+            const relationship = await this.userOrgRelationModel.findOneAndUpdate(
+                { userId: userId, orgId: orgId },
+                { $set: { orgRole: newRole } },
+                { new: true, runValidators: true }
+            ).exec();
+            
+            if (!relationship)
+            {
+                this.logger.warn(`User-org relationship not found for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#updateRole');
+                throw new UserNotMemberException(userId.toString(), orgId.toString());
+            }
+            
+            this.logger.debug(`Role updated successfully for user: ${userId} in org: ${orgId} to role: ${newRole}`, 'UserOrgRelationService#updateRole');
+            return relationship;
         }
-        
-        this.logger.debug(`Role updated successfully for user: ${userId} in org: ${orgId} to role: ${newRole}`, 'UserOrgRelationService#updateRole');
-        return relationship;
+        catch (error)
+        {
+            if (error instanceof UserNotMemberException)
+            {
+                throw error;
+            }
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error during role update: user ${userId} in org ${orgId}`, errorStack, 'UserOrgRelationService#updateRole');
+            throw new DatabaseOperationException('user-org role update', errorMessage);
+        }
     }
 }

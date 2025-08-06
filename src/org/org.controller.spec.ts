@@ -710,7 +710,8 @@ describe('OrgController (Integration)', () =>
                 .get('/api/orgs')
                 .expect(409); // ConflictException
 
-            expect(response.body.message).toContain('Organization not found for relation');
+            expect(response.body.message).toContain('Corrupted relationship');
+            expect(response.body.message).toContain('organization not found');
         });
 
         it('should return organizations in correct DTO format', async () => 
@@ -1535,7 +1536,8 @@ describe('OrgController (Integration)', () =>
                 .send(updateData)
                 .expect(400);
 
-            expect(response.body.message).toContain('Cannot assign OWNER role through role updates');
+            expect(response.body.message).toBe('Cannot assign OWNER role through role updates');
+            expect(response.body.error).toBe('OWNER_ROLE_ASSIGNMENT_NOT_ALLOWED');
 
             // Assert database state unchanged
             const unchangedRelation = await relationModel.findOne({
@@ -1556,7 +1558,8 @@ describe('OrgController (Integration)', () =>
                 .send(updateData)
                 .expect(400);
 
-            expect(response.body.message).toContain('Cannot modify the role of an organization owner');
+            expect(response.body.message).toBe('Cannot modify the role of an organization owner');
+            expect(response.body.error).toBe('OWNER_ROLE_MODIFICATION_NOT_ALLOWED');
 
             // Assert database state unchanged
             const unchangedRelation = await relationModel.findOne({
