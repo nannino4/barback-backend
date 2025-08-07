@@ -34,6 +34,25 @@ Get current user's subscription details.
 null
 ```
 
+**Error Responses**:
+
+**401 Unauthorized** - Authentication Required:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: subscription lookup by user ID - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
 **Subscription Status Values**:
 - `trialing`: User is in trial period
 - `active`: Paid subscription is active
@@ -55,6 +74,32 @@ Check if current user is eligible for a trial subscription.
 ```json
 {
   "eligible": true
+}
+```
+
+**Response** (200 OK) - Not eligible:
+```json
+{
+  "eligible": false
+}
+```
+
+**Error Responses**:
+
+**401 Unauthorized** - Authentication Required:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: subscription lookup by user ID - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
 }
 ```
 
@@ -83,14 +128,85 @@ Start a trial subscription for becoming an organization owner.
 }
 ```
 
-**Errors**:
-- `409 Conflict`: User already has a subscription or is not eligible
+**Error Responses**:
+
+**401 Unauthorized** - Authentication Required:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**404 Not Found** - User Not Found:
+```json
+{
+  "message": "User with ID \"[user_id]\" not found",
+  "error": "USER_NOT_FOUND_BY_ID",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Not Eligible for Trial:
+```json
+{
+  "message": "User is not eligible for trial subscription: User already has a subscription or is not eligible for trial",
+  "error": "NOT_ELIGIBLE_FOR_TRIAL",
+  "statusCode": 409
+}
+```
+
+**400 Bad Request** - Stripe Customer Operation Failed:
+```json
+{
+  "message": "Stripe customer operation failed: customer creation - [details]",
+  "error": "STRIPE_CUSTOMER_FAILED",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Stripe Subscription Operation Failed:
+```json
+{
+  "message": "Stripe subscription operation failed: subscription creation - [details]",
+  "error": "STRIPE_SUBSCRIPTION_FAILED",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Stripe Configuration Error:
+```json
+{
+  "message": "Stripe configuration error: STRIPE_BASIC_PLAN_PRICE_ID is not configured",
+  "error": "STRIPE_CONFIGURATION_ERROR",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: subscription creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**503 Service Unavailable** - Stripe Service Unavailable:
+```json
+{
+  "message": "Stripe service is temporarily unavailable. Please try again later.",
+  "error": "STRIPE_SERVICE_UNAVAILABLE",
+  "statusCode": 503
+}
+```
 
 **Notes**:
 - Creates Stripe customer and subscription
 - Trial period is 3 months
 - Automatically converts to paid plan when trial ends
 - Required before creating an organization
+- If database save fails, Stripe subscription is automatically cancelled for cleanup
 
 ---
 
@@ -110,11 +226,70 @@ Cancel the current subscription.
 }
 ```
 
+**Error Responses**:
+
+**401 Unauthorized** - Authentication Required:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**404 Not Found** - Subscription Not Found:
+```json
+{
+  "message": "Subscription not found for user: [user_id]",
+  "error": "SUBSCRIPTION_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**400 Bad Request** - Invalid Operation:
+```json
+{
+  "message": "Cannot cancel subscription with status: canceled",
+  "error": "INVALID_SUBSCRIPTION_OPERATION",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Stripe Subscription Operation Failed:
+```json
+{
+  "message": "Stripe subscription operation failed: subscription cancellation - [details]",
+  "error": "STRIPE_SUBSCRIPTION_FAILED",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: subscription status update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**503 Service Unavailable** - Stripe Service Unavailable:
+```json
+{
+  "message": "Stripe service is temporarily unavailable. Please try again later.",
+  "error": "STRIPE_SERVICE_UNAVAILABLE",
+  "statusCode": 503
+}
+```
+
 **Effects**:
 - Cancels subscription with Stripe
 - Access to organization features continues until period end
 - No further billing occurs
 - Cannot be undone (user must start new subscription)
+
+**Notes**:
+- If Stripe subscription is not found, local cancellation proceeds
+- Already cancelled subscriptions return 400 error
 
 ---
 
@@ -149,6 +324,21 @@ Get available subscription plans (public endpoint).
   }
 ]
 ```
+
+**Error Responses**:
+
+**500 Internal Server Error** - General Error:
+```json
+{
+  "message": "Stripe API operation failed: subscription plans retrieval - Failed to retrieve subscription plans",
+  "error": "STRIPE_API_FAILED",
+  "statusCode": 500
+}
+```
+
+**Notes**:
+- Returns static plan configurations
+- Errors are rare since data is hardcoded
 
 ---
 
@@ -309,32 +499,106 @@ Handle Stripe webhook events (internal use).
 
 ## Error Handling
 
+### Common Error Responses
+
+**Authentication Error** (401):
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**Subscription Not Found** (404):
+```json
+{
+  "message": "Subscription not found for user: [user_id]",
+  "error": "SUBSCRIPTION_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**User Not Found** (404):
+```json
+{
+  "message": "User with ID \"[user_id]\" not found",
+  "error": "USER_NOT_FOUND_BY_ID",
+  "statusCode": 404
+}
+```
+
 **Not Eligible for Trial** (409):
 ```json
 {
-  "statusCode": 409,
-  "message": "User already has a subscription",
-  "error": "Conflict"
+  "message": "User is not eligible for trial subscription: [reason]",
+  "error": "NOT_ELIGIBLE_FOR_TRIAL",
+  "statusCode": 409
 }
 ```
 
-**Payment Method Error** (400):
+**Invalid Subscription Operation** (400):
 ```json
 {
-  "statusCode": 400,
-  "message": "Invalid payment method",
-  "error": "Bad Request"
+  "message": "Cannot [operation] subscription with status: [status]",
+  "error": "INVALID_SUBSCRIPTION_OPERATION",
+  "statusCode": 400
 }
 ```
 
-**Stripe Error** (500):
+**Stripe Customer Error** (400):
 ```json
 {
-  "statusCode": 500,
-  "message": "Payment processing error",
-  "error": "Internal Server Error"
+  "message": "Stripe customer operation failed: [operation] - [details]",
+  "error": "STRIPE_CUSTOMER_FAILED",
+  "statusCode": 400
 }
 ```
+
+**Stripe Subscription Error** (400):
+```json
+{
+  "message": "Stripe subscription operation failed: [operation] - [details]",
+  "error": "STRIPE_SUBSCRIPTION_FAILED",
+  "statusCode": 400
+}
+```
+
+**Stripe Configuration Error** (500):
+```json
+{
+  "message": "Stripe configuration error: [details]",
+  "error": "STRIPE_CONFIGURATION_ERROR",
+  "statusCode": 500
+}
+```
+
+**Database Operation Error** (500):
+```json
+{
+  "message": "Database operation failed: [operation] - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Stripe Service Unavailable** (503):
+```json
+{
+  "message": "Stripe service is temporarily unavailable. Please try again later.",
+  "error": "STRIPE_SERVICE_UNAVAILABLE",
+  "statusCode": 503
+}
+```
+
+### Error Handling Notes
+
+1. **Stripe Errors**: All Stripe API failures are properly categorized and include specific error details
+2. **Database Errors**: Database operations are wrapped with proper error handling and cleanup
+3. **Validation Errors**: Business logic validation prevents invalid operations
+4. **Retry Logic**: 503 errors indicate temporary issues that can be retried
+5. **Cleanup**: Failed operations include automatic cleanup (e.g., cancelling Stripe subscriptions on database save failures)
+6. **Logging**: All errors are logged with full context for debugging
+7. **Security**: Error messages don't expose sensitive internal information
 
 ## Integration Requirements
 

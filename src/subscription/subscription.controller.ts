@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { StripeConfigurationException } from '../common/exceptions/stripe.exceptions';
 
 @Controller('subscription')
 export class SubscriptionController 
@@ -24,11 +25,22 @@ export class SubscriptionController
         const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
         if (!stripeSecretKey) 
         {
-            throw new Error('STRIPE_SECRET_KEY is not configured');
+            this.logger.error('STRIPE_SECRET_KEY is not configured', undefined, 'SubscriptionController#constructor');
+            throw new StripeConfigurationException('STRIPE_SECRET_KEY is not configured');
         }
-        this.stripe = new Stripe(stripeSecretKey, {
-            apiVersion: '2025-05-28.basil',
-        });
+        
+        try 
+        {
+            this.stripe = new Stripe(stripeSecretKey, {
+                apiVersion: '2025-05-28.basil',
+            });
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown Stripe initialization error';
+            this.logger.error(`Failed to initialize Stripe in controller: ${errorMessage}`, error instanceof Error ? error.stack : undefined, 'SubscriptionController#constructor');
+            throw new StripeConfigurationException(`Failed to initialize Stripe: ${errorMessage}`);
+        }
     }
 
     @UseGuards(JwtAuthGuard)
@@ -36,6 +48,7 @@ export class SubscriptionController
     async getSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto | null> 
     {
         this.logger.debug(`Getting subscription for user: ${user.id}`, 'SubscriptionController#getSubscription');
+        
         const subscription = await this.subscriptionService.findByUserId(user.id);
         if (!subscription) 
         {
@@ -49,6 +62,7 @@ export class SubscriptionController
     async startOwnerTrialSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto> 
     {
         this.logger.debug(`Starting owner trial subscription for user: ${user.id}`, 'SubscriptionController#startOwnerTrialSubscription');
+        
         const subscription = await this.subscriptionService.createTrialSubscription(user.id);
         return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
@@ -58,6 +72,7 @@ export class SubscriptionController
     async cancelSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto> 
     {
         this.logger.debug(`Canceling subscription for user: ${user.id}`, 'SubscriptionController#cancelSubscription');
+        
         const subscription = await this.subscriptionService.cancelSubscription(user.id);
         return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
@@ -66,6 +81,7 @@ export class SubscriptionController
     async getSubscriptionPlans(): Promise<OutSubscriptionPlanDto[]> 
     {
         this.logger.debug('Getting subscription plans', 'SubscriptionController#getSubscriptionPlans');
+        
         const plans = await this.subscriptionService.getSubscriptionPlans();
         return plainToInstance(OutSubscriptionPlanDto, plans, { excludeExtraneousValues: true });
     }
@@ -75,6 +91,7 @@ export class SubscriptionController
     async checkTrialEligibility(@CurrentUser() user: User): Promise<{ eligible: boolean }> 
     {
         this.logger.debug(`Checking trial eligibility for user: ${user.id}`, 'SubscriptionController#checkTrialEligibility');
+        
         const eligible = await this.subscriptionService.isEligibleForTrial(user.id);
         return { eligible };
     }
