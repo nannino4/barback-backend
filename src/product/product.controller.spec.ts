@@ -337,7 +337,7 @@ describe('ProductController (Integration)', () =>
             await request(app.getHttpServer())
                 .post(`/api/orgs/${mockOrgId}/products`)
                 .send(validCreateDto)
-                .expect(400);
+                .expect(409);
         });
 
         it('should allow same product name in different organizations', async () =>
@@ -459,7 +459,7 @@ describe('ProductController (Integration)', () =>
             await request(app.getHttpServer())
                 .put(`/api/orgs/${mockOrgId}/products/${savedProduct.id}`)
                 .send(updateToExistingName)
-                .expect(400);
+                .expect(409);
         });
 
         it('should return 400 for invalid productId', async () =>
@@ -966,10 +966,10 @@ describe('ProductController (Integration)', () =>
             // Act
             const response = await request(app.getHttpServer())
                 .get(`/api/orgs/${mockOrgId}/products/${testProduct.id}/logs?startDate=invalid-date`)
-                .expect(200);
+                .expect(400);
 
-            // Assert - Should still return logs (invalid date ignored)
-            expect(response.body).toBeInstanceOf(Array);
+            // Assert - Should return error for invalid date
+            expect(response.body.message).toContain('Invalid start date format');
         });
 
         it('should not return logs from other products in same organization', async () =>

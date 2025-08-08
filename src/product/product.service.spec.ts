@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { Product, ProductSchema } from './schemas/product.schema';
 import { Category, CategorySchema } from '../category/schemas/category.schema';
@@ -10,6 +9,11 @@ import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { 
+    ProductNotFoundException, 
+    ProductNameConflictException,
+    InvalidProductCategoryException,
+} from './exceptions/product.exceptions';
 
 describe('ProductService - Service Tests (Unit-style)', () => 
 {
@@ -150,7 +154,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
             expect(savedProduct.categoryIds.map((id: any) => id.toString())).toContain(category2.id);
         });
 
-        it('should throw BadRequestException when product name already exists in organization', async () => 
+        it('should throw ProductNameConflictException when product name already exists in organization', async () => 
         {
             // Arrange - Create existing product
             await productModel.create({
@@ -162,7 +166,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.createProduct(mockOrgId, mockCreateProductDto))
-                .rejects.toThrow(BadRequestException);
+                .rejects.toThrow(ProductNameConflictException);
         });
 
         it('should allow same product name in different organizations', async () => 
@@ -184,7 +188,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
             expect(savedProduct.orgId.toString()).toBe(mockOrgId2.toString());
         });
 
-        it('should throw BadRequestException when category does not exist', async () => 
+        it('should throw InvalidProductCategoryException when category does not exist', async () => 
         {
             // Arrange
             const nonExistentCategoryId = new Types.ObjectId().toString();
@@ -195,10 +199,10 @@ describe('ProductService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.createProduct(mockOrgId, dtoWithInvalidCategory))
-                .rejects.toThrow(BadRequestException);
+                .rejects.toThrow(InvalidProductCategoryException);
         });
 
-        it('should throw BadRequestException when category belongs to different organization', async () => 
+        it('should throw InvalidProductCategoryException when category belongs to different organization', async () => 
         {
             // Arrange - Create category in different org
             const categoryInDifferentOrg = await categoryModel.create({
@@ -213,7 +217,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.createProduct(mockOrgId, dtoWithWrongOrgCategory))
-                .rejects.toThrow(BadRequestException);
+                .rejects.toThrow(InvalidProductCategoryException);
         });
     });
 
@@ -322,21 +326,21 @@ describe('ProductService - Service Tests (Unit-style)', () =>
             expect(result.orgId.toString()).toBe(mockOrgId.toString());
         });
 
-        it('should throw NotFoundException when product does not exist', async () => 
+        it('should throw ProductNotFoundException when product does not exist', async () => 
         {
             // Arrange
             const nonExistentId = new Types.ObjectId();
 
             // Act & Assert
             await expect(service.findProductById(mockOrgId, nonExistentId))
-                .rejects.toThrow(NotFoundException);
+                .rejects.toThrow(ProductNotFoundException);
         });
 
-        it('should throw NotFoundException when product belongs to different organization', async () => 
+        it('should throw ProductNotFoundException when product belongs to different organization', async () => 
         {
             // Act & Assert
             await expect(service.findProductById(mockOrgId2, savedProduct._id))
-                .rejects.toThrow(NotFoundException);
+                .rejects.toThrow(ProductNotFoundException);
         });
     });
 
@@ -391,24 +395,24 @@ describe('ProductService - Service Tests (Unit-style)', () =>
             expect(updatedProduct.categoryIds[0].toString()).toBe(validCategory.id);
         });
 
-        it('should throw NotFoundException when product does not exist', async () => 
+        it('should throw ProductNotFoundException when product does not exist', async () => 
         {
             // Arrange
             const nonExistentId = new Types.ObjectId();
 
             // Act & Assert
             await expect(service.updateProduct(mockOrgId, nonExistentId, mockUpdateProductDto))
-                .rejects.toThrow(NotFoundException);
+                .rejects.toThrow(ProductNotFoundException);
         });
 
-        it('should throw NotFoundException when product belongs to different organization', async () => 
+        it('should throw ProductNotFoundException when product belongs to different organization', async () => 
         {
             // Act & Assert
             await expect(service.updateProduct(mockOrgId2, savedProduct._id, mockUpdateProductDto))
-                .rejects.toThrow(NotFoundException);
+                .rejects.toThrow(ProductNotFoundException);
         });
 
-        it('should throw BadRequestException when updating to existing product name in same organization', async () => 
+        it('should throw ProductNameConflictException when updating to existing product name in same organization', async () => 
         {
             // Arrange - Create another product with different name
             await productModel.create({
@@ -425,7 +429,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.updateProduct(mockOrgId, savedProduct._id, updateToExistingName))
-                .rejects.toThrow(BadRequestException);
+                .rejects.toThrow(ProductNameConflictException);
         });
 
         it('should allow updating to same name (no change)', async () => 
@@ -442,7 +446,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
             expect(result.name).toBe(savedProduct.name);
         });
 
-        it('should throw BadRequestException when category does not exist', async () => 
+        it('should throw InvalidProductCategoryException when category does not exist', async () => 
         {
             // Arrange
             const nonExistentCategoryId = new Types.ObjectId().toString();
@@ -452,10 +456,10 @@ describe('ProductService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.updateProduct(mockOrgId, savedProduct._id, updateWithInvalidCategory))
-                .rejects.toThrow(BadRequestException);
+                .rejects.toThrow(InvalidProductCategoryException);
         });
 
-        it('should throw BadRequestException when category belongs to different organization', async () => 
+        it('should throw InvalidProductCategoryException when category belongs to different organization', async () => 
         {
             // Arrange - Create category in different org
             const categoryInDifferentOrg = await categoryModel.create({
@@ -469,7 +473,7 @@ describe('ProductService - Service Tests (Unit-style)', () =>
 
             // Act & Assert
             await expect(service.updateProduct(mockOrgId, savedProduct._id, updateWithWrongOrgCategory))
-                .rejects.toThrow(BadRequestException);
+                .rejects.toThrow(InvalidProductCategoryException);
         });
     });
 
@@ -498,21 +502,21 @@ describe('ProductService - Service Tests (Unit-style)', () =>
             expect(deletedProduct).toBeNull();
         });
 
-        it('should throw NotFoundException when product does not exist', async () => 
+        it('should throw ProductNotFoundException when product does not exist', async () => 
         {
             // Arrange
             const nonExistentId = new Types.ObjectId();
 
             // Act & Assert
             await expect(service.deleteProduct(mockOrgId, nonExistentId))
-                .rejects.toThrow(NotFoundException);
+                .rejects.toThrow(ProductNotFoundException);
         });
 
-        it('should throw NotFoundException when product belongs to different organization', async () => 
+        it('should throw ProductNotFoundException when product belongs to different organization', async () => 
         {
             // Act & Assert
             await expect(service.deleteProduct(mockOrgId2, savedProduct._id))
-                .rejects.toThrow(NotFoundException);
+                .rejects.toThrow(ProductNotFoundException);
         });
 
         it('should not affect products in other organizations', async () => 

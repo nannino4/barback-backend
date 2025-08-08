@@ -1,13 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { InventoryService } from './inventory.service';
 import { InventoryLog, InventoryLogSchema, InventoryLogType } from './schemas/inventory-log.schema';
 import { Product, ProductSchema } from './schemas/product.schema';
 import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { 
+    ProductNotFoundException,
+    NegativeStockException,
+    ZeroStockAdjustmentException,
+    InvalidDateRangeException,
+} from './exceptions/product.exceptions';
 
 describe('InventoryService - Service Tests (Unit-style)', () => 
 {
@@ -205,7 +210,7 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
             expect(updatedProduct.currentQuantity).toBe(30);
         });
 
-        it('should throw NotFoundException when product does not exist', async () => 
+        it('should throw ProductNotFoundException when product does not exist', async () => 
         {
             // Arrange
             const nonExistentProductId = new Types.ObjectId();
@@ -216,14 +221,14 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
                 nonExistentProductId, 
                 mockUserId, 
                 mockAdjustmentDto
-            )).rejects.toThrow(NotFoundException);
+            )).rejects.toThrow(ProductNotFoundException);
 
             // Assert - No logs should be created
             const logsCount = await inventoryLogModel.countDocuments({});
             expect(logsCount).toBe(0);
         });
 
-        it('should throw NotFoundException when product belongs to different organization', async () => 
+        it('should throw ProductNotFoundException when product belongs to different organization', async () => 
         {
             // Act & Assert
             await expect(service.adjustStock(
@@ -231,7 +236,7 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
                 mockProductId, 
                 mockUserId, 
                 mockAdjustmentDto
-            )).rejects.toThrow(NotFoundException);
+            )).rejects.toThrow(ProductNotFoundException);
 
             // Assert - Product quantity should remain unchanged
             const unchangedProduct = await productModel.findById(mockProductId);
@@ -242,7 +247,7 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
             expect(logsCount).toBe(0);
         });
 
-        it('should throw BadRequestException when adjustment would result in negative quantity', async () => 
+        it('should throw NegativeStockException when adjustment would result in negative quantity', async () => 
         {
             // Arrange
             const largeNegativeAdjustment: InStockAdjustmentDto = {
@@ -257,7 +262,33 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
                 mockProductId, 
                 mockUserId, 
                 largeNegativeAdjustment
-            )).rejects.toThrow(BadRequestException);
+            )).rejects.toThrow(NegativeStockException);
+
+            // Assert - Product quantity should remain unchanged
+            const unchangedProduct = await productModel.findById(mockProductId);
+            expect(unchangedProduct.currentQuantity).toBe(10);
+
+            // Assert - No logs should be created
+            const logsCount = await inventoryLogModel.countDocuments({});
+            expect(logsCount).toBe(0);
+        });
+
+        it('should throw ZeroStockAdjustmentException when adjustment quantity is zero', async () => 
+        {
+            // Arrange
+            const zeroAdjustment: InStockAdjustmentDto = {
+                type: InventoryLogType.ADJUSTMENT,
+                quantity: 0,
+                note: 'Zero adjustment',
+            };
+
+            // Act & Assert
+            await expect(service.adjustStock(
+                mockOrgId, 
+                mockProductId, 
+                mockUserId, 
+                zeroAdjustment
+            )).rejects.toThrow(ZeroStockAdjustmentException);
 
             // Assert - Product quantity should remain unchanged
             const unchangedProduct = await productModel.findById(mockProductId);
@@ -487,7 +518,22 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
             expect(result).toHaveLength(0);
         });
 
-        it('should throw NotFoundException when product does not exist', async () => 
+        it('should throw InvalidDateRangeException when start date is after end date', async () => 
+        {
+            // Arrange
+            const startDate = new Date('2025-06-02T00:00:00Z');
+            const endDate = new Date('2025-06-01T00:00:00Z'); // End date before start date
+
+            // Act & Assert
+            await expect(service.getProductInventoryLogs(
+                mockOrgId, 
+                mockProductId, 
+                startDate, 
+                endDate
+            )).rejects.toThrow(InvalidDateRangeException);
+        });
+
+        it('should throw ProductNotFoundException when product does not exist', async () => 
         {
             // Arrange
             const nonExistentProductId = new Types.ObjectId();
@@ -496,16 +542,16 @@ describe('InventoryService - Service Tests (Unit-style)', () =>
             await expect(service.getProductInventoryLogs(
                 mockOrgId, 
                 nonExistentProductId
-            )).rejects.toThrow(NotFoundException);
+            )).rejects.toThrow(ProductNotFoundException);
         });
 
-        it('should throw NotFoundException when product belongs to different organization', async () => 
+        it('should throw ProductNotFoundException when product belongs to different organization', async () => 
         {
             // Act & Assert
             await expect(service.getProductInventoryLogs(
                 mockOrgId2, 
                 mockProductId
-            )).rejects.toThrow(NotFoundException);
+            )).rejects.toThrow(ProductNotFoundException);
         });
 
         it('should not return logs from other products in same organization', async () => 

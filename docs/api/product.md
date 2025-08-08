@@ -3,14 +3,7 @@
 ## Overview
 The Product Management module handles inventory items within organizations. Products are linked to categories and include stock tracking, pricing, and inventory management features.
 
-## Features
-- Organization-scoped products
-- Category linking and filtering
-- Stock quantity tracking
-- Role-based access control
-- Product search and filtering
-
-## Endpoints
+## Core Endpoints
 
 ### GET /api/orgs/:orgId/products
 Get all products for an organization.
@@ -19,10 +12,10 @@ Get all products for an organization.
 **Authorization**: Owner, Manager, or Staff
 
 **Parameters**:
-- `orgId` (path): Organization ID
+- `orgId` (path): Organization ID (must be valid ObjectId)
 
 **Query Parameters**:
-- `categoryId` (optional): Filter products by category ID
+- `categoryId` (optional): Filter products by category ID (must be valid ObjectId if provided)
 
 **Response** (200 OK):
 ```json
@@ -31,32 +24,52 @@ Get all products for an organization.
     "id": "64a1b2c3d4e5f6789abc123",
     "name": "Johnnie Walker Black Label",
     "description": "12-year-old blended Scotch whisky",
-    "unit": "bottle",
-    "parLevel": 10,
+    "brand": "Johnnie Walker",
+    "defaultUnit": "bottle",
+    "defaultPurchasePrice": 45.50,
     "currentQuantity": 7,
-    "categoryId": "64a1b2c3d4e5f6789def456",
-    "organizationId": "64a1b2c3d4e5f6789ghi789",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
-  },
-  {
-    "id": "64a1b2c3d4e5f6789abc124",
-    "name": "Grey Goose Vodka",
-    "description": "Premium French vodka",
-    "unit": "bottle",
-    "parLevel": 15,
-    "currentQuantity": 12,
-    "categoryId": "64a1b2c3d4e5f6789def457",
-    "organizationId": "64a1b2c3d4e5f6789ghi789",
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "categoryIds": ["64a1b2c3d4e5f6789def456"],
+    "imageUrl": "https://example.com/image.jpg"
   }
 ]
 ```
 
-**Filtering Examples**:
-- `GET /api/orgs/123/products` - All products
-- `GET /api/orgs/123/products?categoryId=456` - Products in specific category
+**Error Responses**:
+
+**400 Bad Request** - Invalid Organization ID:
+```json
+{
+  "message": "Validation failed (expected type is ObjectId)",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - No Authentication Token:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for this organization",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: product retrieval - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 ---
 
@@ -67,8 +80,8 @@ Get a specific product.
 **Authorization**: Owner, Manager, or Staff
 
 **Parameters**:
-- `orgId` (path): Organization ID
-- `id` (path): Product ID
+- `orgId` (path): Organization ID (must be valid ObjectId)
+- `id` (path): Product ID (must be valid ObjectId)
 
 **Response** (200 OK):
 ```json
@@ -76,18 +89,60 @@ Get a specific product.
   "id": "64a1b2c3d4e5f6789abc123",
   "name": "Johnnie Walker Black Label",
   "description": "12-year-old blended Scotch whisky",
-  "unit": "bottle",
-  "parLevel": 10,
+  "brand": "Johnnie Walker",
+  "defaultUnit": "bottle",
+  "defaultPurchasePrice": 45.50,
   "currentQuantity": 7,
-  "categoryId": "64a1b2c3d4e5f6789def456",
-  "organizationId": "64a1b2c3d4e5f6789ghi789",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "categoryIds": ["64a1b2c3d4e5f6789def456"],
+  "imageUrl": "https://example.com/image.jpg"
 }
 ```
 
-**Errors**:
-- `404 Not Found`: Product not found or not in specified organization
+**Error Responses**:
+
+**400 Bad Request** - Invalid Parameters:
+```json
+{
+  "message": "Validation failed (expected type is ObjectId)",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - No Authentication Token:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for this organization",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Product Not Found:
+```json
+{
+  "message": "Product with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "PRODUCT_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: product retrieval - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 ---
 
@@ -98,19 +153,31 @@ Create a new product.
 **Authorization**: Owner or Manager only
 
 **Parameters**:
-- `orgId` (path): Organization ID
+- `orgId` (path): Organization ID (must be valid ObjectId)
 
 **Request Body**:
 ```json
 {
   "name": "Bombay Sapphire Gin",
   "description": "Premium London dry gin",
-  "unit": "bottle",
-  "parLevel": 8,
+  "brand": "Bombay Sapphire",
+  "defaultUnit": "bottle",
+  "defaultPurchasePrice": 28.99,
   "currentQuantity": 5,
-  "categoryId": "64a1b2c3d4e5f6789def458"
+  "categoryIds": ["64a1b2c3d4e5f6789def458"],
+  "imageUrl": "https://example.com/gin.jpg"
 }
 ```
+
+**Validation Rules**:
+- `name`: Required, string, max 200 characters, unique within organization
+- `description`: Optional, string
+- `brand`: Optional, string
+- `defaultUnit`: Required, string, max 50 characters
+- `defaultPurchasePrice`: Optional, number, min 0
+- `currentQuantity`: Optional, number, min 0, defaults to 0
+- `categoryIds`: Optional, array of valid ObjectIds belonging to the organization
+- `imageUrl`: Optional, valid URL
 
 **Response** (201 Created):
 ```json
@@ -118,32 +185,73 @@ Create a new product.
   "id": "64a1b2c3d4e5f6789abc125",
   "name": "Bombay Sapphire Gin",
   "description": "Premium London dry gin",
-  "unit": "bottle",
-  "parLevel": 8,
+  "brand": "Bombay Sapphire",
+  "defaultUnit": "bottle",
+  "defaultPurchasePrice": 28.99,
   "currentQuantity": 5,
-  "categoryId": "64a1b2c3d4e5f6789def458",
-  "organizationId": "64a1b2c3d4e5f6789ghi789",
-  "createdAt": "2024-01-01T12:00:00.000Z",
-  "updatedAt": "2024-01-01T12:00:00.000Z"
+  "categoryIds": ["64a1b2c3d4e5f6789def458"],
+  "imageUrl": "https://example.com/gin.jpg"
 }
 ```
 
-**Validation Rules**:
-- `name`: Required, max 200 characters, unique within organization
-- `description`: Optional, max 1000 characters
-- `unit`: Required, max 50 characters (e.g., "bottle", "liter", "kg")
-- `parLevel`: Required, non-negative integer (target stock level)
-- `currentQuantity`: Required, non-negative number (current stock)
-- `categoryId`: Optional, must be valid category ID in same organization
+**Error Responses**:
 
-**Business Rules**:
-- Product names must be unique within the organization
-- Category must exist and belong to same organization
-- Initial stock quantity is set during creation
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "name should not be empty",
+    "defaultUnit should not be empty",
+    "currentQuantity must be a positive number"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
 
-**Errors**:
-- `400 Bad Request`: Validation errors
-- `409 Conflict`: Product name already exists in organization
+**400 Bad Request** - Invalid Category:
+```json
+{
+  "message": "Category with ID \"64a1b2c3d4e5f6789def458\" not found or does not belong to the organization",
+  "error": "INVALID_PRODUCT_CATEGORY",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - No Authentication Token:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for this organization",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**409 Conflict** - Duplicate Product Name:
+```json
+{
+  "message": "Product with name \"Bombay Sapphire Gin\" already exists in this organization",
+  "error": "PRODUCT_NAME_CONFLICT",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: product creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 ---
 
@@ -154,19 +262,23 @@ Update an existing product.
 **Authorization**: Owner or Manager only
 
 **Parameters**:
-- `orgId` (path): Organization ID
-- `id` (path): Product ID
+- `orgId` (path): Organization ID (must be valid ObjectId)
+- `id` (path): Product ID (must be valid ObjectId)
 
-**Request Body**:
+**Request Body** (partial updates supported):
 ```json
 {
   "name": "Johnnie Walker Black Label 12yr",
   "description": "12-year-old blended Scotch whisky - premium selection",
-  "unit": "bottle",
-  "parLevel": 12,
-  "categoryId": "64a1b2c3d4e5f6789def456"
+  "defaultPurchasePrice": 47.99,
+  "categoryIds": ["64a1b2c3d4e5f6789def456"]
 }
 ```
+
+**Validation Rules**:
+- Same validation rules as creation
+- All fields are optional (partial updates)
+- `currentQuantity` cannot be updated through this endpoint (use stock adjustment)
 
 **Response** (200 OK):
 ```json
@@ -174,24 +286,81 @@ Update an existing product.
   "id": "64a1b2c3d4e5f6789abc123",
   "name": "Johnnie Walker Black Label 12yr",
   "description": "12-year-old blended Scotch whisky - premium selection",
-  "unit": "bottle",
-  "parLevel": 12,
+  "brand": "Johnnie Walker",
+  "defaultUnit": "bottle",
+  "defaultPurchasePrice": 47.99,
   "currentQuantity": 7,
-  "categoryId": "64a1b2c3d4e5f6789def456",
-  "organizationId": "64a1b2c3d4e5f6789ghi789",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T12:30:00.000Z"
+  "categoryIds": ["64a1b2c3d4e5f6789def456"],
+  "imageUrl": "https://example.com/image.jpg"
 }
 ```
 
-**Notes**:
-- `currentQuantity` cannot be updated through this endpoint (use inventory adjustment)
-- Partial updates supported - only send fields to update
-- Category changes are allowed if target category exists
+**Error Responses**:
 
-**Errors**:
-- `404 Not Found`: Product not found or not in organization
-- `409 Conflict`: Name conflicts with existing product
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "name should not be empty",
+    "defaultPurchasePrice must be a positive number"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid Category:
+```json
+{
+  "message": "Category with ID \"64a1b2c3d4e5f6789def458\" not found or does not belong to the organization",
+  "error": "INVALID_PRODUCT_CATEGORY",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - No Authentication Token:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for this organization",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Product Not Found:
+```json
+{
+  "message": "Product with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "PRODUCT_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Duplicate Product Name:
+```json
+{
+  "message": "Product with name \"Bombay Sapphire Gin\" already exists in this organization",
+  "error": "PRODUCT_NAME_CONFLICT",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: product update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 ---
 
@@ -202,8 +371,8 @@ Delete a product.
 **Authorization**: Owner or Manager only
 
 **Parameters**:
-- `orgId` (path): Organization ID
-- `id` (path): Product ID
+- `orgId` (path): Organization ID (must be valid ObjectId)
+- `id` (path): Product ID (must be valid ObjectId)
 
 **Response** (200 OK):
 ```json
@@ -212,13 +381,297 @@ Delete a product.
 }
 ```
 
-**Effects**:
-- Product is permanently deleted
-- Associated inventory logs are preserved for audit
-- Cannot be undone
+**Error Responses**:
 
-**Errors**:
-- `404 Not Found`: Product not found or not in organization
+**400 Bad Request** - Invalid Parameters:
+```json
+{
+  "message": "Validation failed (expected type is ObjectId)",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - No Authentication Token:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for this organization",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Product Not Found:
+```json
+{
+  "message": "Product with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "PRODUCT_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: product deletion - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Notes**:
+- Product deletion is permanent and cannot be undone
+- Associated inventory logs are preserved for audit purposes
+
+---
+
+## Inventory Management Endpoints
+
+### POST /api/orgs/:orgId/products/:id/adjust-stock
+Adjust product stock quantity.
+
+**Authentication**: Required (JWT)
+**Authorization**: Owner, Manager, or Staff
+
+**Parameters**:
+- `orgId` (path): Organization ID (must be valid ObjectId)
+- `id` (path): Product ID (must be valid ObjectId)
+
+**Request Body**:
+```json
+{
+  "type": "adjustment",
+  "quantity": -5,
+  "note": "Inventory adjustment after stocktake"
+}
+```
+
+**Validation Rules**:
+- `type`: Required, enum: "purchase", "consumption", "adjustment", "stocktake"
+- `quantity`: Required, number, cannot be zero
+- `note`: Optional, string
+
+**Business Rules**:
+- Adjustment quantity can be positive (increase) or negative (decrease)
+- Final quantity cannot be negative
+- Zero adjustments are not allowed
+
+**Response** (200 OK):
+```json
+{
+  "id": "64a1b2c3d4e5f6789log001",
+  "type": "adjustment",
+  "quantity": -5,
+  "previousQuantity": 12,
+  "newQuantity": 7,
+  "note": "Inventory adjustment after stocktake",
+  "createdAt": "2024-01-01T12:00:00.000Z"
+}
+```
+
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "type must be a valid enum value",
+    "quantity should not be empty"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Zero Stock Adjustment:
+```json
+{
+  "message": "Stock adjustment quantity cannot be zero",
+  "error": "ZERO_STOCK_ADJUSTMENT",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Negative Stock Result:
+```json
+{
+  "message": "Stock adjustment would result in negative quantity. Current: 3, Adjustment: -5",
+  "error": "NEGATIVE_STOCK_NOT_ALLOWED",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - No Authentication Token:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for this organization",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Product Not Found:
+```json
+{
+  "message": "Product with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "PRODUCT_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: inventory log creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**500 Internal Server Error** - Product Stock Update Failed:
+```json
+{
+  "message": "Database operation failed: product stock update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Transaction Notes**:
+- Stock adjustments are handled with rollback capability
+- If product update fails, inventory log is automatically removed
+- Both operations succeed or fail together for data consistency
+
+---
+
+### GET /api/orgs/:orgId/products/:id/logs
+Get inventory adjustment logs for a product.
+
+**Authentication**: Required (JWT)
+**Authorization**: Owner, Manager, or Staff
+
+**Parameters**:
+- `orgId` (path): Organization ID (must be valid ObjectId)
+- `id` (path): Product ID (must be valid ObjectId)
+
+**Query Parameters**:
+- `startDate` (optional): Start date for log filtering (ISO 8601 format)
+- `endDate` (optional): End date for log filtering (ISO 8601 format)
+
+**Response** (200 OK):
+```json
+[
+  {
+    "id": "64a1b2c3d4e5f6789log001",
+    "type": "adjustment",
+    "quantity": -2,
+    "previousQuantity": 9,
+    "newQuantity": 7,
+    "note": "Broken bottle during transport",
+    "createdAt": "2024-01-15T10:30:00.000Z"
+  },
+  {
+    "id": "64a1b2c3d4e5f6789log002",
+    "type": "purchase",
+    "quantity": 12,
+    "previousQuantity": 0,
+    "newQuantity": 12,
+    "note": "Weekly delivery from supplier",
+    "createdAt": "2024-01-10T09:00:00.000Z"
+  }
+]
+```
+
+**Error Responses**:
+
+**400 Bad Request** - Invalid Parameters:
+```json
+{
+  "message": "Validation failed (expected type is ObjectId)",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid Date Format:
+```json
+{
+  "message": "Invalid start date format provided",
+  "error": "INVALID_DATE_RANGE",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid Date Range:
+```json
+{
+  "message": "Start date must be before or equal to end date",
+  "error": "INVALID_DATE_RANGE",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - No Authentication Token:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for this organization",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Product Not Found:
+```json
+{
+  "message": "Product with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "PRODUCT_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: inventory logs retrieval - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Date Filtering Examples**:
+- `GET /api/orgs/123/products/456/logs` - All logs
+- `GET /api/orgs/123/products/456/logs?startDate=2024-01-01` - From specific date
+- `GET /api/orgs/123/products/456/logs?endDate=2024-01-31` - Until specific date
+- `GET /api/orgs/123/products/456/logs?startDate=2024-01-01&endDate=2024-01-31` - Date range
+
+**Notes**:
+- Logs are returned in reverse chronological order (newest first)
+- Date filtering uses the `createdAt` timestamp
+- Date parameters should be in ISO 8601 format (YYYY-MM-DD or full datetime)
 
 ---
 
@@ -227,36 +680,33 @@ Delete a product.
 ### Product Object
 ```json
 {
-  "id": "string",           // MongoDB ObjectId
-  "name": "string",         // Product name (max 200 chars, unique in org)
-  "description": "string",  // Optional description (max 1000 chars)
-  "unit": "string",         // Unit of measurement (max 50 chars)
-  "parLevel": "number",     // Target stock level (non-negative integer)
-  "currentQuantity": "number", // Current stock quantity (non-negative)
-  "categoryId": "string|null", // Category ID or null if uncategorized
-  "organizationId": "string", // Organization ID
-  "createdAt": "string",    // ISO timestamp
-  "updatedAt": "string"     // ISO timestamp
+  "id": "string",              // MongoDB ObjectId
+  "name": "string",            // Product name (required, unique in org)
+  "description": "string",     // Optional description
+  "brand": "string",           // Optional brand name
+  "defaultUnit": "string",     // Unit of measurement (required)
+  "defaultPurchasePrice": "number", // Optional purchase price (min 0)
+  "currentQuantity": "number", // Current stock quantity (required, min 0, default 0)
+  "categoryIds": "string[]",   // Array of category IDs (can be empty)
+  "imageUrl": "string",        // Optional product image URL
+  "createdAt": "string",       // ISO timestamp
+  "updatedAt": "string"        // ISO timestamp
 }
 ```
 
-### Product with Category Information
-For enhanced display, you may want to include category details:
+### Product with Additional Information
+For enhanced display with category details:
 ```json
 {
   "id": "64a1b2c3d4e5f6789abc123",
   "name": "Johnnie Walker Black Label",
   "description": "12-year-old blended Scotch whisky",
-  "unit": "bottle",
-  "parLevel": 10,
+  "brand": "Johnnie Walker",
+  "defaultUnit": "bottle",
+  "defaultPurchasePrice": 45.50,
   "currentQuantity": 7,
-  "categoryId": "64a1b2c3d4e5f6789def456",
-  "category": {
-    "id": "64a1b2c3d4e5f6789def456",
-    "name": "Whiskey"
-  },
-  "organizationId": "64a1b2c3d4e5f6789ghi789",
-  "stockStatus": "low",     // Derived field based on parLevel comparison
+  "categoryIds": ["64a1b2c3d4e5f6789def456"],
+  "imageUrl": "https://example.com/image.jpg",
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
 }
@@ -264,14 +714,13 @@ For enhanced display, you may want to include category details:
 
 ## Stock Management
 
-### Stock Status Calculation
-Products can be classified based on current quantity vs par level:
+### Current Stock Tracking
+Products track current quantities with the following constraints:
 
-- **Overstocked**: `currentQuantity > parLevel * 1.2`
-- **Adequate**: `parLevel * 0.8 <= currentQuantity <= parLevel * 1.2`
-- **Low**: `parLevel * 0.5 <= currentQuantity < parLevel * 0.8`
-- **Critical**: `currentQuantity < parLevel * 0.5`
-- **Out of Stock**: `currentQuantity === 0`
+- **Non-negative**: Stock quantities cannot be negative
+- **Decimal Support**: Quantities can be decimal values for precise measurements
+- **Real-time Updates**: Stock is updated immediately when adjustments are made
+- **Audit Trail**: All stock changes are logged for full traceability
 
 ### Units of Measurement
 Common unit examples:
@@ -279,7 +728,7 @@ Common unit examples:
 - **Volume**: "liter", "ml", "gallon", "oz"
 - **Weight**: "kg", "g", "lb", "oz"
 - **Count**: "piece", "pack", "case", "box"
-- **Custom**: Any text up to 50 characters
+- **Custom**: Any text describing the measurement unit
 
 ## Role-Based Access Control
 
@@ -303,204 +752,49 @@ Common unit examples:
 ## Business Rules
 
 1. **Unique Names**: Product names must be unique within an organization
-2. **Organization Scoping**: Products belong to specific organizations
+2. **Organization Scoping**: Products belong to specific organizations  
 3. **Category Validation**: Categories must exist in same organization
 4. **Stock Integrity**: Current quantity cannot be negative
-5. **Par Level Management**: Par levels help with reorder planning
-6. **Audit Trail**: All stock changes are logged (see Inventory Management)
+5. **Multiple Categories**: Products can belong to multiple categories
+6. **Audit Trail**: All stock changes are logged with full details
 
 ## Validation Rules
 
 ### Name Validation
 - Required field
-- Maximum 200 characters
 - Must be unique within organization
 - Trimmed of leading/trailing whitespace
 
 ### Description Validation
 - Optional field
-- Maximum 1000 characters
 - Can contain any text including line breaks
+
+### Brand Validation
+- Optional field
+- Can contain any text
 
 ### Unit Validation
 - Required field
-- Maximum 50 characters
 - Common units: bottle, liter, kg, piece, etc.
 
+### Price Validation
+- Optional field
+- Must be non-negative number if provided
+- Supports decimal values
+
 ### Quantity Validation
-- Par level: Required, non-negative integer
 - Current quantity: Required, non-negative number (supports decimals)
-- Cannot set negative values
+- Defaults to 0 when creating new products
+- Cannot be set to negative values
 
 ### Category Validation
-- Must be null or valid category ID
-- Category must exist in same organization
+- Must be empty array or array of valid category IDs
+- Categories must exist in same organization
 - Can be changed after product creation
 
-## Error Handling
-
-**Validation Error** (400):
-```json
-{
-  "statusCode": 400,
-  "message": [
-    "name should not be empty",
-    "parLevel must be a positive number"
-  ],
-  "error": "Bad Request"
-}
-```
-
-**Duplicate Name** (409):
-```json
-{
-  "statusCode": 409,
-  "message": "Product name already exists in organization",
-  "error": "Conflict"
-}
-```
-
-**Invalid Category** (400):
-```json
-{
-  "statusCode": 400,
-  "message": "Category does not exist in organization",
-  "error": "Bad Request"
-}
-```
-
-**Access Denied** (403):
-```json
-{
-  "statusCode": 403,
-  "message": "Insufficient permissions for this organization",
-  "error": "Forbidden"
-}
-```
-
-## Integration Notes
-
-### Frontend Implementation
-
-1. **Product List with Categories**:
-```javascript
-// Get products with category filtering
-const getProducts = async (orgId, categoryId = null) => {
-  const url = `/api/orgs/${orgId}/products${categoryId ? `?categoryId=${categoryId}` : ''}`;
-  const response = await fetch(url, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  return response.json();
-};
-
-// Calculate stock status
-const getStockStatus = (product) => {
-  const { currentQuantity, parLevel } = product;
-  if (currentQuantity === 0) return 'out-of-stock';
-  if (currentQuantity < parLevel * 0.5) return 'critical';
-  if (currentQuantity < parLevel * 0.8) return 'low';
-  if (currentQuantity > parLevel * 1.2) return 'overstocked';
-  return 'adequate';
-};
-```
-
-2. **Product Form Validation**:
-```javascript
-const validateProduct = (product) => {
-  const errors = {};
-  
-  if (!product.name?.trim()) {
-    errors.name = 'Product name is required';
-  } else if (product.name.length > 200) {
-    errors.name = 'Product name must be 200 characters or less';
-  }
-  
-  if (!product.unit?.trim()) {
-    errors.unit = 'Unit is required';
-  }
-  
-  if (product.parLevel < 0) {
-    errors.parLevel = 'Par level cannot be negative';
-  }
-  
-  if (product.currentQuantity < 0) {
-    errors.currentQuantity = 'Current quantity cannot be negative';
-  }
-  
-  return errors;
-};
-```
-
-3. **API Usage Examples**:
-```javascript
-// Create product
-const createProduct = async (orgId, productData) => {
-  const response = await fetch(`/api/orgs/${orgId}/products`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(productData)
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to create product: ${response.statusText}`);
-  }
-  
-  return response.json();
-};
-
-// Update product
-const updateProduct = async (orgId, productId, updates) => {
-  const response = await fetch(`/api/orgs/${orgId}/products/${productId}`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(updates)
-  });
-  
-  return response.json();
-};
-```
-
-### Search and Filtering
-For enhanced user experience, implement client-side filtering:
-
-```javascript
-const filterProducts = (products, filters) => {
-  return products.filter(product => {
-    // Name search
-    if (filters.search && !product.name.toLowerCase().includes(filters.search.toLowerCase())) {
-      return false;
-    }
-    
-    // Category filter
-    if (filters.categoryId && product.categoryId !== filters.categoryId) {
-      return false;
-    }
-    
-    // Stock status filter
-    if (filters.stockStatus) {
-      const status = getStockStatus(product);
-      if (status !== filters.stockStatus) {
-        return false;
-      }
-    }
-    
-    return true;
-  });
-};
-```
-
-### Mobile App Considerations
-- Support barcode scanning for product identification
-- Offline support for product catalogs
-- Quick stock adjustment interfaces
-- Product search with fuzzy matching
-- Category-based navigation
+### Image URL Validation
+- Optional field
+- Must be valid URL format if provided
 
 ## Performance Considerations
 
@@ -511,11 +805,11 @@ const filterProducts = (products, filters) => {
 
 ## Future Enhancements
 
-1. **Product Images**: Support for product photos
-2. **Barcode Support**: Product identification via barcodes
-3. **Pricing**: Cost and selling price tracking
-4. **Suppliers**: Link products to suppliers and vendor information
-5. **Product Variants**: Support for product variations (sizes, etc.)
-6. **Batch/Lot Tracking**: Track product batches for expiration and quality
+1. **Advanced Search**: Full-text search across product names and descriptions
+2. **Barcode Support**: Product identification via barcodes/QR codes
+3. **Product Variants**: Support for product variations (sizes, flavors, etc.)
+4. **Batch/Lot Tracking**: Track product batches for expiration and quality control
+5. **Supplier Management**: Link products to suppliers and vendor information
+6. **Pricing History**: Track price changes over time
 7. **Reorder Points**: Automated reorder alerts based on consumption patterns
-8. **Product Templates**: Common products for quick setup
+8. **Product Templates**: Common products for quick setup across organizations

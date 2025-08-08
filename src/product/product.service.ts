@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Product } from './schemas/product.schema';
@@ -6,6 +6,13 @@ import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
 import { CategoryService } from '../category/category.service';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
+import { CategoryNotFoundException } from '../category/exceptions/category.exceptions';
+import { 
+    ProductNotFoundException, 
+    ProductNameConflictException,
+    InvalidProductCategoryException,
+} from './exceptions/product.exceptions';
 
 @Injectable()
 export class ProductService 
@@ -34,7 +41,7 @@ export class ProductService
         
         if (existingProduct) 
         {
-            throw new BadRequestException(`Product with name '${createProductDto.name}' already exists in this organization`);
+            throw new ProductNameConflictException(createProductDto.name);
         }
 
         const product = new this.productModel({
@@ -44,9 +51,17 @@ export class ProductService
             orgId,
         });
 
-        const savedProduct = await product.save();
-        this.logger.debug(`Product created with id: ${savedProduct._id}`, 'ProductService#createProduct');
-        return savedProduct;
+        try 
+        {
+            const savedProduct = await product.save();
+            this.logger.debug(`Product created with id: ${savedProduct._id}`, 'ProductService#createProduct');
+            return savedProduct;
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('product creation', errorMessage);
+        }
     }
 
     async findProductsByOrg(orgId: Types.ObjectId, categoryId?: string): Promise<Product[]> 
@@ -61,23 +76,40 @@ export class ProductService
             filter.categoryIds = new Types.ObjectId(categoryId);
         }
 
-        return this.productModel
-            .find(filter)
-            .sort({ name: 1 })
-            .exec();
+        try 
+        {
+            return this.productModel
+                .find(filter)
+                .sort({ name: 1 })
+                .exec();
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('product retrieval', errorMessage);
+        }
     }
 
     async findProductById(orgId: Types.ObjectId, productId: Types.ObjectId): Promise<Product> 
     {
         this.logger.debug(`Finding product ${productId} for org ${orgId}`, 'ProductService#findProductById');
         
-        const product = await this.productModel
-            .findOne({ _id: productId, orgId })
-            .exec();
+        let product: Product | null;
+        try 
+        {
+            product = await this.productModel
+                .findOne({ _id: productId, orgId })
+                .exec();
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('product retrieval', errorMessage);
+        }
 
         if (!product) 
         {
-            throw new NotFoundException(`Product with id ${productId} not found in organization ${orgId}`);
+            throw new ProductNotFoundException(productId.toString());
         }
 
         return product;
@@ -108,7 +140,7 @@ export class ProductService
             
             if (existingProduct) 
             {
-                throw new BadRequestException(`Product with name '${updateProductDto.name}' already exists in this organization`);
+                throw new ProductNameConflictException(updateProductDto.name);
             }
         }
 
@@ -118,17 +150,26 @@ export class ProductService
             updateData.categoryIds = updateProductDto.categoryIds.map(id => new Types.ObjectId(id));
         }
 
-        const updatedProduct = await this.productModel
-            .findOneAndUpdate(
-                { _id: productId, orgId },
-                updateData,
-                { new: true }
-            )
-            .exec();
+        let updatedProduct: Product | null;
+        try 
+        {
+            updatedProduct = await this.productModel
+                .findOneAndUpdate(
+                    { _id: productId, orgId },
+                    updateData,
+                    { new: true }
+                )
+                .exec();
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('product update', errorMessage);
+        }
 
         if (!updatedProduct) 
         {
-            throw new NotFoundException(`Product with id ${productId} not found in organization ${orgId}`);
+            throw new ProductNotFoundException(productId.toString());
         }
 
         this.logger.debug(`Product ${productId} updated successfully`, 'ProductService#updateProduct');
@@ -139,13 +180,22 @@ export class ProductService
     {
         this.logger.debug(`Deleting product ${productId} for org ${orgId}`, 'ProductService#deleteProduct');
         
-        const deletedProduct = await this.productModel
-            .findOneAndDelete({ _id: productId, orgId })
-            .exec();
+        let deletedProduct: Product | null;
+        try 
+        {
+            deletedProduct = await this.productModel
+                .findOneAndDelete({ _id: productId, orgId })
+                .exec();
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('product deletion', errorMessage);
+        }
 
         if (!deletedProduct) 
         {
-            throw new NotFoundException(`Product with id ${productId} not found in organization ${orgId}`);
+            throw new ProductNotFoundException(productId.toString());
         }
 
         this.logger.debug(`Product ${productId} deleted successfully`, 'ProductService#deleteProduct');
@@ -166,9 +216,9 @@ export class ProductService
             } 
             catch (error) 
             {
-                if (error instanceof NotFoundException) 
+                if (error instanceof CategoryNotFoundException) 
                 {
-                    throw new BadRequestException(`Category with id ${categoryId} not found in organization ${orgId}`);
+                    throw new InvalidProductCategoryException(categoryId);
                 }
                 throw error;
             }

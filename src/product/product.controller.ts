@@ -26,6 +26,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { InvalidDateRangeException } from './exceptions/product.exceptions';
 
 @Controller('orgs/:orgId/products')
 @UseGuards(JwtAuthGuard, OrgRolesGuard)
@@ -146,7 +147,7 @@ export class ProductController
             startDateObj = new Date(startDate);
             if (isNaN(startDateObj.getTime())) 
             {
-                startDateObj = undefined; // Ignore invalid dates
+                throw new InvalidDateRangeException('Invalid start date format provided');
             }
         }
         
@@ -155,8 +156,14 @@ export class ProductController
             endDateObj = new Date(endDate);
             if (isNaN(endDateObj.getTime())) 
             {
-                endDateObj = undefined; // Ignore invalid dates
+                throw new InvalidDateRangeException('Invalid end date format provided');
             }
+        }
+        
+        // Validate date range if both dates are provided
+        if (startDateObj && endDateObj && startDateObj > endDateObj) 
+        {
+            throw new InvalidDateRangeException('Start date must be before or equal to end date');
         }
         
         const logs = await this.inventoryService.getProductInventoryLogs(

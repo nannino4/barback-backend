@@ -1,10 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { InventoryLog } from './schemas/inventory-log.schema';
 import { Product } from './schemas/product.schema';
 import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
+import { 
+    ProductNotFoundException,
+    NegativeStockException,
+    ZeroStockAdjustmentException,
+    InvalidDateRangeException,
+} from './exceptions/product.exceptions';
 
 @Injectable()
 export class InventoryService 
@@ -24,11 +31,27 @@ export class InventoryService
     {
         this.logger.debug(`Adjusting stock for product ${productId} in org ${orgId}`, 'InventoryService#adjustStock');
 
+        // Validate adjustment quantity is not zero
+        if (adjustmentDto.quantity === 0) 
+        {
+            throw new ZeroStockAdjustmentException();
+        }
+
         // Find the product and verify it belongs to the organization
-        const product = await this.productModel.findOne({ _id: productId, orgId }).exec();
+        let product: Product | null;
+        try 
+        {
+            product = await this.productModel.findOne({ _id: productId, orgId }).exec();
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('product lookup for stock adjustment', errorMessage);
+        }
+
         if (!product) 
         {
-            throw new NotFoundException(`Product with id ${productId} not found in organization ${orgId}`);
+            throw new ProductNotFoundException(productId.toString());
         }
 
         const previousQuantity = product.currentQuantity;
@@ -37,7 +60,7 @@ export class InventoryService
         // Validate the new quantity is not negative
         if (newQuantity < 0) 
         {
-            throw new BadRequestException(`Stock adjustment would result in negative quantity. Current: ${previousQuantity}, Adjustment: ${adjustmentDto.quantity}`);
+            throw new NegativeStockException(previousQuantity, adjustmentDto.quantity);
         }
 
         // Create the inventory log entry
@@ -54,24 +77,37 @@ export class InventoryService
 
         // Update the product quantity and save the log in a transaction-like approach
         // Note: For production, consider using MongoDB transactions
-        const savedLog = await inventoryLog.save();
-        
         try 
         {
-            await this.productModel.updateOne(
-                { _id: productId, orgId },
-                { currentQuantity: newQuantity }
-            ).exec();
+            const savedLog = await inventoryLog.save();
+            
+            try 
+            {
+                await this.productModel.updateOne(
+                    { _id: productId, orgId },
+                    { currentQuantity: newQuantity }
+                ).exec();
+                
+                this.logger.debug(`Stock adjusted for product ${productId}: ${previousQuantity} -> ${newQuantity}`, 'InventoryService#adjustStock');
+                return savedLog;
+            } 
+            catch (productUpdateError) 
+            {
+                // If product update fails, remove the log entry to maintain consistency
+                await this.inventoryLogModel.deleteOne({ _id: savedLog._id }).exec();
+                const errorMessage = productUpdateError instanceof Error ? productUpdateError.message : 'Unknown error';
+                throw new DatabaseOperationException('product stock update', errorMessage);
+            }
         } 
         catch (error) 
         {
-            // If product update fails, remove the log entry to maintain consistency
-            await this.inventoryLogModel.deleteOne({ _id: savedLog._id }).exec();
-            throw error;
+            if (error instanceof DatabaseOperationException) 
+            {
+                throw error;
+            }
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('inventory log creation', errorMessage);
         }
-
-        this.logger.debug(`Stock adjusted for product ${productId}: ${previousQuantity} -> ${newQuantity}`, 'InventoryService#adjustStock');
-        return savedLog;
     }
 
     async getProductInventoryLogs(
@@ -83,11 +119,27 @@ export class InventoryService
     {
         this.logger.debug(`Getting inventory logs for product ${productId} in org ${orgId}`, 'InventoryService#getProductInventoryLogs');
 
+        // Validate date range if both dates are provided
+        if (startDate && endDate && startDate > endDate) 
+        {
+            throw new InvalidDateRangeException();
+        }
+
         // Verify product exists and belongs to organization
-        const product = await this.productModel.findOne({ _id: productId, orgId }).exec();
+        let product: Product | null;
+        try 
+        {
+            product = await this.productModel.findOne({ _id: productId, orgId }).exec();
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('product lookup for logs', errorMessage);
+        }
+
         if (!product) 
         {
-            throw new NotFoundException(`Product with id ${productId} not found in organization ${orgId}`);
+            throw new ProductNotFoundException(productId.toString());
         }
 
         const query: any = { orgId, productId };
@@ -100,12 +152,20 @@ export class InventoryService
             if (endDate) query.createdAt.$lte = endDate;
         }
 
-        const logs = await this.inventoryLogModel
-            .find(query)
-            .sort({ createdAt: -1 })  // Most recent first
-            .exec();
+        try 
+        {
+            const logs = await this.inventoryLogModel
+                .find(query)
+                .sort({ createdAt: -1 })  // Most recent first
+                .exec();
 
-        this.logger.debug(`Found ${logs.length} inventory logs for product ${productId}`, 'InventoryService#getProductInventoryLogs');
-        return logs;
+            this.logger.debug(`Found ${logs.length} inventory logs for product ${productId}`, 'InventoryService#getProductInventoryLogs');
+            return logs;
+        } 
+        catch (error) 
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            throw new DatabaseOperationException('inventory logs retrieval', errorMessage);
+        }
     }
 }
