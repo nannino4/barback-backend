@@ -603,41 +603,7 @@ Update member role in organization.
 
 **Role Management Rules**:
 - **OWNER**: Cannot be modified or assigned through this endpoint
-- **MANAGER**: Can manage staff members and organization resources
-- **STAFF**: Basic organization access with limited permissions
-- **Hierarchy**: OWNER > MANAGER > STAFF
-- **Restrictions**: 
-  - Cannot modify owner roles
-  - Cannot assign owner roles
-  - Managers can only modify staff roles
-  - Owners can modify any non-owner role
-
-**Implementation Notes**:
-- Role changes are immediately effective
-- Data consistency checks prevent corrupted relationships
-- Organization access is verified through role-based guard
-- Complete user and organization data returned for client state updates
-
----
-
-## Data Models
-
-### Organization Object
-```json
-{
-  "id": "string",           // MongoDB ObjectId
-  "name": "string",         // Organization name (max 100 chars)
-  "settings": {
-    "defaultCurrency": "string"  // Currency code (EUR, USD, etc.)
-  },
-  "createdAt": "string",    // ISO timestamp
-  "updatedAt": "string"     // ISO timestamp
-}
-```
-
-**Role Management Rules**:
-- **OWNER**: Cannot be modified or assigned through this endpoint
-- **MANAGER**: Can manage staff members and organization resources
+- **MANAGER**: Can manage managers and staff members and organization resources
 - **STAFF**: Basic organization access with limited permissions
 - **Hierarchy**: OWNER > MANAGER > STAFF
 - **Restrictions**: 
@@ -705,25 +671,14 @@ Update member role in organization.
 | Delete organization | ✅ | ❌ | ❌ |
 | View members | ✅ | ✅ | ✅ |
 | Invite members | ✅ | ✅ | ❌ |
-| Update member roles | ✅ | ✅* | ❌ |
+| Update member roles* | ✅ | ✅ | ❌ |
 | Remove members | ✅ | ✅ | ❌ |
 | Manage categories | ✅ | ✅ | ❌ |
 | Manage products | ✅ | ✅ | ❌ |
 | View inventory | ✅ | ✅ | ✅ |
 | Adjust inventory | ✅ | ✅ | ✅ |
 
-*Managers cannot promote users to owner or change owner roles
-
-### Access Control Implementation
-
-All organization-scoped endpoints use the `@OrgRoles()` decorator:
-
-```typescript
-@OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)  // All roles
-@OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)                // Owners and managers only
-@OrgRoles(OrgRole.OWNER)                                 // Owners only
-```
-
+*No one cannot promote users to owner or change owner roles
 
 ## Integration Notes
 
@@ -738,13 +693,3 @@ All organization-scoped endpoints use the `@OrgRoles()` decorator:
 2. Role updates are immediate and affect access permissions
 3. Owner role cannot be changed through role update endpoints
 4. Data consistency is validated across all operations
-
-## Business Rules
-
-1. **Subscription Requirement**: Active subscription required for organization creation
-2. **One Organization Per Subscription**: Each subscription can create one organization
-3. **Role Hierarchy**: Owner > Manager > Staff
-4. **Ownership Protection**: Owner role cannot be changed through normal role updates
-5. **Minimum Ownership**: At least one owner must remain in organization
-6. **Access Inheritance**: Higher roles inherit lower role permissions
-8. **Unique Names**: Organization names must be unique per owner (different owners can have organizations with the same name)
