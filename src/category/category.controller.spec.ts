@@ -214,7 +214,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(404);
 
             // Assert
-            expect(response.body.message).toBe('Category not found');
+            expect(response.body.error).toBe('CATEGORY_NOT_FOUND');
         });
 
         it('should return 404 when category belongs to different org', async () =>
@@ -230,7 +230,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(404);
 
             // Assert
-            expect(response.body.message).toBe('Category not found');
+            expect(response.body.error).toBe('CATEGORY_NOT_FOUND');
         });
 
         it('should return 400 for invalid category id', async () =>
@@ -394,7 +394,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(400);
 
             // Assert
-            expect(response.body.message).toContain('Parent category not found');
+            expect(response.body.error).toBe('INVALID_PARENT_CATEGORY');
         });
 
         it('should reject extra fields not in DTO', async () =>
@@ -513,7 +513,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(400);
 
             // Assert
-            expect(response.body.message).toContain('cannot be its own parent');
+            expect(response.body.error).toBe('CATEGORY_SELF_PARENT');
         });
 
         it('should return 400 when creating circular reference', async () =>
@@ -540,7 +540,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(400);
 
             // Assert
-            expect(response.body.message).toContain('Circular reference detected');
+            expect(response.body.error).toBe('CATEGORY_CIRCULAR_REFERENCE');
         });
 
         it('should return 404 when category not found', async () =>
@@ -558,7 +558,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(404);
 
             // Assert
-            expect(response.body.message).toBe('Category not found');
+            expect(response.body.error).toBe('CATEGORY_NOT_FOUND');
         });
 
         it('should return 404 when category belongs to different org', async () =>
@@ -578,7 +578,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(404);
 
             // Assert
-            expect(response.body.message).toBe('Category not found');
+            expect(response.body.error).toBe('CATEGORY_NOT_FOUND');
         });
 
         it('should return 400 for invalid category id', async () =>
@@ -663,7 +663,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(400);
 
             // Assert
-            expect(response.body.message).toContain('Cannot delete category with child categories');
+            expect(response.body.error).toBe('CATEGORY_HAS_CHILDREN');
 
             // Verify parent category still exists
             const stillExists = await categoryService.findCategoryById(
@@ -684,7 +684,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(404);
 
             // Assert
-            expect(response.body.message).toBe('Category not found');
+            expect(response.body.error).toBe('CATEGORY_NOT_FOUND');
         });
 
         it('should return 404 when category belongs to different org', async () =>
@@ -700,7 +700,7 @@ describe('CategoryController (Integration)', () =>
                 .expect(404);
 
             // Assert
-            expect(response.body.message).toBe('Category not found');
+            expect(response.body.error).toBe('CATEGORY_NOT_FOUND');
         });
 
         it('should return 400 for invalid category id', async () =>
