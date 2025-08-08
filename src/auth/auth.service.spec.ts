@@ -9,7 +9,7 @@ import { User, UserSchema, UserRole, AuthProvider } from '../user/schemas/user.s
 import { RegisterEmailDto } from './dto/in.register-email.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
-import { InvitationService } from '../invitations/invitation.service';
+import { InvitationService } from '../invitation/invitation.service';
 import { CustomLogger } from '../common/logger/custom.logger';
 import * as bcrypt from 'bcrypt';
 import {

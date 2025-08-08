@@ -15,7 +15,7 @@ import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
-import { InvitationService } from '../invitations/invitation.service';
+import { InvitationService } from '../invitation/invitation.service';
 import { GoogleService } from './services/google.service';
 import { CustomLogger } from '../common/logger/custom.logger';
 

@@ -6,7 +6,7 @@ import { GoogleUserInfoDto } from '../dto/google-user-info.dto';
 import { GoogleTokenResponseDto } from '../dto/google-token-response.dto';
 import { User, AuthProvider } from '../../user/schemas/user.schema';
 import { UserService } from '../../user/user.service';
-import { InvitationService } from '../../invitations/invitation.service';
+import { InvitationService } from '../../invitation/invitation.service';
 import { Types } from 'mongoose';
 import { OutGoogleAuthUrlDto } from '../dto/out.google-auth-url.dto';
 import { CustomLogger } from 'src/common/logger/custom.logger';

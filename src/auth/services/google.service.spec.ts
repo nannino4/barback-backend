@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { GoogleService } from './google.service';
 import { UserService } from '../../user/user.service';
-import { InvitationService } from '../../invitations/invitation.service';
+import { InvitationService } from '../../invitation/invitation.service';
 import { CustomLogger } from '../../common/logger/custom.logger';
 import { User, AuthProvider } from '../../user/schemas/user.schema';
 import { Types } from 'mongoose';

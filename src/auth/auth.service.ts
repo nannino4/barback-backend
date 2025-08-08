@@ -13,7 +13,7 @@ import { OutTokensDto } from './dto/out.tokens.dto';
 import { OutAuthResponseDto } from './dto/out.auth-response.dto';
 import { OutUserDto } from '../user/dto/out.user.dto';
 import { EmailService } from '../email/email.service';
-import { InvitationService } from '../invitations/invitation.service';
+import { InvitationService } from '../invitation/invitation.service';
 import { plainToClass } from 'class-transformer';
 import {
     JwtConfigurationException,

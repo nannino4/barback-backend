@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { EmailModule } from '../email/email.module';
-import { InvitationModule } from 'src/invitations/invitation.module';
+import { InvitationModule } from 'src/invitation/invitation.module';
 import { GoogleService } from './services/google.service';
 
 @Module({
