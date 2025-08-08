@@ -9,8 +9,9 @@ The Category Management module handles product categorization within organizatio
 - Role-based access control
 - Circular reference prevention
 - Cascade deletion handling
+- Duplicate name prevention
 
-## Endpoints
+## Core Endpoints
 
 ### GET /api/orgs/:orgId/categories
 Get all categories for an organization.
@@ -45,10 +46,48 @@ Get all categories for an organization.
 ]
 ```
 
+**Error Responses**:
+
+**400 Bad Request** - Invalid Organization ID:
+```json
+{
+  "message": "Invalid ObjectId format: invalidId",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing Token:
+```json
+{
+  "message": "Unauthorized",
+  "error": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Organization Permissions:
+```json
+{
+  "message": "Access denied. Required organization roles: OWNER, MANAGER, STAFF",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: categories retrieval - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
 **Notes**:
-- Returns flat list of all categories
+- Returns flat list of all categories sorted by name
 - Use `parentId` to build tree structure in frontend
-- Categories are ordered by creation date
+- Empty array returned if no categories exist for organization
 
 ---
 
@@ -75,8 +114,52 @@ Get a specific category.
 }
 ```
 
-**Errors**:
-- `404 Not Found`: Category not found or not in specified organization
+**Error Responses**:
+
+**400 Bad Request** - Invalid ID Format:
+```json
+{
+  "message": "Invalid ObjectId format: invalidId",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing Token:
+```json
+{
+  "message": "Unauthorized",
+  "error": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Organization Permissions:
+```json
+{
+  "message": "Access denied. Required organization roles: OWNER, MANAGER, STAFF",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Category Not Found:
+```json
+{
+  "message": "Category with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "CATEGORY_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: category retrieval - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 ---
 
@@ -98,6 +181,11 @@ Create a new category.
 }
 ```
 
+**Validation Rules**:
+- `name`: Required, non-empty string, max 255 characters
+- `description`: Optional string, max 500 characters when provided
+- `parentId`: Optional, must be valid MongoDB ObjectId of existing category in same organization
+
 **Response** (201 Created):
 ```json
 {
@@ -111,19 +199,78 @@ Create a new category.
 }
 ```
 
-**Validation Rules**:
-- `name`: Required, max 100 characters, unique within organization
-- `description`: Optional, max 500 characters
-- `parentId`: Optional, must be valid category ID in same organization
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "name should not be empty",
+    "parentId must be a mongodb id"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid Organization ID:
+```json
+{
+  "message": "Invalid ObjectId format: invalidId",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid Parent Category:
+```json
+{
+  "message": "Parent category with ID \"64a1b2c3d4e5f6789abc999\" not found or does not belong to the organization",
+  "error": "INVALID_PARENT_CATEGORY",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing Token:
+```json
+{
+  "message": "Unauthorized",
+  "error": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Access denied. Required organization roles: OWNER, MANAGER",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**409 Conflict** - Category Name Already Exists:
+```json
+{
+  "message": "Category with name \"Wine\" already exists in this organization",
+  "error": "CATEGORY_NAME_CONFLICT",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: category creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 **Business Rules**:
-- Category names must be unique within the organization
+- Category names must be unique within the organization (case-sensitive)
 - Parent category must exist and belong to same organization
-- Circular references are prevented
-
-**Errors**:
-- `400 Bad Request`: Validation errors or circular reference attempt
-- `409 Conflict`: Category name already exists in organization
+- No circular references are allowed in hierarchy
 
 ---
 
@@ -146,11 +293,17 @@ Update an existing category.
 }
 ```
 
+**Validation Rules**:
+- All fields are optional for updates
+- `name`: Non-empty string, max 255 characters when provided
+- `description`: String, max 500 characters when provided  
+- `parentId`: Valid MongoDB ObjectId of existing category in same organization, or null
+
 **Response** (200 OK):
 ```json
 {
   "id": "64a1b2c3d4e5f6789abc123",
-  "name": "Premium Spirits",
+  "name": "Premium Spirits", 
   "description": "High-end alcoholic spirits and liquors",
   "parentId": null,
   "organizationId": "64a1b2c3d4e5f6789def456",
@@ -159,20 +312,111 @@ Update an existing category.
 }
 ```
 
-**Validation Rules**:
-- Same validation as creation
-- Cannot set category as its own parent (circular reference)
-- Cannot create cycles in parent-child relationships
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "name should not be empty",
+    "parentId must be a mongodb id"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid ID Format:
+```json
+{
+  "message": "Invalid ObjectId format: invalidId",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Invalid Parent Category:
+```json
+{
+  "message": "Parent category with ID \"64a1b2c3d4e5f6789abc999\" not found or does not belong to the organization",
+  "error": "INVALID_PARENT_CATEGORY", 
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Self Parent Assignment:
+```json
+{
+  "message": "Category cannot be its own parent",
+  "error": "CATEGORY_SELF_PARENT",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Circular Reference:
+```json
+{
+  "message": "Circular reference detected: category cannot be a descendant of itself",
+  "error": "CATEGORY_CIRCULAR_REFERENCE",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing Token:
+```json
+{
+  "message": "Unauthorized",
+  "error": "Unauthorized", 
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Access denied. Required organization roles: OWNER, MANAGER",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Category Not Found:
+```json
+{
+  "message": "Category with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "CATEGORY_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Category Name Already Exists:
+```json
+{
+  "message": "Category with name \"Premium Spirits\" already exists in this organization",
+  "error": "CATEGORY_NAME_CONFLICT",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: category update - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 **Partial Updates**:
 - Can update individual fields
 - Omitted fields remain unchanged
 - Set `parentId` to `null` to make category a root category
 
-**Errors**:
-- `400 Bad Request`: Validation errors or circular reference attempt
-- `404 Not Found`: Category not found or not in organization
-- `409 Conflict`: Name conflicts with existing category
+**Business Rules**:
+- Cannot set category as its own parent
+- Cannot create cycles in parent-child relationships
+- Updated name must not conflict with existing categories in organization
+- All hierarchy validation occurs before database update
 
 ---
 
@@ -186,16 +430,73 @@ Delete a category.
 - `orgId` (path): Organization ID
 - `id` (path): Category ID
 
-**Response** (204 No Content): Empty response
+**Response** (200 OK):
+```json
+{
+  "message": "Category deleted successfully"
+}
+```
 
-**Cascade Behavior**:
-- Child categories become root categories (parentId set to null)
-- Products in this category have their categoryId set to null
-- Deletion is soft - category is marked as deleted but preserved for audit
+**Error Responses**:
 
-**Errors**:
-- `404 Not Found`: Category not found or not in organization
-- `400 Bad Request`: Cannot delete category (business rule violation)
+**400 Bad Request** - Invalid ID Format:
+```json
+{
+  "message": "Invalid ObjectId format: invalidId",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**400 Bad Request** - Category Has Children:
+```json
+{
+  "message": "Cannot delete category with child categories. Please delete or reassign child categories first.",
+  "error": "CATEGORY_HAS_CHILDREN",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing Token:
+```json
+{
+  "message": "Unauthorized",
+  "error": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Access denied. Required organization roles: OWNER, MANAGER",
+  "error": "Forbidden", 
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Category Not Found:
+```json
+{
+  "message": "Category with ID \"64a1b2c3d4e5f6789abc123\" not found or does not belong to the organization",
+  "error": "CATEGORY_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: category deletion - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Business Rules**:
+- Cannot delete categories that have child categories
+- Must delete or reassign child categories first
+- Category and all references are permanently removed
 
 ---
 
@@ -205,7 +506,7 @@ Delete a category.
 ```json
 {
   "id": "string",           // MongoDB ObjectId
-  "name": "string",         // Category name (max 100 chars, unique in org)
+  "name": "string",         // Category name (max 255 chars, unique in org)
   "description": "string",  // Optional description (max 500 chars)
   "parentId": "string|null", // Parent category ID or null for root
   "organizationId": "string", // Organization ID
@@ -256,140 +557,32 @@ Beverages (root)
 
 ## Business Rules
 
-1. **Unique Names**: Category names must be unique within an organization
+1. **Unique Names**: Category names must be unique within an organization (case-sensitive)
 2. **Hierarchical Structure**: Categories can have parent-child relationships
 3. **No Circular References**: Cannot create cycles in parent-child relationships
 4. **Organization Scoping**: Categories belong to specific organizations
-5. **Cascade Handling**: Deleting categories affects child categories and products
-6. **Soft Deletion**: Categories are marked as deleted for audit purposes
+5. **Child Category Protection**: Cannot delete categories that have child categories
+6. **Parent Validation**: Parent categories must exist in the same organization
 
 ## Validation Rules
 
 ### Name Validation
-- Required field
-- Maximum 100 characters
+- Required field for creation
+- Non-empty string when provided for updates
+- Maximum 255 characters
 - Must be unique within organization
 - Trimmed of leading/trailing whitespace
 
 ### Description Validation
 - Optional field
-- Maximum 500 characters
+- Maximum 500 characters when provided
 - Can contain any text including line breaks
 
 ### Parent ID Validation
-- Must be null or valid category ID
+- Must be null or valid MongoDB ObjectId
 - Parent category must exist in same organization
 - Cannot create circular references
 - Cannot set category as its own parent
-
-## Error Handling
-
-**Validation Error** (400):
-```json
-{
-  "statusCode": 400,
-  "message": [
-    "name should not be empty",
-    "name must be shorter than or equal to 100 characters"
-  ],
-  "error": "Bad Request"
-}
-```
-
-**Duplicate Name** (409):
-```json
-{
-  "statusCode": 409,
-  "message": "Category name already exists in organization",
-  "error": "Conflict"
-}
-```
-
-**Circular Reference** (400):
-```json
-{
-  "statusCode": 400,
-  "message": "Cannot create circular reference in category hierarchy",
-  "error": "Bad Request"
-}
-```
-
-**Access Denied** (403):
-```json
-{
-  "statusCode": 403,
-  "message": "Insufficient permissions for this organization",
-  "error": "Forbidden"
-}
-```
-
-## Integration Notes
-
-### Frontend Implementation
-
-1. **Building Category Tree**:
-```javascript
-function buildCategoryTree(categories) {
-  const map = new Map();
-  const roots = [];
-  
-  // Create map of all categories
-  categories.forEach(cat => map.set(cat.id, { ...cat, children: [] }));
-  
-  // Build tree structure
-  categories.forEach(cat => {
-    if (cat.parentId) {
-      const parent = map.get(cat.parentId);
-      if (parent) {
-        parent.children.push(map.get(cat.id));
-      }
-    } else {
-      roots.push(map.get(cat.id));
-    }
-  });
-  
-  return roots;
-}
-```
-
-2. **Category Dropdown with Hierarchy**:
-```javascript
-function flattenCategoriesForDropdown(categories, prefix = '') {
-  let options = [];
-  categories.forEach(cat => {
-    options.push({
-      value: cat.id,
-      label: prefix + cat.name
-    });
-    if (cat.children?.length) {
-      options.push(...flattenCategoriesForDropdown(cat.children, prefix + '  '));
-    }
-  });
-  return options;
-}
-```
-
-3. **API Usage Examples**:
-```javascript
-// Get all categories
-const categories = await fetch(`/api/orgs/${orgId}/categories`, {
-  headers: { 'Authorization': `Bearer ${token}` }
-});
-
-// Create category
-const newCategory = await fetch(`/api/orgs/${orgId}/categories`, {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: 'New Category',
-    description: 'Category description',
-    parentId: parentCategoryId || null
-  })
-});
-```
 
 ### Mobile App Considerations
 - Cache category tree for offline use

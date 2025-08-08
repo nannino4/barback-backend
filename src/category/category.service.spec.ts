@@ -1,13 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { Category, CategorySchema } from './schemas/category.schema';
 import { InCreateCategoryDto } from './dto/in.create-category.dto';
 import { InUpdateCategoryDto } from './dto/in.update-category.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { 
+    CategoryNotFoundException, 
+    CategoryNameConflictException,
+    InvalidParentCategoryException,
+    CategoryCircularReferenceException,
+    CategorySelfParentException,
+    CategoryHasChildrenException,
+} from './exceptions/category.exceptions';
 
 describe('CategoryService - Service Tests (Unit-style)', () => 
 {
@@ -119,7 +126,18 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             expect(savedSubCategory.parentId.toString()).toBe((parentCategory._id as Types.ObjectId).toString());
         });
 
-        it('should throw BadRequestException when parentId does not exist', async () => 
+        it('should throw CategoryNameConflictException when category name already exists in organization', async () => 
+        {
+            // Arrange - Create first category
+            await service.createCategory(mockOrgId, mockCreateCategoryDto);
+            
+            // Act & Assert - Try to create another category with same name
+            await expect(service.createCategory(mockOrgId, mockCreateCategoryDto))
+                .rejects
+                .toThrow(CategoryNameConflictException);
+        });
+
+        it('should throw InvalidParentCategoryException when parentId does not exist', async () => 
         {
             // Arrange
             const nonExistentParentId = new Types.ObjectId();
@@ -131,10 +149,10 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.createCategory(mockOrgId, categoryWithInvalidParent))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(InvalidParentCategoryException);
         });
 
-        it('should throw BadRequestException when parentId belongs to different org', async () => 
+        it('should throw InvalidParentCategoryException when parentId belongs to different org', async () => 
         {
             // Arrange - Create parent in different org
             const parentInDifferentOrg = await service.createCategory(mockOrgId2, mockCreateCategoryDto);
@@ -146,7 +164,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.createCategory(mockOrgId, categoryWithWrongOrgParent))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(InvalidParentCategoryException);
         });
 
         it('should create category without description when not provided', async () => 
@@ -243,26 +261,26 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             expect(result.orgId.toString()).toBe(mockOrgId.toString());
         });
 
-        it('should throw NotFoundException when category does not exist', async () => 
+        it('should throw CategoryNotFoundException when category does not exist', async () => 
         {
             // Arrange
-            const nonExistentId = new Types.ObjectId();
+            const nonExistentCategoryId = new Types.ObjectId();
 
             // Act & Assert
-            await expect(service.findCategoryById(mockOrgId, nonExistentId))
+            await expect(service.findCategoryById(mockOrgId, nonExistentCategoryId))
                 .rejects
-                .toThrow(NotFoundException);
+                .toThrow(CategoryNotFoundException);
         });
 
-        it('should throw NotFoundException when category belongs to different org', async () => 
+        it('should throw CategoryNotFoundException when category belongs to different org', async () => 
         {
-            // Arrange - Create category in different org
+            // Arrange - Create category in one org
             const categoryInDifferentOrg = await service.createCategory(mockOrgId2, mockCreateCategoryDto);
 
             // Act & Assert
             await expect(service.findCategoryById(mockOrgId, categoryInDifferentOrg._id as Types.ObjectId))
                 .rejects
-                .toThrow(NotFoundException);
+                .toThrow(CategoryNotFoundException);
         });
     });
 
@@ -313,6 +331,20 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             expect(result.description).toBe(existingCategory.description); // Should remain unchanged
         });
 
+        it('should throw CategoryNameConflictException when updating to existing category name', async () => 
+        {
+            // Arrange - Create another category with different name
+            await service.createCategory(mockOrgId, { name: 'Other Category' });
+            const updateDto: InUpdateCategoryDto = {
+                name: 'Other Category', // Try to use the other category's name
+            };
+
+            // Act & Assert
+            await expect(service.updateCategory(mockOrgId, existingCategory._id as Types.ObjectId, updateDto))
+                .rejects
+                .toThrow(CategoryNameConflictException);
+        });
+
         it('should successfully set parent category', async () => 
         {
             // Arrange
@@ -345,7 +377,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             expect(result.parentId!.toString()).toBe((parentCategory._id as Types.ObjectId).toString());
         });
 
-        it('should throw BadRequestException when setting category as its own parent', async () => 
+        it('should throw CategorySelfParentException when setting category as its own parent', async () => 
         {
             // Arrange
             const updateDto: InUpdateCategoryDto = {
@@ -355,10 +387,10 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.updateCategory(mockOrgId, existingCategory._id as Types.ObjectId, updateDto))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(CategorySelfParentException);
         });
 
-        it('should throw BadRequestException when parentId does not exist', async () => 
+        it('should throw InvalidParentCategoryException when parentId does not exist', async () => 
         {
             // Arrange
             const nonExistentParentId = new Types.ObjectId();
@@ -369,10 +401,10 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.updateCategory(mockOrgId, existingCategory._id as Types.ObjectId, updateDto))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(InvalidParentCategoryException);
         });
 
-        it('should throw BadRequestException when creating circular reference', async () => 
+        it('should throw CategoryCircularReferenceException when creating circular reference', async () => 
         {            // Arrange - Create hierarchy: grandparent -> parent -> child
             const grandparent = await service.createCategory(mockOrgId, { name: 'Grandparent' });
             const parent = await service.createCategory(mockOrgId, { 
@@ -387,10 +419,10 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert - Try to make grandparent a child of child (circular reference)
             await expect(service.updateCategory(mockOrgId, grandparent._id as Types.ObjectId, { parentId: child.id }))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(CategoryCircularReferenceException);
         });
 
-        it('should throw NotFoundException when category does not exist', async () => 
+        it('should throw CategoryNotFoundException when category does not exist', async () => 
         {
             // Arrange
             const nonExistentId = new Types.ObjectId();
@@ -399,10 +431,10 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.updateCategory(mockOrgId, nonExistentId, updateDto))
                 .rejects
-                .toThrow(NotFoundException);
+                .toThrow(CategoryNotFoundException);
         });
 
-        it('should throw NotFoundException when category belongs to different org', async () => 
+        it('should throw CategoryNotFoundException when category belongs to different org', async () => 
         {
             // Arrange
             const categoryInDifferentOrg = await service.createCategory(mockOrgId2, mockCreateCategoryDto);
@@ -411,7 +443,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.updateCategory(mockOrgId, categoryInDifferentOrg._id as Types.ObjectId, updateDto))
                 .rejects
-                .toThrow(NotFoundException);
+                .toThrow(CategoryNotFoundException);
         });
     });
 
@@ -434,7 +466,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             expect(deletedCategory).toBeNull();
         });
 
-        it('should throw BadRequestException when trying to delete category with children', async () => 
+        it('should throw CategoryHasChildrenException when trying to delete category with children', async () => 
         {
             // Arrange - Create child category
             await service.createCategory(mockOrgId, {
@@ -445,7 +477,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.deleteCategory(mockOrgId, existingCategory._id as Types.ObjectId))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(CategoryHasChildrenException);
 
             // Verify parent category still exists
             const parentStillExists = await categoryModel.findById(existingCategory._id);
@@ -469,7 +501,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             expect(deletedCategory).toBeNull();
         });
 
-        it('should throw NotFoundException when category does not exist', async () => 
+        it('should throw CategoryNotFoundException when category does not exist', async () => 
         {
             // Arrange
             const nonExistentId = new Types.ObjectId();
@@ -477,10 +509,10 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.deleteCategory(mockOrgId, nonExistentId))
                 .rejects
-                .toThrow(NotFoundException);
+                .toThrow(CategoryNotFoundException);
         });
 
-        it('should throw NotFoundException when category belongs to different org', async () => 
+        it('should throw CategoryNotFoundException when category belongs to different org', async () => 
         {
             // Arrange
             const categoryInDifferentOrg = await service.createCategory(mockOrgId2, mockCreateCategoryDto);
@@ -488,7 +520,7 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert
             await expect(service.deleteCategory(mockOrgId, categoryInDifferentOrg._id as Types.ObjectId))
                 .rejects
-                .toThrow(NotFoundException);
+                .toThrow(CategoryNotFoundException);
         });
 
         it('should not affect categories in different organizations', async () => 
@@ -526,11 +558,11 @@ describe('CategoryService - Service Tests (Unit-style)', () =>
             // Act & Assert - Try to create circular reference at different levels
             await expect(service.updateCategory(mockOrgId, level1._id as Types.ObjectId, { parentId: level4.id }))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(CategoryCircularReferenceException);
 
             await expect(service.updateCategory(mockOrgId, level2._id as Types.ObjectId, { parentId: level4.id }))
                 .rejects
-                .toThrow(BadRequestException);
+                .toThrow(CategoryCircularReferenceException);
         });
     });
 });
