@@ -9,6 +9,7 @@ import { CategoryService } from './category.service';
 import { Category, CategorySchema } from './schemas/category.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
+import { OrgSubscriptionGuard } from '../org/guards/org-subscription.guard';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { InCreateCategoryDto } from './dto/in.create-category.dto';
 import { InUpdateCategoryDto } from './dto/in.update-category.dto';
@@ -57,6 +58,10 @@ describe('CategoryController (Integration)', () =>
                 canActivate: () => true,
             })
             .overrideGuard(OrgRolesGuard)
+            .useValue({
+                canActivate: () => true,
+            })
+            .overrideGuard(OrgSubscriptionGuard)
             .useValue({
                 canActivate: () => true,
             })

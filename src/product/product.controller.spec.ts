@@ -13,6 +13,7 @@ import { InventoryLog, InventoryLogSchema, InventoryLogType } from './schemas/in
 import { Category, CategorySchema } from '../category/schemas/category.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
+import { OrgSubscriptionGuard } from '../org/guards/org-subscription.guard';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
@@ -81,6 +82,10 @@ describe('ProductController (Integration)', () =>
                 },
             })
             .overrideGuard(OrgRolesGuard)
+            .useValue({
+                canActivate: () => true,
+            })
+            .overrideGuard(OrgSubscriptionGuard)
             .useValue({
                 canActivate: () => true,
             })

@@ -19,6 +19,7 @@ import { OutProductDto } from './dto/out.product.dto';
 import { OutInventoryLogDto } from './dto/out.inventory-log.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
+import { OrgSubscriptionGuard } from '../org/guards/org-subscription.guard';
 import { OrgRoles } from '../org/decorators/org-roles.decorator';
 import { OrgRole } from '../org/schemas/user-org-relation.schema';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
@@ -29,7 +30,7 @@ import { CustomLogger } from '../common/logger/custom.logger';
 import { InvalidDateRangeException } from './exceptions/product.exceptions';
 
 @Controller('orgs/:orgId/products')
-@UseGuards(JwtAuthGuard, OrgRolesGuard)
+@UseGuards(JwtAuthGuard, OrgRolesGuard, OrgSubscriptionGuard)
 export class ProductController 
 {
     constructor(

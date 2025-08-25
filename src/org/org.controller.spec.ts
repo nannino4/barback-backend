@@ -14,6 +14,7 @@ import { User, UserSchema } from '../user/schemas/user.schema';
 import { Subscription, SubscriptionSchema } from '../subscription/schemas/subscription.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from './guards/org-roles.guard';
+import { OrgSubscriptionGuard } from './guards/org-subscription.guard';
 import { UserService } from '../user/user.service';
 import { SubscriptionService } from '../subscription/subscription.service';
 import { Types } from 'mongoose';
@@ -70,6 +71,7 @@ describe('OrgController (Integration)', () =>
                 UserOrgRelationService, 
                 UserService, 
                 OrgRolesGuard,
+                OrgSubscriptionGuard,
                 SubscriptionService,
                 {
                     provide: ConfigService,
@@ -86,6 +88,10 @@ describe('OrgController (Integration)', () =>
             .overrideGuard(JwtAuthGuard)
             .useValue({
                 canActivate: () => true, // Will be overridden in beforeEach
+            })
+            .overrideGuard(OrgSubscriptionGuard)
+            .useValue({
+                canActivate: () => true, // Always allow for tests
             })
 
             .compile();

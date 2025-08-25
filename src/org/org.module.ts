@@ -12,6 +12,7 @@ import { SubscriptionModule } from '../subscription/subscription.module';
 import { EmailModule } from '../email/email.module';
 import { AuthGuardModule } from '../auth/auth-guard.module';
 import { OrgRolesGuard } from './guards/org-roles.guard';
+import { OrgSubscriptionGuard } from './guards/org-subscription.guard';
 import { UserModule } from 'src/user/user.module';
 
 @Module({
@@ -26,7 +27,7 @@ import { UserModule } from 'src/user/user.module';
         EmailModule, // Used for notifications
     ],
     controllers: [OrgController],
-    providers: [OrgService, UserOrgRelationService, OrgRolesGuard],
-    exports: [OrgService, UserOrgRelationService, OrgRolesGuard],
+    providers: [OrgService, UserOrgRelationService, OrgRolesGuard, OrgSubscriptionGuard],
+    exports: [OrgService, UserOrgRelationService, OrgRolesGuard, OrgSubscriptionGuard],
 })
 export class OrgModule { }

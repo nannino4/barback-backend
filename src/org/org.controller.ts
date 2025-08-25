@@ -26,6 +26,7 @@ import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 import { OrgRolesGuard } from './guards/org-roles.guard';
+import { OrgSubscriptionGuard } from './guards/org-subscription.guard';
 import { OrgRoles } from './decorators/org-roles.decorator';
 import { UserService } from '../user/user.service';
 import { SubscriptionService } from '../subscription/subscription.service';
@@ -121,7 +122,7 @@ export class OrgController
     }
 
     @Get(':id/members')
-    @UseGuards(OrgRolesGuard)
+    @UseGuards(OrgRolesGuard, OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)
     async getOrgMembers(
         @CurrentUser() user: User,
@@ -165,7 +166,7 @@ export class OrgController
     }
 
     @Put(':id')
-    @UseGuards(OrgRolesGuard)
+    @UseGuards(OrgRolesGuard, OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER)
     async updateOrg(
         @CurrentUser() user: User,
@@ -180,7 +181,7 @@ export class OrgController
     }
 
     @Put(':id/members/:userId/role')
-    @UseGuards(OrgRolesGuard)
+    @UseGuards(OrgRolesGuard, OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async updateMemberRole(
         @CurrentUser() user: User,

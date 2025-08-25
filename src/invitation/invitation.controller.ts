@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
+import { OrgSubscriptionGuard } from '../org/guards/org-subscription.guard';
 import { OrgRoles } from '../org/decorators/org-roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { InvitationService } from './invitation.service';
@@ -48,6 +49,7 @@ export class InvitationController
      * @returns The created invitation
      */
     @Post('orgs/:orgId/invitations')
+    @UseGuards(OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async sendInvitation(
         @Param('orgId', ObjectIdValidationPipe) orgId: string,
@@ -84,6 +86,7 @@ export class InvitationController
      * @returns List of pending invitations for the organization
      */
     @Get('orgs/:orgId/invitations')
+    @UseGuards(OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async getOrganizationInvitations(
         @Param('orgId', ObjectIdValidationPipe) orgId: string,
@@ -103,6 +106,7 @@ export class InvitationController
      * @returns Success message
      */
     @Delete('orgs/:orgId/invitations/:invitationId')
+    @UseGuards(OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async revokeInvitation(
         @Param('orgId', ObjectIdValidationPipe) orgId: string,
