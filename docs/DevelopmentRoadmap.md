@@ -102,6 +102,58 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Allow users to delete their own account (consider implications and data retention policies).
   - [X] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
 
+#### Email Verification Access Control (New)
+Currently users can use most authenticated features before verifying email. We will introduce a unified guard to restrict sensitive operations until verification.
+
+- [ ] **Define Policy**:
+  - [ ] Agree final rule: all authenticated endpoints require verified email except explicitly whitelisted (registration, login, token refresh, email verification & resend, password reset, public invitation flows, subscription plan listing, Stripe webhooks).
+  - [ ] Document rationale (abuse prevention for invitations, organization creation, subscription trials, resource access).
+- [ ] **Implement `EmailVerifiedGuard`**:
+  - [ ] Guard checks `request.user.isEmailVerified` (populated by JWT auth) and throws `ForbiddenException` with code `EMAIL_NOT_VERIFIED`.
+  - [ ] Return payload: `{ statusCode: 403, error: 'EMAIL_NOT_VERIFIED', message: 'Email must be verified to access this resource.' }`.
+- [ ] **Skip Decorator**:
+  - [ ] Create `@SkipEmailVerification()` (sets custom metadata) for endpoints exempt from verification.
+  - [ ] Add helper constant for metadata key (e.g., `SKIP_EMAIL_VERIFICATION_KEY`).
+- [ ] **Global Registration**:
+  - [ ] Provide guard via `APP_GUARD` after JWT guard so user is already resolved.
+  - [ ] Ensure ordering does not affect public endpoints (guard should early-return if no auth user present).
+- [ ] **Apply Decorator to Exempt Endpoints** (see lists below).
+- [ ] **Add Error Documentation** to each protected API doc (single shared snippet) referencing new 403 response.
+- [ ] **Testing**:
+  - [ ] Unit test guard logic (verified vs unverified, skip metadata).
+  - [ ] E2E tests: unverified user hitting protected endpoint (e.g., create org) -> 403; after verification -> success.
+  - [ ] Regression: exempt endpoints remain accessible (login, resend verification email, etc.).
+- [ ] **Migration/Data Review**:
+  - [ ] Confirm existing Google users have `isEmailVerified = true`.
+  - [ ] Optionally create script to list active unverified users for follow-up emails (future enhancement).
+- [ ] **Telemetry (Optional)**:
+  - [ ] Log denied attempts for analytics (count, endpoint, userId) without sensitive data.
+
+**Endpoints Requiring Email Verification (Protected)**
+- User Self: `GET /api/users/me`, `PUT /api/users/me`, `PUT /api/users/me/password`, `DELETE /api/users/me`
+- Admin: All `/api/admin/*` endpoints (role management & user data)
+- Subscription (except public plans): `GET /api/subscription`, `GET /api/subscription/trial-eligibility`, `POST /api/subscription/start-owner-trial`, `DELETE /api/subscription/cancel`, Payment methods endpoints (`GET/POST/DELETE /api/payment/methods*`)
+- Organization: `POST /api/orgs`, `GET /api/orgs`, `GET /api/orgs/:id/members`, `PUT /api/orgs/:id`, `PUT /api/orgs/:id/members/:userId/role`
+- Invitations (authenticated org/member flows): `POST /api/orgs/:orgId/invitations`, `GET /api/orgs/:orgId/invitations`, `DELETE /api/orgs/:orgId/invitations/:invitationId`, `GET /api/invites`, `POST /api/invites/accept/:token`, `POST /api/invites/decline/:token`
+- Categories: All `/api/orgs/:orgId/categories*` endpoints
+- Products: All `/api/orgs/:orgId/products*` endpoints and related inventory: `POST /api/orgs/:orgId/products/:id/adjust-stock`, `GET /api/orgs/:orgId/products/:id/logs`
+- (Future) Alerts, Analytics: all organization-scoped endpoints once implemented
+
+**Endpoints Exempt From Email Verification**
+- Auth Registration/Login: `POST /api/auth/register/email`, `POST /api/auth/login/email`, Google OAuth endpoints, `POST /api/auth/refresh-token`
+- Email Verification Flow: `POST /api/auth/send-verification-email`, `POST /api/auth/verify-email`, `GET /api/auth/verify-email/:token`
+- Password Reset: `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `GET /api/auth/reset-password/:token`
+- Public Invitations: `GET /api/public/invitations/details/:token`, `POST /api/public/invitations/accept/:token`, `POST /api/public/invitations/decline/:token`, anonymous invitation accept/decline endpoints
+- Subscription Plans (public): `GET /api/subscription/plans`
+- Webhooks: `POST /webhooks/stripe`
+
+**Design Notes**
+- Simpler maintenance via global guard + skip decorator vs manually adding guard to each controller.
+- Keeps future feature additions safe by default (new authenticated endpoints will require verified email unless explicitly skipped).
+
+**Follow-Up Enhancements (Deferred)**
+- Automated reminder emails for users inactive/unverified after X days.
+
 #### Subscription Management
 - [X] **Stripe Setup**:
   - [X] Set up Stripe account and configure API keys.
