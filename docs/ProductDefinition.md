@@ -24,7 +24,6 @@
 - For each active subscription a user can create an organization of which is owner
 - The first subscription for a user starts with a free trial
 - Subscriptions renew automatically
-- Subscription will be handled by stripe
 
 #### Organizations
 - Single inventory management per organization
