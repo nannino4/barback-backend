@@ -50,6 +50,13 @@ export class OrgSubscriptionGuard implements CanActivate
                 throw new ForbiddenException('Organization not found');
             }
 
+            // Check if organization has a subscription
+            if (!org.subscriptionId) 
+            {
+                this.logger.warn(`Organization ${orgId} has no subscription`, 'OrgSubscriptionGuard#canActivate');
+                throw new ForbiddenException('Organization has no subscription');
+            }
+
             // Get organization's subscription
             const subscription = await this.subscriptionService.findById(org.subscriptionId);
             if (!subscription) 

@@ -76,7 +76,7 @@ export class SubscriptionService
         }
 
         // Get user to create/update Stripe customer
-        const user = await this.userService.findById(userId); // Let user service handle its own errors
+        const user = await this.userService.findById(userId);
         let stripeCustomerId = user.stripeCustomerId;
 
         // Create Stripe customer if needed
@@ -89,15 +89,14 @@ export class SubscriptionService
                     name: `${user.firstName} ${user.lastName}`,
                 });
                 stripeCustomerId = stripeCustomer.id;
-                
-                // Update user with Stripe customer ID
-                await this.userService.updateStripeCustomerId(userId, stripeCustomerId); // Let user service handle its own errors
             }
             catch (error)
             {
                 this.logger.error(`Failed to create Stripe customer for user: ${userId}`, error instanceof Error ? error.stack : undefined, 'SubscriptionService#createTrialSubscription');
                 this.handleStripeError(error, 'customer creation');
             }
+            // Update user with Stripe customer ID
+            await this.userService.updateStripeCustomerId(userId, stripeCustomerId);
         }
 
         // Create trial subscription in Stripe
