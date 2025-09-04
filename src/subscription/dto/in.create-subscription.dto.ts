@@ -1,13 +1,9 @@
-import { IsEnum, IsBoolean, ValidateIf, IsNotEmpty } from 'class-validator';
-import { SubscriptionStatus } from '../schemas/subscription.schema';
+import { IsEnum, IsOptional } from 'class-validator';
+import { BillingInterval } from '../../common/services/stripe.service';
 
 export class InCreateSubscriptionDto 
 {
-    @IsEnum(SubscriptionStatus)
-    status!: SubscriptionStatus;
-
-    @ValidateIf((o, value) => value !== undefined)
-    @IsNotEmpty()
-    @IsBoolean()
-    autoRenew?: boolean;
+    @IsOptional()
+    @IsEnum(BillingInterval)
+    billingInterval?: BillingInterval;
 }

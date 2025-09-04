@@ -1,69 +1,17 @@
 # Subscription Management API Documentation
 
 ## Overview
-The Subscription Management module handles user subscriptions for organization ownership, payment methods, and Stripe integration. Users get a 3-month trial that automatically converts to a paid plan.
+The Subscription Management module handles user subscriptions for organization ownership, payment methods, and Stripe integration. Users can have multiple subscriptions - one per organization they want to own. Only the first subscription for each user includes a 3-month trial period.
 
 ## Subscription Workflow
 
-1. **Check Trial Eligibility**: Verify if user can start a trial
-2. **Start Trial**: Create 3-month trial subscription
+1. **Check Trial Eligibility**: Verify if user can start a trial (only available for users with no existing subscriptions)
+2. **Start Trial or Paid Subscription**: Create subscription based on eligibility
 3. **Create Organization**: Use active subscription to create organization
 4. **Auto-Conversion**: Trial converts to paid subscription automatically
-5. **Manage Subscription**: View, update, or cancel subscription
+5. **Manage Subscriptions**: View, update, or cancel subscriptions
 
 ## Subscription Endpoints
-
-### GET /api/subscription
-Get current user's subscription details.
-
-**Authentication**: Required (JWT)
-
-**Response** (200 OK):
-```json
-{
-  "id": "64a1b2c3d4e5f6789abc123",
-  "status": "trialing",
-  "autoRenew": true,
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
-```
-
-**Response** (200 OK) - No subscription:
-```json
-null
-```
-
-**Error Responses**:
-
-**401 Unauthorized** - Authentication Required:
-```json
-{
-  "message": "Unauthorized",
-  "statusCode": 401
-}
-```
-
-**500 Internal Server Error** - Database Operation Failed:
-```json
-{
-  "message": "Database operation failed: subscription lookup by user ID - [details]",
-  "error": "DATABASE_OPERATION_FAILED",
-  "statusCode": 500
-}
-```
-
-**Subscription Status Values**:
-- `trialing`: User is in trial period
-- `active`: Paid subscription is active
-- `past_due`: Payment failed, subscription may be suspended
-- `canceled`: Subscription has been cancelled
-- `unpaid`: Payment required
-- `incomplete`: Subscription setup incomplete
-- `incomplete_expired`: Setup expired
-- `paused`: Subscription temporarily paused
-
----
 
 ### GET /api/subscription/trial-eligibility
 Check if current user is eligible for a trial subscription.
@@ -110,12 +58,17 @@ Check if current user is eligible for a trial subscription.
 
 ---
 
-### POST /api/subscription/start-owner-trial
+### POST /api/subscription/start-trial
 Start a trial subscription for becoming an organization owner.
 
 **Authentication**: Required (JWT)
 
-**Request Body**: Empty
+**Request Body**:
+```json
+{
+  "billingInterval": "monthly" // optional, defaults to "monthly". Options: "monthly", "yearly"
+}
+```
 
 **Response** (201 Created):
 ```json
@@ -207,22 +160,30 @@ Start a trial subscription for becoming an organization owner.
 - Automatically converts to paid plan when trial ends
 - Required before creating an organization
 - If database save fails, Stripe subscription is automatically cancelled for cleanup
+- Only available for users who have never had a trial subscription
 
 ---
 
-### DELETE /api/subscription/cancel
-Cancel the current subscription.
+### POST /api/subscription/start-paid
+Start a paid subscription for becoming an organization owner.
 
 **Authentication**: Required (JWT)
 
-**Response** (200 OK):
+**Request Body**:
 ```json
 {
-  "id": "64a1b2c3d4e5f6789abc123",
-  "status": "canceled",
-  "autoRenew": false,
+  "billingInterval": "monthly" // optional, defaults to "monthly". Options: "monthly", "yearly"
+}
+```
+
+**Response** (201 Created):
+```json
+{
+  "id": "64a1b2c3d4e5f6789abc124",
+  "status": "active",
+  "autoRenew": true,
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T12:30:00.000Z"
+  "updatedAt": "2024-01-01T00:00:00.000Z"
 }
 ```
 
@@ -236,20 +197,20 @@ Cancel the current subscription.
 }
 ```
 
-**404 Not Found** - Subscription Not Found:
+**404 Not Found** - User Not Found:
 ```json
 {
-  "message": "Subscription not found for user: [user_id]",
-  "error": "SUBSCRIPTION_NOT_FOUND",
+  "message": "User with ID \"[user_id]\" not found",
+  "error": "USER_NOT_FOUND_BY_ID",
   "statusCode": 404
 }
 ```
 
-**400 Bad Request** - Invalid Operation:
+**400 Bad Request** - Stripe Customer Operation Failed:
 ```json
 {
-  "message": "Cannot cancel subscription with status: canceled",
-  "error": "INVALID_SUBSCRIPTION_OPERATION",
+  "message": "Stripe customer operation failed: customer creation - [details]",
+  "error": "STRIPE_CUSTOMER_FAILED",
   "statusCode": 400
 }
 ```
@@ -257,16 +218,25 @@ Cancel the current subscription.
 **400 Bad Request** - Stripe Subscription Operation Failed:
 ```json
 {
-  "message": "Stripe subscription operation failed: subscription cancellation - [details]",
+  "message": "Stripe subscription operation failed: subscription creation - [details]",
   "error": "STRIPE_SUBSCRIPTION_FAILED",
   "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Stripe Configuration Error:
+```json
+{
+  "message": "Stripe configuration error: STRIPE_BASIC_PLAN_PRICE_ID is not configured",
+  "error": "STRIPE_CONFIGURATION_ERROR",
+  "statusCode": 500
 }
 ```
 
 **500 Internal Server Error** - Database Operation Failed:
 ```json
 {
-  "message": "Database operation failed: subscription status update - [details]",
+  "message": "Database operation failed: subscription creation - [details]",
   "error": "DATABASE_OPERATION_FAILED",
   "statusCode": 500
 }
@@ -281,15 +251,63 @@ Cancel the current subscription.
 }
 ```
 
-**Effects**:
-- Cancels subscription with Stripe
-- Access to organization features continues until period end
-- No further billing occurs
-- Cannot be undone (user must start new subscription)
+**Notes**:
+- Creates Stripe customer and subscription
+- Starts billing immediately
+- Required before creating an organization
+- If database save fails, Stripe subscription is automatically cancelled for cleanup
+- Available for users who already used their trial or want to start with paid subscription
+
+---
+
+### GET /api/subscription/all
+Get all subscriptions for the current user.
+
+**Authentication**: Required (JWT)
+
+**Response** (200 OK):
+```json
+[
+  {
+    "id": "64a1b2c3d4e5f6789abc123",
+    "status": "canceled",
+    "autoRenew": false,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T12:30:00.000Z"
+  },
+  {
+    "id": "64a1b2c3d4e5f6789abc124",
+    "status": "active",
+    "autoRenew": true,
+    "createdAt": "2024-01-02T00:00:00.000Z",
+    "updatedAt": "2024-01-02T00:00:00.000Z"
+  }
+]
+```
+
+**Error Responses**:
+
+**401 Unauthorized** - Authentication Required:
+```json
+{
+  "message": "Unauthorized",
+  "statusCode": 401
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: subscription lookup by user ID - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
 
 **Notes**:
-- If Stripe subscription is not found, local cancellation proceeds
-- Already cancelled subscriptions return 400 error
+- Returns all subscriptions ordered by creation date (newest first)
+- Empty array if user has no subscriptions
+- Includes both active and canceled subscriptions
 
 ---
 
@@ -606,7 +624,8 @@ Handle Stripe webhook events (internal use).
 ```bash
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_BASIC_PLAN_PRICE_ID=price_...
+STRIPE_BASIC_MONTHLY_PRICE_ID=price_...
+STRIPE_BASIC_YEARLY_PRICE_ID=price_...
 ```
 
 ### Frontend Integration Steps
@@ -619,9 +638,15 @@ STRIPE_BASIC_PLAN_PRICE_ID=price_...
 
 2. **Start Trial Subscription**:
    ```javascript
-   const response = await fetch('/api/subscription/start-owner-trial', {
+   const response = await fetch('/api/subscription/start-trial', {
      method: 'POST',
-     headers: { 'Authorization': `Bearer ${token}` }
+     headers: { 
+       'Authorization': `Bearer ${token}`,
+       'Content-Type': 'application/json' 
+     },
+     body: JSON.stringify({
+       billingInterval: 'monthly' // optional, 'monthly' or 'yearly'
+     })
    });
    ```
 
@@ -648,8 +673,10 @@ STRIPE_BASIC_PLAN_PRICE_ID=price_...
 
 ## Business Rules
 
-1. **Trial Period**: 3 months for new organization owners
-2. **Auto-Conversion**: Trial automatically converts to paid plan
-3. **Pricing**: $29.99/month for Basic Plan
-4. **Cancellation**: Immediate cancellation, access until period end
-5. **Organization Ownership**: Requires active subscription
+1. **Trial Period**: 3 months for first subscription only
+2. **Multiple Subscriptions**: Users can have multiple subscriptions (one per organization)
+3. **Trial Eligibility**: Only first subscription per user gets trial period
+4. **Auto-Conversion**: Trial automatically converts to paid plan
+5. **Pricing**: $29.99/month for Basic Plan
+6. **Cancellation**: Immediate cancellation, access until period end
+7. **Organization Ownership**: Each organization requires its own active subscription

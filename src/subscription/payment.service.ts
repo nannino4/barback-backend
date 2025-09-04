@@ -1,31 +1,19 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Types } from 'mongoose';
-import Stripe from 'stripe';
 import { UserService } from '../user/user.service';
+import { StripeService } from '../common/services/stripe.service';
 import { CustomLogger } from '../common/logger/custom.logger';
+import Stripe from 'stripe';
 
 @Injectable()
 export class PaymentService 
 {
-    private readonly stripe: Stripe;
-
     constructor(
         private readonly userService: UserService,
-        private readonly configService: ConfigService,
+        private readonly stripeService: StripeService,
         private readonly logger: CustomLogger,
     ) 
     {
-        const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-        if (!stripeSecretKey) 
-        {
-            throw new Error('STRIPE_SECRET_KEY is not configured');
-        }
-        
-        this.stripe = new Stripe(stripeSecretKey, {
-            apiVersion: '2025-05-28.basil',
-        });
-        
         this.logger.debug('PaymentService initialized', 'PaymentService#constructor');
     }
 
@@ -39,18 +27,16 @@ export class PaymentService
         // Create Stripe customer if it doesn't exist
         if (!stripeCustomerId) 
         {
-            const stripeCustomer = await this.stripe.customers.create({
-                email: user.email,
-                name: `${user.firstName} ${user.lastName}`,
-            });
+            const stripeCustomer = await this.stripeService.createCustomer(
+                user.email,
+                `${user.firstName} ${user.lastName}`
+            );
             stripeCustomerId = stripeCustomer.id;
             await this.userService.updateStripeCustomerId(userId, stripeCustomerId);
         }
 
         // Attach payment method to customer
-        const paymentMethod = await this.stripe.paymentMethods.attach(paymentMethodId, {
-            customer: stripeCustomerId,
-        });
+        const paymentMethod = await this.stripeService.attachPaymentMethod(paymentMethodId, stripeCustomerId);
 
         this.logger.debug(`Payment method added successfully for user: ${userId}`, 'PaymentService#addPaymentMethod');
         return paymentMethod;
@@ -66,12 +52,8 @@ export class PaymentService
             return [];
         }
 
-        const paymentMethods = await this.stripe.paymentMethods.list({
-            customer: user.stripeCustomerId,
-            type: 'card',
-        });
-
-        return paymentMethods.data;
+        const paymentMethods = await this.stripeService.listPaymentMethods(user.stripeCustomerId);
+        return paymentMethods;
     }
 
     async removePaymentMethod(userId: Types.ObjectId, paymentMethodId: string): Promise<void> 
@@ -85,13 +67,13 @@ export class PaymentService
         }
 
         // Verify the payment method belongs to the user
-        const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+        const paymentMethod = await this.stripeService.retrievePaymentMethod(paymentMethodId);
         if (paymentMethod.customer !== user.stripeCustomerId) 
         {
             throw new BadRequestException('Payment method does not belong to user');
         }
 
-        await this.stripe.paymentMethods.detach(paymentMethodId);
+        await this.stripeService.detachPaymentMethod(paymentMethodId);
         this.logger.debug(`Payment method removed successfully for user: ${userId}`, 'PaymentService#removePaymentMethod');
     }
 
@@ -106,18 +88,13 @@ export class PaymentService
         }
 
         // Verify the payment method belongs to the user
-        const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+        const paymentMethod = await this.stripeService.retrievePaymentMethod(paymentMethodId);
         if (paymentMethod.customer !== user.stripeCustomerId) 
         {
             throw new BadRequestException('Payment method does not belong to user');
         }
 
-        await this.stripe.customers.update(user.stripeCustomerId, {
-            invoice_settings: {
-                default_payment_method: paymentMethodId,
-            },
-        });
-
+        await this.stripeService.setDefaultPaymentMethod(user.stripeCustomerId, paymentMethodId);
         this.logger.debug(`Default payment method set successfully for user: ${userId}`, 'PaymentService#setDefaultPaymentMethod');
     }
 }

@@ -91,6 +91,21 @@ export class SubscriptionOwnershipException extends ConflictException
 }
 
 /**
+ * Custom exception thrown when subscription is already being used by another organization
+ */
+export class SubscriptionAlreadyInUseException extends ConflictException
+{
+    constructor(subscriptionId: string)
+    {
+        super({
+            message: `Subscription "${subscriptionId}" is already being used by another organization`,
+            error: 'SUBSCRIPTION_ALREADY_IN_USE',
+            statusCode: 409,
+        });
+    }
+}
+
+/**
  * Custom exception thrown when organization name already exists
  */
 export class OrganizationNameExistsException extends ConflictException

@@ -17,6 +17,7 @@ import { OrgRolesGuard } from './guards/org-roles.guard';
 import { OrgSubscriptionGuard } from './guards/org-subscription.guard';
 import { UserService } from '../user/user.service';
 import { SubscriptionService } from '../subscription/subscription.service';
+import { StripeService } from '../common/services/stripe.service';
 import { Types } from 'mongoose';
 import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
@@ -73,6 +74,7 @@ describe('OrgController (Integration)', () =>
                 OrgRolesGuard,
                 OrgSubscriptionGuard,
                 SubscriptionService,
+                StripeService,
                 {
                     provide: ConfigService,
                     useValue: {
@@ -498,7 +500,7 @@ describe('OrgController (Integration)', () =>
             await request(app.getHttpServer())
                 .post('/api/orgs')
                 .send(createData2)
-                .expect(500); // Internal Server Error due to unique constraint violation
+                .expect(409); // Conflict: Subscription already in use
         });
 
         it('should return 409 when subscription is not active', async () => 

@@ -7,7 +7,7 @@ import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { CreateOrgDto } from './dto/in.create-org.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
 import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
-import { OrganizationNotFoundException, OrganizationNameExistsException } from './exceptions/org.exceptions';
+import { OrganizationNotFoundException, OrganizationNameExistsException, SubscriptionAlreadyInUseException } from './exceptions/org.exceptions';
 
 @Injectable()
 export class OrgService 
@@ -63,6 +63,13 @@ export class OrgService
         }
         catch (error)
         {
+            // Handle MongoDB duplicate key error for subscription
+            if (error instanceof Error && error.message.includes('E11000') && error.message.includes('subscriptionId')) 
+            {
+                this.logger.warn(`Subscription ${subscriptionId} is already being used by another organization`, 'OrgService#create');
+                throw new SubscriptionAlreadyInUseException(subscriptionId.toString());
+            }
+            
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
             const errorStack = error instanceof Error ? error.stack : undefined;
             this.logger.error(`Database error during organization creation: ${createData.name}`, errorStack, 'OrgService#create');

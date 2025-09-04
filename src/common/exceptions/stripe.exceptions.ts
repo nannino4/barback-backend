@@ -61,6 +61,21 @@ export class StripeSubscriptionException extends BadRequestException
 }
 
 /**
+ * Custom exception thrown when Stripe payment method operations fail
+ */
+export class StripePaymentMethodException extends BadRequestException
+{
+    constructor(operation: string, details?: string)
+    {
+        super({
+            message: `Stripe payment method operation failed: ${operation}${details ? ` - ${details}` : ''}`,
+            error: 'STRIPE_PAYMENT_METHOD_FAILED',
+            statusCode: 400,
+        });
+    }
+}
+
+/**
  * Custom exception thrown when Stripe service is temporarily unavailable
  */
 export class StripeServiceUnavailableException extends ServiceUnavailableException

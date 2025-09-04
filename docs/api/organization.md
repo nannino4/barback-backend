@@ -116,7 +116,7 @@ Create a new organization.
 - User becomes the organization owner automatically
 - Subscription must be active or trialing status
 - Organization names must be unique per owner (different owners can have organizations with the same name)
-- One organization per subscription limitation
+- Each organization requires its own subscription
 - All database operations are wrapped in error handling
 
 ---

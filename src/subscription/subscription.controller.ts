@@ -1,79 +1,64 @@
-import { Controller, Get, Post, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, UseGuards, Body } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
 import { SubscriptionService } from './subscription.service';
+import { InCreateSubscriptionDto } from './dto/in.create-subscription.dto';
 import { OutSubscriptionDto } from './dto/out.subscription.dto';
 import { OutSubscriptionPlanDto } from './dto/out.subscription-plan.dto';
-import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
 import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
-import { StripeConfigurationException } from '../common/exceptions/stripe.exceptions';
 
 @Controller('subscription')
 export class SubscriptionController 
 {
-    private readonly stripe: Stripe;
-
     constructor(
         private readonly subscriptionService: SubscriptionService,
-        private readonly configService: ConfigService,
         private readonly logger: CustomLogger,
     ) 
     {
-        const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-        if (!stripeSecretKey) 
-        {
-            this.logger.error('STRIPE_SECRET_KEY is not configured', undefined, 'SubscriptionController#constructor');
-            throw new StripeConfigurationException('STRIPE_SECRET_KEY is not configured');
-        }
-        
-        try 
-        {
-            this.stripe = new Stripe(stripeSecretKey, {
-                apiVersion: '2025-05-28.basil',
-            });
-        }
-        catch (error)
-        {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown Stripe initialization error';
-            this.logger.error(`Failed to initialize Stripe in controller: ${errorMessage}`, error instanceof Error ? error.stack : undefined, 'SubscriptionController#constructor');
-            throw new StripeConfigurationException(`Failed to initialize Stripe: ${errorMessage}`);
-        }
+        this.logger.debug('SubscriptionController initialized', 'SubscriptionController#constructor');
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get()
-    async getSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto | null> 
+    @Get('all')
+    async getAllSubscriptions(@CurrentUser() user: User): Promise<OutSubscriptionDto[]> 
     {
-        this.logger.debug(`Getting subscription for user: ${user.id}`, 'SubscriptionController#getSubscription');
+        this.logger.debug(`Getting all subscriptions for user: ${user.id}`, 'SubscriptionController#getAllSubscriptions');
         
-        const subscription = await this.subscriptionService.findByUserId(user.id);
-        if (!subscription) 
-        {
-            return null;
-        }
+        const subscriptions = await this.subscriptionService.findAllByUserId(user.id);
+        return plainToInstance(OutSubscriptionDto, subscriptions.map(sub => sub.toObject()), { excludeExtraneousValues: true });
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('start-trial')
+    async startTrialSubscription(
+        @CurrentUser() user: User,
+        @Body() createSubscriptionDto: InCreateSubscriptionDto
+    ): Promise<OutSubscriptionDto> 
+    {
+        this.logger.debug(`Starting trial subscription for user: ${user.id}`, 'SubscriptionController#startTrialSubscription');
+        
+        const subscription = await this.subscriptionService.createTrialSubscription(
+            user.id, 
+            createSubscriptionDto.billingInterval
+        );
         return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 
     @UseGuards(JwtAuthGuard)
-    @Post('start-owner-trial')
-    async startOwnerTrialSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto> 
+    @Post('start-paid')
+    async startPaidSubscription(
+        @CurrentUser() user: User,
+        @Body() createSubscriptionDto: InCreateSubscriptionDto
+    ): Promise<OutSubscriptionDto> 
     {
-        this.logger.debug(`Starting owner trial subscription for user: ${user.id}`, 'SubscriptionController#startOwnerTrialSubscription');
+        this.logger.debug(`Starting paid subscription for user: ${user.id}`, 'SubscriptionController#startPaidSubscription');
         
-        const subscription = await this.subscriptionService.createTrialSubscription(user.id);
-        return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @Delete('cancel')
-    async cancelSubscription(@CurrentUser() user: User): Promise<OutSubscriptionDto> 
-    {
-        this.logger.debug(`Canceling subscription for user: ${user.id}`, 'SubscriptionController#cancelSubscription');
-        
-        const subscription = await this.subscriptionService.cancelSubscription(user.id);
+        const subscription = await this.subscriptionService.createPaidSubscription(
+            user.id,
+            createSubscriptionDto.billingInterval
+        );
         return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 

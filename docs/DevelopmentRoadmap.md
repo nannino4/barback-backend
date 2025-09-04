@@ -132,7 +132,7 @@ Currently users can use most authenticated features before verifying email. We w
 **Endpoints Requiring Email Verification (Protected)**
 - User Self: `GET /api/users/me`, `PUT /api/users/me`, `PUT /api/users/me/password`, `DELETE /api/users/me`
 - Admin: All `/api/admin/*` endpoints (role management & user data)
-- Subscription (except public plans): `GET /api/subscription`, `GET /api/subscription/trial-eligibility`, `POST /api/subscription/start-owner-trial`, `DELETE /api/subscription/cancel`, Payment methods endpoints (`GET/POST/DELETE /api/payment/methods*`)
+- Subscription (except public plans): `GET /api/subscription`, `GET /api/subscription/trial-eligibility`, `POST /api/subscription/start-trial`, `DELETE /api/subscription/cancel`, Payment methods endpoints (`GET/POST/DELETE /api/payment/methods*`)
 - Organization: `POST /api/orgs`, `GET /api/orgs`, `GET /api/orgs/:id/members`, `PUT /api/orgs/:id`, `PUT /api/orgs/:id/members/:userId/role`
 - Invitations (authenticated org/member flows): `POST /api/orgs/:orgId/invitations`, `GET /api/orgs/:orgId/invitations`, `DELETE /api/orgs/:orgId/invitations/:invitationId`, `GET /api/invites`, `POST /api/invites/accept/:token`, `POST /api/invites/decline/:token`
 - Categories: All `/api/orgs/:orgId/categories*` endpoints
@@ -174,7 +174,7 @@ Currently users can use most authenticated features before verifying email. We w
   - [X] Restrict organization creation to active subscribers.
 - [X] **API Endpoints**:
   - [X] `/subscription` - Get user's subscription.
-  - [X] `/subscription/start-owner-trial` - Start trial for organization owners.
+  - [X] `/subscription/start-trial` - Start trial for organization owners.
   - [X] `/subscription/cancel` - Cancel subscription.
   - [X] `/subscription/plans` - Get available plans.
   - [X] `/subscription/trial-eligibility` - Check trial eligibility.
