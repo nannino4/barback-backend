@@ -331,7 +331,34 @@ Currently users can use most authenticated features before verifying email. We w
 - [ ] **API Endpoints**:
   - [ ] `GET /api/orgs/:orgId/analytics/consumption?category=mycategory&productId=myproductid` - Product consumption by time period, category and product
 
-- [ ] **Next steps**:
+#### Database Transactions & Data Consistency
+- [ ] **Transaction Infrastructure**:
+  - [ ] Implement TransactionService for MongoDB transaction management
+  - [ ] Add transaction support to CommonModule for global availability
+  - [ ] Configure proper error handling and logging for transactional operations
+- [ ] **High Priority Transactions** (Critical for data integrity):
+  - [ ] Stock adjustments with inventory log creation (atomically update product quantity and create audit log)
+  - [ ] Organization creation with owner relationship (prevent orphaned organizations)
+- [ ] **Medium Priority Transactions**:
+  - [ ] Invitation acceptance with user-org relationship creation
+  - [ ] User registration with invitation processing (ensure complete onboarding)
+  - [ ] Subscription creation with Stripe integration (prevent orphaned Stripe resources)
+- [ ] **Lower Priority Transactions**:
+  - [ ] User deletion with comprehensive cleanup (organizations, subscriptions, relationships)
+  - [ ] Organization deletion with member cleanup (when owner leaves)
+- [ ] **Transaction Testing**:
+  - [ ] Integration tests for organization creation transactions
+  - [ ] Integration tests for stock adjustment transactions
+  - [ ] Integration tests for invitation acceptance transactions
+  - [ ] Integration tests for user registration transactions
+  - [ ] Integration tests for subscription creation transactions
+
+**📋 MongoDB Requirements:**
+- [ ] Ensure MongoDB deployment supports replica sets (required for transactions)
+- [ ] Verify MongoDB version 4.0+ for single replica set transactions
+- [ ] Configure connection pool settings for optimal transaction performance
+
+### Next steps**:
   - [ ] Rate limiting
 
 ---
