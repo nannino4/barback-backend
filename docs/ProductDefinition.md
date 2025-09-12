@@ -1,5 +1,7 @@
 # Barback - Product Definition
 
+This document outlines the product vision, target users, and feature roadmap for Barback, a comprehensive inventory management solution tailored for cocktail bars.
+
 ## MVP Stage
 
 ### Target Users

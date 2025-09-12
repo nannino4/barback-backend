@@ -5,8 +5,6 @@ This document outlines the coding standards and practices to follow when working
 ## Core Principles
 
 - **Readability & Maintainability**: Code should be easy to understand, navigate, and modify. Prioritize clarity over cleverness.
-- **Code Economy**: Write the least amount of code possible to achieve the objective. Avoid unnecessary abstractions and boilerplate.
-- **SOLID Principles**: Follow SOLID principles where they add value.
 
 ## General Guidelines
 
@@ -27,7 +25,7 @@ This document outlines the coding standards and practices to follow when working
 ### Error Handling
 
 - Always handle promise rejections and exceptions
-- Use appropriate HTTP exceptions from NestJS (`BadRequestException`, etc.)
+- Use appropriate HTTP exceptions
 - Log errors with sufficient context for debugging
 
 ## Logging
@@ -35,11 +33,11 @@ This document outlines the coding standards and practices to follow when working
 ### Log Content and Formatting
 
 -   **Request ID**: All log messages related to a specific HTTP request **must** include a unique Request ID. This is crucial for tracing the lifecycle of a request across different services and modules.
-    -   *Implementation Note*: This will be integrated into `MyLogger` using a mechanism like `nestjs-cls` or custom middleware with `AsyncLocalStorage` to make the request ID available throughout the call stack.
 -   **Method Name & Context**: Provide context for your log messages.
     -   Pass it as the second argument to the logger methods: `this.logger.debug('User created successfully', 'UserService#createUser');`
     -   The logger prefix includes `[ClassName]` or `[ClassName#methodName]` if provided.
 -   **Clear Messages**: Write log messages that are clear, concise, and provide enough information to understand the event without needing to read the source code.
+-   **Log At Beginning and End**: Include log messages at the beginning and end of each method to trace execution flow.
 
 ## Code Formatting Style
 
@@ -75,19 +73,6 @@ The following TypeScript compiler options from `tsconfig.json` directly influenc
     - **Consistent Function Returns**: If a function is declared to return a value, all possible code paths within that function must explicitly return a value of the declared type (due to `noImplicitReturns`).
 
 
-## Testing Guidelines
-
-See [TestingGuidelines.md](./TestingGuidelines.md).
-
-## MongoDB/Database Guidelines
-
-- Model data according to access patterns, not just entity relationships
-- Use appropriate indexes for frequently queried fields
-- **Index Definition**: All database indexes must be defined explicitly using the `SchemaName.index({ field: 1 }, { options });` method after the schema is created (e.g., `UserSchema.index(...)`). Do not rely on shorthand index definitions within `@Prop` decorators (like `index: true` or `unique: true` for indexing purposes). This ensures clarity and centralized control over index configurations.
-- Validate data before saving to database
-- Use transactions for operations that must succeed or fail as a unit
-- When using NestJS with MongoDB, leverage an ODM like Mongoose and the `@nestjs/mongoose` module for integration.
-
 ## NestJS-Specific Guidelines
 
 - Use built-in decorators for request validation
@@ -108,22 +93,4 @@ DTOs (Data Transfer Objects) should follow a clear naming convention to indicate
 ## Documentation
 
 - Add JSDoc comments for public APIs
-- Document non-obvious decisions with inline comments
-- Keep README and other documentation up-to-date
-
-## Performance Considerations
-
-- Be mindful of N+1 query problems
-- Consider pagination for endpoints returning lists
-- Propose and use appropriate caching strategies where beneficial
-- Optimize assets and API responses
-
-## Security Guidelines
-
-- Never trust client input
-- Store sensitive information in environment variables
-- Apply the principle of least privilege
-
----
-
-Remember: The best code is often the code you don't write. Solve the actual problem, not the imagined one.
+- Document only non-obvious decisions with inline comments
