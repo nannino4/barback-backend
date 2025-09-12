@@ -332,10 +332,6 @@ Currently users can use most authenticated features before verifying email. We w
   - [ ] `GET /api/orgs/:orgId/analytics/consumption?category=mycategory&productId=myproductid` - Product consumption by time period, category and product
 
 #### Database Transactions & Data Consistency
-- [ ] **Transaction Infrastructure**:
-  - [ ] Implement TransactionService for MongoDB transaction management
-  - [ ] Add transaction support to CommonModule for global availability
-  - [ ] Configure proper error handling and logging for transactional operations
 - [ ] **High Priority Transactions** (Critical for data integrity):
   - [ ] Stock adjustments with inventory log creation (atomically update product quantity and create audit log)
   - [ ] Organization creation with owner relationship (prevent orphaned organizations)
