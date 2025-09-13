@@ -332,21 +332,14 @@ Currently users can use most authenticated features before verifying email. We w
   - [ ] `GET /api/orgs/:orgId/analytics/consumption?category=mycategory&productId=myproductid` - Product consumption by time period, category and product
 
 #### Database Transactions & Data Consistency
-- [ ] **High Priority Transactions** (Critical for data integrity):
-  - [ ] Stock adjustments with inventory log creation (atomically update product quantity and create audit log)
-  - [ ] Organization creation with owner relationship (prevent orphaned organizations)
+- [X] **High Priority Transactions** (Critical for data integrity):
+  - [X] Stock adjustments with inventory log creation (atomically update product quantity and create audit log)
+  - [X] Organization creation with owner relationship (prevent orphaned organizations)
 - [ ] **Medium Priority Transactions**:
-  - [ ] Invitation acceptance with user-org relationship creation
-  - [ ] User registration with invitation processing (ensure complete onboarding)
   - [ ] Subscription creation with Stripe integration (prevent orphaned Stripe resources)
-- [ ] **Lower Priority Transactions**:
-  - [ ] User deletion with comprehensive cleanup (organizations, subscriptions, relationships)
-  - [ ] Organization deletion with member cleanup (when owner leaves)
 - [ ] **Transaction Testing**:
   - [ ] Integration tests for organization creation transactions
   - [ ] Integration tests for stock adjustment transactions
-  - [ ] Integration tests for invitation acceptance transactions
-  - [ ] Integration tests for user registration transactions
   - [ ] Integration tests for subscription creation transactions
 
 **📋 MongoDB Requirements:**
