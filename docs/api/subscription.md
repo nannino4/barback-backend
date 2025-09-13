@@ -13,7 +13,7 @@ The Subscription Management module handles user subscriptions for organization o
 
 ## Subscription Endpoints
 
-### GET /api/subscription/trial-eligibility
+### GET /api/subscriptions/trial-eligibility
 Check if current user is eligible for a trial subscription.
 
 **Authentication**: Required (JWT)
@@ -58,19 +58,25 @@ Check if current user is eligible for a trial subscription.
 
 ---
 
-### POST /api/subscription/start-trial
-Start a trial subscription for becoming an organization owner.
+### POST /api/subscriptions
+Create either a trial or paid subscription using a unified endpoint.
 
 **Authentication**: Required (JWT)
 
 **Request Body**:
 ```json
 {
-  "billingInterval": "monthly" // optional, defaults to "monthly". Options: "monthly", "yearly"
+  "billingInterval": "monthly", // optional, defaults to "monthly". Options: "monthly", "yearly"
+  "isTrial": true                 // optional, defaults to false. When true attempts to create a trial subscription
 }
 ```
 
-**Response** (201 Created):
+**Behavior**:
+- If `isTrial` is `true`, trial eligibility is validated. Ineligible users receive 409.
+- If `isTrial` is `false` or omitted, a paid subscription is created immediately.
+- Trial subscriptions automatically convert to paid at end of trial.
+
+**Response** (201 Created) - Trial:
 ```json
 {
   "id": "64a1b2c3d4e5f6789abc123",
@@ -155,112 +161,20 @@ Start a trial subscription for becoming an organization owner.
 ```
 
 **Notes**:
-- Creates Stripe customer and subscription
-- Trial period is 3 months
+- Creates Stripe customer and subscription (trial or paid)
+- Trial period is 3 months and only available on the first subscription for a user
 - Automatically converts to paid plan when trial ends
 - Required before creating an organization
 - If database save fails, Stripe subscription is automatically cancelled for cleanup
-- Only available for users who have never had a trial subscription
+- Single endpoint simplifies client logic vs separate trial/paid endpoints
 
 ---
 
-### POST /api/subscription/start-paid
-Start a paid subscription for becoming an organization owner.
-
-**Authentication**: Required (JWT)
-
-**Request Body**:
-```json
-{
-  "billingInterval": "monthly" // optional, defaults to "monthly". Options: "monthly", "yearly"
-}
-```
-
-**Response** (201 Created):
-```json
-{
-  "id": "64a1b2c3d4e5f6789abc124",
-  "status": "active",
-  "autoRenew": true,
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
-}
-```
-
-**Error Responses**:
-
-**401 Unauthorized** - Authentication Required:
-```json
-{
-  "message": "Unauthorized",
-  "statusCode": 401
-}
-```
-
-**404 Not Found** - User Not Found:
-```json
-{
-  "message": "User with ID \"[user_id]\" not found",
-  "error": "USER_NOT_FOUND_BY_ID",
-  "statusCode": 404
-}
-```
-
-**400 Bad Request** - Stripe Customer Operation Failed:
-```json
-{
-  "message": "Stripe customer operation failed: customer creation - [details]",
-  "error": "STRIPE_CUSTOMER_FAILED",
-  "statusCode": 400
-}
-```
-
-**400 Bad Request** - Stripe Subscription Operation Failed:
-```json
-{
-  "message": "Stripe subscription operation failed: subscription creation - [details]",
-  "error": "STRIPE_SUBSCRIPTION_FAILED",
-  "statusCode": 400
-}
-```
-
-**500 Internal Server Error** - Stripe Configuration Error:
-```json
-{
-  "message": "Stripe configuration error: STRIPE_BASIC_PLAN_PRICE_ID is not configured",
-  "error": "STRIPE_CONFIGURATION_ERROR",
-  "statusCode": 500
-}
-```
-
-**500 Internal Server Error** - Database Operation Failed:
-```json
-{
-  "message": "Database operation failed: subscription creation - [details]",
-  "error": "DATABASE_OPERATION_FAILED",
-  "statusCode": 500
-}
-```
-
-**503 Service Unavailable** - Stripe Service Unavailable:
-```json
-{
-  "message": "Stripe service is temporarily unavailable. Please try again later.",
-  "error": "STRIPE_SERVICE_UNAVAILABLE",
-  "statusCode": 503
-}
-```
-
-**Notes**:
-- Creates Stripe customer and subscription
-- Starts billing immediately
-- Required before creating an organization
-- If database save fails, Stripe subscription is automatically cancelled for cleanup
-- Available for users who already used their trial or want to start with paid subscription
+// (Removed separate /start-paid endpoint in favor of unified POST /api/subscriptions)
 
 ---
 
-### GET /api/subscription/all
+### GET /api/subscriptions
 Get all subscriptions for the current user.
 
 **Authentication**: Required (JWT)
@@ -311,7 +225,7 @@ Get all subscriptions for the current user.
 
 ---
 
-### GET /api/subscription/plans
+### GET /api/subscriptions/plans
 Get available subscription plans (public endpoint).
 
 **Authentication**: Not required
@@ -636,16 +550,30 @@ STRIPE_BASIC_YEARLY_PRICE_ID=price_...
    const { eligible } = await response.json();
    ```
 
-2. **Start Trial Subscription**:
+2. **Create Subscription (Trial or Paid)**:
    ```javascript
-   const response = await fetch('/api/subscription/start-trial', {
+   // Trial example
+   const trialResponse = await fetch('/api/subscriptions', {
      method: 'POST',
-     headers: { 
+     headers: {
        'Authorization': `Bearer ${token}`,
-       'Content-Type': 'application/json' 
+       'Content-Type': 'application/json'
      },
      body: JSON.stringify({
-       billingInterval: 'monthly' // optional, 'monthly' or 'yearly'
+       billingInterval: 'monthly',
+       isTrial: true
+     })
+   });
+
+   // Paid example
+   const paidResponse = await fetch('/api/subscriptions', {
+     method: 'POST',
+     headers: {
+       'Authorization': `Bearer ${token}`,
+       'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({
+       billingInterval: 'yearly'
      })
    });
    ```

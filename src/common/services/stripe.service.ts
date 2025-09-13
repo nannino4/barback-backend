@@ -110,79 +110,64 @@ export class StripeService
     }
 
     // Subscription Management
-    async createTrialSubscription(customerId: string, billingInterval: BillingInterval = BillingInterval.MONTHLY, trialEnd?: number): Promise<Stripe.Subscription> 
+    /**
+     * Unified subscription creation supporting trial and paid flows.
+     * @param customerId Stripe customer ID
+     * @param billingInterval Billing interval (monthly/yearly)
+     * @param options Additional creation options
+     */
+    async createSubscription(
+        customerId: string,
+        billingInterval: BillingInterval = BillingInterval.MONTHLY,
+        options?: { isTrial?: boolean; trialEndEpochSeconds?: number }
+    ): Promise<Stripe.Subscription>
     {
-        this.logger.debug(`Creating trial subscription for customer: ${customerId} with ${billingInterval} billing`, 'StripeService#createTrialSubscription');
-        
-        try 
+        const isTrial = options?.isTrial === true;
+        this.logger.debug(`Creating ${isTrial ? 'trial' : 'paid'} subscription for customer: ${customerId} with ${billingInterval} billing`, 'StripeService#createSubscription');
+
+        try
         {
             const priceId = this.getPriceId(billingInterval);
             const subscriptionParams: Stripe.SubscriptionCreateParams = {
                 customer: customerId,
-                items: [
-                    {
-                        price: priceId,
-                    },
-                ],
-                // Ensure the subscription automatically starts billing after trial
+                items: [{ price: priceId }],
                 payment_behavior: 'default_incomplete',
-                payment_settings: {
-                    save_default_payment_method: 'on_subscription',
-                },
+                payment_settings: { save_default_payment_method: 'on_subscription' },
                 expand: ['latest_invoice.payment_intent'],
             };
 
-            if (trialEnd) 
+            if (isTrial)
             {
+                // Validate provided trial end or default to 90 days
+                let trialEnd = options?.trialEndEpochSeconds;
+                if (trialEnd)
+                {
+                    const now = Math.floor(Date.now() / 1000);
+                    if (trialEnd <= now)
+                    {
+                        this.logger.error(`Provided trial end (${trialEnd}) is in the past`, undefined, 'StripeService#createSubscription');
+                        throw new StripeSubscriptionException('trial configuration', 'Provided trial end timestamp is in the past');
+                    }
+                }
+                else
+                {
+                    // Default 90 days trial window
+                    trialEnd = Math.floor((Date.now() + (90 * 24 * 60 * 60 * 1000)) / 1000);
+                }
                 subscriptionParams.trial_end = trialEnd;
-            }
-            else 
-            {
-                // Default 90 days trial
-                subscriptionParams.trial_end = Math.floor((Date.now() + (90 * 24 * 60 * 60 * 1000)) / 1000);
             }
 
             const subscription = await this.stripe.subscriptions.create(subscriptionParams);
-            this.logger.debug(`Trial subscription created: ${subscription.id}`, 'StripeService#createTrialSubscription');
+            this.logger.debug(`${isTrial ? 'Trial' : 'Paid'} subscription created: ${subscription.id}`, 'StripeService#createSubscription');
             return subscription;
         }
         catch (error)
         {
-            this.logger.error(`Failed to create trial subscription for customer: ${customerId}`, error instanceof Error ? error.stack : undefined, 'StripeService#createTrialSubscription');
+            this.logger.error(`Failed to create ${options?.isTrial ? 'trial' : 'paid'} subscription for customer: ${customerId}`, error instanceof Error ? error.stack : undefined, 'StripeService#createSubscription');
             this.handleStripeError(error, 'subscription creation');
         }
     }
 
-    async createPaidSubscription(customerId: string, billingInterval: BillingInterval = BillingInterval.MONTHLY): Promise<Stripe.Subscription> 
-    {
-        this.logger.debug(`Creating paid subscription for customer: ${customerId} with ${billingInterval} billing`, 'StripeService#createPaidSubscription');
-        
-        try 
-        {
-            const priceId = this.getPriceId(billingInterval);
-            const subscription = await this.stripe.subscriptions.create({
-                customer: customerId,
-                items: [
-                    {
-                        price: priceId,
-                    },
-                ],
-                payment_behavior: 'default_incomplete',
-                payment_settings: {
-                    save_default_payment_method: 'on_subscription',
-                },
-                expand: ['latest_invoice.payment_intent'],
-            });
-            
-            this.logger.debug(`Paid subscription created: ${subscription.id}`, 'StripeService#createPaidSubscription');
-            return subscription;
-        }
-        catch (error)
-        {
-            this.logger.error(`Failed to create paid subscription for customer: ${customerId}`, error instanceof Error ? error.stack : undefined, 'StripeService#createPaidSubscription');
-            this.handleStripeError(error, 'subscription creation');
-        }
-    }
 
     async cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> 
     {

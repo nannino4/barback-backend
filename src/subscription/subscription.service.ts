@@ -27,97 +27,44 @@ export class SubscriptionService
         this.logger.debug('SubscriptionService initialized', 'SubscriptionService#constructor');
     }
 
-    async createTrialSubscription(userId: Types.ObjectId, billingInterval: BillingInterval = BillingInterval.MONTHLY): Promise<Subscription> 
+    async createSubscription(userId: Types.ObjectId, billingInterval: BillingInterval = BillingInterval.MONTHLY, isTrial: boolean): Promise<Subscription>
     {
-        this.logger.debug(`Creating trial subscription for user: ${userId} with ${billingInterval} billing`, 'SubscriptionService#createTrialSubscription');
-        
-        // Check if user is eligible for trial
-        const isEligible = await this.isEligibleForTrial(userId);
-        if (!isEligible) 
+        this.logger.debug(`Creating ${isTrial ? 'trial' : 'paid'} subscription for user: ${userId} with ${billingInterval} billing`, 'SubscriptionService#createSubscription');
+
+        // If trial requested ensure eligibility
+        if (isTrial)
         {
-            this.logger.warn(`User ${userId} is not eligible for trial subscription`, 'SubscriptionService#createTrialSubscription');
-            throw new NotEligibleForTrialException('User already has a trial subscription or is not eligible for trial');
+            const eligible = await this.isEligibleForTrial(userId);
+            if (!eligible)
+            {
+                this.logger.warn(`User ${userId} is not eligible for trial subscription`, 'SubscriptionService#createSubscription');
+                throw new NotEligibleForTrialException('User already has a subscription or is not eligible for trial');
+            }
         }
 
-        // Get user to create/update Stripe customer
+        // Retrieve user and ensure Stripe customer exists
         const user = await this.userService.findById(userId);
         let stripeCustomerId = user.stripeCustomerId;
 
-        // Create Stripe customer if needed
-        if (!stripeCustomerId) 
+        if (!stripeCustomerId)
         {
             const stripeCustomer = await this.stripeService.createCustomer(
                 user.email,
                 `${user.firstName} ${user.lastName}`
             );
             stripeCustomerId = stripeCustomer.id;
-            
-            // Update user with Stripe customer ID
             await this.userService.updateStripeCustomerId(userId, stripeCustomerId);
         }
 
-        // Create trial subscription in Stripe
-        const stripeSubscription = await this.stripeService.createTrialSubscription(stripeCustomerId, billingInterval);
+        // Create subscription in Stripe (trial vs paid)
+        const stripeSubscription = await this.stripeService.createSubscription(
+            stripeCustomerId,
+            billingInterval,
+            { isTrial }
+        );
 
-        // Create subscription record in database
-        try 
-        {
-            const subscription = new this.subscriptionModel({
-                userId: userId,
-                stripeSubscriptionId: stripeSubscription.id,
-                status: SubscriptionStatus.TRIALING,
-                autoRenew: true,
-            });
-
-            await subscription.save();
-            this.logger.debug(`Trial subscription created successfully for user: ${userId}`, 'SubscriptionService#createTrialSubscription');
-            return subscription;
-        }
-        catch (error)
-        {
-            // If database save fails, cleanup Stripe subscription
-            try 
-            {
-                await this.stripeService.cancelSubscription(stripeSubscription.id);
-                this.logger.debug(`Cleaned up Stripe subscription ${stripeSubscription.id} after database failure`, 'SubscriptionService#createTrialSubscription');
-            }
-            catch (cleanupError)
-            {
-                this.logger.error(`Failed to cleanup Stripe subscription ${stripeSubscription.id} after database failure`, cleanupError instanceof Error ? cleanupError.stack : undefined, 'SubscriptionService#createTrialSubscription');
-            }
-
-            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            this.logger.error(`Database error during trial subscription creation for user: ${userId}`, error instanceof Error ? error.stack : undefined, 'SubscriptionService#createTrialSubscription');
-            throw new DatabaseOperationException('subscription creation', errorMessage);
-        }
-    }
-
-    async createPaidSubscription(userId: Types.ObjectId, billingInterval: BillingInterval = BillingInterval.MONTHLY): Promise<Subscription> 
-    {
-        this.logger.debug(`Creating paid subscription for user: ${userId} with ${billingInterval} billing`, 'SubscriptionService#createPaidSubscription');
-
-        // Get user to create/update Stripe customer
-        const user = await this.userService.findById(userId);
-        let stripeCustomerId = user.stripeCustomerId;
-
-        // Create Stripe customer if needed
-        if (!stripeCustomerId) 
-        {
-            const stripeCustomer = await this.stripeService.createCustomer(
-                user.email,
-                `${user.firstName} ${user.lastName}`
-            );
-            stripeCustomerId = stripeCustomer.id;
-            
-            // Update user with Stripe customer ID
-            await this.userService.updateStripeCustomerId(userId, stripeCustomerId);
-        }
-
-        // Create paid subscription in Stripe
-        const stripeSubscription = await this.stripeService.createPaidSubscription(stripeCustomerId, billingInterval);
-
-        // Create subscription record in database
-        try 
+        // Persist subscription locally
+        try
         {
             const subscription = new this.subscriptionModel({
                 userId: userId,
@@ -127,24 +74,24 @@ export class SubscriptionService
             });
 
             await subscription.save();
-            this.logger.debug(`Paid subscription created successfully for user: ${userId}`, 'SubscriptionService#createPaidSubscription');
+            this.logger.debug(`${isTrial ? 'Trial' : 'Paid'} subscription created successfully for user: ${userId}`, 'SubscriptionService#createSubscription');
             return subscription;
         }
         catch (error)
         {
-            // If database save fails, cleanup Stripe subscription
-            try 
+            // Cleanup Stripe subscription if DB fails
+            try
             {
                 await this.stripeService.cancelSubscription(stripeSubscription.id);
-                this.logger.debug(`Cleaned up Stripe subscription ${stripeSubscription.id} after database failure`, 'SubscriptionService#createPaidSubscription');
+                this.logger.debug(`Cleaned up Stripe subscription ${stripeSubscription.id} after database failure`, 'SubscriptionService#createSubscription');
             }
             catch (cleanupError)
             {
-                this.logger.error(`Failed to cleanup Stripe subscription ${stripeSubscription.id} after database failure`, cleanupError instanceof Error ? cleanupError.stack : undefined, 'SubscriptionService#createPaidSubscription');
+                this.logger.error(`Failed to cleanup Stripe subscription ${stripeSubscription.id} after database failure`, cleanupError instanceof Error ? cleanupError.stack : undefined, 'SubscriptionService#createSubscription');
             }
 
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            this.logger.error(`Database error during paid subscription creation for user: ${userId}`, error instanceof Error ? error.stack : undefined, 'SubscriptionService#createPaidSubscription');
+            this.logger.error(`Database error during subscription creation for user: ${userId}`, error instanceof Error ? error.stack : undefined, 'SubscriptionService#createSubscription');
             throw new DatabaseOperationException('subscription creation', errorMessage);
         }
     }

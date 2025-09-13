@@ -9,7 +9,7 @@ import { OutSubscriptionPlanDto } from './dto/out.subscription-plan.dto';
 import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
 
-@Controller('subscription')
+@Controller('subscriptions')
 export class SubscriptionController 
 {
     constructor(
@@ -21,7 +21,7 @@ export class SubscriptionController
     }
 
     @UseGuards(JwtAuthGuard)
-    @Get('all')
+    @Get()
     async getAllSubscriptions(@CurrentUser() user: User): Promise<OutSubscriptionDto[]> 
     {
         this.logger.debug(`Getting all subscriptions for user: ${user.id}`, 'SubscriptionController#getAllSubscriptions');
@@ -31,23 +31,7 @@ export class SubscriptionController
     }
 
     @UseGuards(JwtAuthGuard)
-    @Post('start-trial')
-    async startTrialSubscription(
-        @CurrentUser() user: User,
-        @Body() createSubscriptionDto: InCreateSubscriptionDto
-    ): Promise<OutSubscriptionDto> 
-    {
-        this.logger.debug(`Starting trial subscription for user: ${user.id}`, 'SubscriptionController#startTrialSubscription');
-        
-        const subscription = await this.subscriptionService.createTrialSubscription(
-            user.id, 
-            createSubscriptionDto.billingInterval
-        );
-        return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
-    }
-
-    @UseGuards(JwtAuthGuard)
-    @Post('start-paid')
+    @Post()
     async startPaidSubscription(
         @CurrentUser() user: User,
         @Body() createSubscriptionDto: InCreateSubscriptionDto
@@ -55,9 +39,10 @@ export class SubscriptionController
     {
         this.logger.debug(`Starting paid subscription for user: ${user.id}`, 'SubscriptionController#startPaidSubscription');
         
-        const subscription = await this.subscriptionService.createPaidSubscription(
+        const subscription = await this.subscriptionService.createSubscription(
             user.id,
-            createSubscriptionDto.billingInterval
+            createSubscriptionDto.billingInterval,
+            createSubscriptionDto.isTrial
         );
         return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
