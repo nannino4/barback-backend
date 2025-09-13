@@ -59,29 +59,6 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Implement Email verification for new accounts
   - [X] Implement User Login with email and password.
   - [X] Implement Password reset functionality via email
-
-**✅ Email/Password Authentication Status: COMPLETED**
-- Full email verification system with secure token generation and expiration
-- Password reset functionality with secure tokens and email delivery
-- Automatic verification email sending upon registration
-- EmailService with Nodemailer integration for reliable email delivery
-- Comprehensive API endpoints: `/auth/send-verification-email`, `/auth/verify-email`, `/auth/forgot-password`, `/auth/reset-password`
-- Security features: token expiration, one-time use tokens, email enumeration prevention
-- Complete test coverage for all email authentication flows
-- Integration with existing authentication system
-
-**✅ Google OAuth Authentication Status: COMPLETED**
-- Manual OAuth 2.0 implementation without Passport dependency
-- Smart account linking for users with existing email accounts
-- Automatic email verification for Google users
-- Profile picture synchronization from Google accounts
-- Support for both web (authorization code) and mobile (access token) flows
-- Comprehensive API endpoints: `/auth/google`, `/auth/google/callback`, `/auth/google/token`
-- Secure token validation and user information retrieval
-- Error handling and frontend redirect support
-- Complete documentation with usage examples
-- Smooth user experience handling multiple authentication methods
-
 - [X] **Google OAuth Authentication**:
   - [X] Implement User Registration with Google OAuth
   - [X] Implement User Login with Google OAuth
@@ -106,8 +83,7 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
 Currently users can use most authenticated features before verifying email. We will introduce a unified guard to restrict sensitive operations until verification.
 
 - [ ] **Define Policy**:
-  - [ ] Agree final rule: all authenticated endpoints require verified email except explicitly whitelisted (registration, login, token refresh, email verification & resend, password reset, public invitation flows, subscription plan listing, Stripe webhooks).
-  - [ ] Document rationale (abuse prevention for invitations, organization creation, subscription trials, resource access).
+  - [ ] Agree final rule: all authenticated endpoints require verified email except explicitly whitelisted (registration, login, token refresh, email verification & resend, password reset, subscription plan listing, Stripe webhooks).
 - [ ] **Implement `EmailVerifiedGuard`**:
   - [ ] Guard checks `request.user.isEmailVerified` (populated by JWT auth) and throws `ForbiddenException` with code `EMAIL_NOT_VERIFIED`.
   - [ ] Return payload: `{ statusCode: 403, error: 'EMAIL_NOT_VERIFIED', message: 'Email must be verified to access this resource.' }`.
@@ -123,11 +99,6 @@ Currently users can use most authenticated features before verifying email. We w
   - [ ] Unit test guard logic (verified vs unverified, skip metadata).
   - [ ] E2E tests: unverified user hitting protected endpoint (e.g., create org) -> 403; after verification -> success.
   - [ ] Regression: exempt endpoints remain accessible (login, resend verification email, etc.).
-- [ ] **Migration/Data Review**:
-  - [ ] Confirm existing Google users have `isEmailVerified = true`.
-  - [ ] Optionally create script to list active unverified users for follow-up emails (future enhancement).
-- [ ] **Telemetry (Optional)**:
-  - [ ] Log denied attempts for analytics (count, endpoint, userId) without sensitive data.
 
 **Endpoints Requiring Email Verification (Protected)**
 - User Self: `GET /api/users/me`, `PUT /api/users/me`, `PUT /api/users/me/password`, `DELETE /api/users/me`
@@ -150,9 +121,6 @@ Currently users can use most authenticated features before verifying email. We w
 **Design Notes**
 - Simpler maintenance via global guard + skip decorator vs manually adding guard to each controller.
 - Keeps future feature additions safe by default (new authenticated endpoints will require verified email unless explicitly skipped).
-
-**Follow-Up Enhancements (Deferred)**
-- Automated reminder emails for users inactive/unverified after X days.
 
 #### Subscription Management
 - [X] **Stripe Setup**:
@@ -184,15 +152,6 @@ Currently users can use most authenticated features before verifying email. We w
   - [ ] Trial expiration warnings (7-day, 3-day, 1-day reminders).
   - [ ] Automatic billing activation notification when trial ends.
   - [ ] Payment failure notifications.
-
-**✅ Subscription Management Status: COMPLETED**
-- Full Stripe integration with automatic trial-to-paid conversion
-- Trial subscriptions only created when users want to become organization owners
-- Comprehensive payment method management
-- Webhook handling for subscription status synchronization
-- Access control guards for subscription-based features
-- Complete API endpoints for subscription and payment management
-- Documentation: `/src/subscription/SubscriptionDocumentation.md`
 
 **📋 Deployment Checklist:**
 - [ ] Set up actual Stripe account and get production API keys
@@ -232,16 +191,6 @@ Currently users can use most authenticated features before verifying email. We w
   - [X] `GET /public/invitations/details/{token}` - Get invitation details
   - [X] `DELETE /api/orgs/{id}/invites/{invitationId}` - Revoke invitation
 
-**✅ Organization Management Status: COMPLETED**
-- Full organization CRUD operations with member management
-- Complete invitation system with email notifications
-- Token-based invitation security with 7-day expiration
-- Support for both authenticated and anonymous invitation acceptance
-- Role-based access control for all organization operations
-- Automatic invitation processing during user registration
-- Beautiful HTML email templates for invitations
-- Comprehensive API endpoints following RESTful conventions
-
 #### Category Management
 - [X] **Data Layer Setup**:
   - [X] Create Category Mongoose schema with validation and indexes
@@ -259,14 +208,6 @@ Currently users can use most authenticated features before verifying email. We w
   - [X] Extend OrgRolesGuard to restrict create/update/delete to owners and managers
   - [X] Ensure all operations are scoped to user's organization
 
-**✅ Category Management Status: COMPLETED**
-- Full category CRUD operations with hierarchical support
-- Parent-child relationship validation and circular reference prevention
-- Role-based access control (owners/managers can modify, all members can view)
-- Proper data validation and error handling
-- Integration with organization-scoped access control
-- Comprehensive API endpoints following RESTful conventions
-
 #### Product Management
 - [X] **Data Layer Setup**:
   - [X] Create Product Mongoose schema with category linking and validation
@@ -281,15 +222,6 @@ Currently users can use most authenticated features before verifying email. We w
   - [X] `PUT /api/orgs/:orgId/products/:id` - Update product
   - [X] `DELETE /api/orgs/:orgId/products/:id` - Delete product
 
-**✅ Product Management Status: COMPLETED**
-- Full product CRUD operations with category integration
-- Organization-scoped access control with role-based permissions
-- Unique product name validation within organizations
-- Stock quantity tracking and management
-- Category filtering support for product listings
-- Comprehensive data validation and error handling
-- RESTful API endpoints following project conventions
-
 #### Inventory Management
 - [X] **Data Layer Setup**:
   - [X] Create InventoryLog Mongoose schema for tracking stock changes
@@ -300,15 +232,6 @@ Currently users can use most authenticated features before verifying email. We w
 - [X] **API Endpoints**:
   - [X] `POST /api/orgs/:orgId/products/:productId/adjust-stock` - Manual stock adjustment
   - [X] `GET /api/orgs/:orgId/products/:productId/logs` - Get product inventory history
-
-**✅ Inventory Management Status: COMPLETED**
-- Full stock adjustment system with support for purchase, consumption, adjustment, and stocktake types
-- Comprehensive inventory logging with audit trails and user tracking
-- Simple quantity-based adjustments (positive/negative numbers) with validation to prevent negative stock
-- Organization-scoped access control with role-based permissions
-- Proper data validation and error handling
-- Integration with existing product management system
-- API endpoints following RESTful conventions and project patterns
 
 #### Alerts & Notifications
 - [ ] **Data Layer Setup**:
@@ -335,12 +258,9 @@ Currently users can use most authenticated features before verifying email. We w
 - [X] **High Priority Transactions** (Critical for data integrity):
   - [X] Stock adjustments with inventory log creation (atomically update product quantity and create audit log)
   - [X] Organization creation with owner relationship (prevent orphaned organizations)
-- [ ] **Medium Priority Transactions**:
-  - [ ] Subscription creation with Stripe integration (prevent orphaned Stripe resources)
 - [ ] **Transaction Testing**:
   - [ ] Integration tests for organization creation transactions
   - [ ] Integration tests for stock adjustment transactions
-  - [ ] Integration tests for subscription creation transactions
 
 **📋 MongoDB Requirements:**
 - [ ] Ensure MongoDB deployment supports replica sets (required for transactions)
