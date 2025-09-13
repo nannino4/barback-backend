@@ -14,30 +14,6 @@ export class UserOrgRelationService
         private readonly logger: CustomLogger,
     ) {}
 
-    async create(userId: Types.ObjectId, orgId: Types.ObjectId, orgRole: OrgRole): Promise<UserOrgRelation>
-    {
-        this.logger.debug(`Creating user-org relationship for user: ${userId} in org: ${orgId} with role: ${orgRole}`, 'UserOrgRelationService#create');
-        
-        try 
-        {
-            const relationship = new this.userOrgRelationModel({
-                userId: userId,
-                orgId: orgId,
-                orgRole: orgRole,
-            });
-            
-            await relationship.save();
-            this.logger.debug(`User-org relationship created successfully for user: ${userId} in org: ${orgId}`, 'UserOrgRelationService#create');
-            return relationship;
-        }
-        catch (error)
-        {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Database error during user-org relationship creation: user ${userId} in org ${orgId}`, errorStack, 'UserOrgRelationService#create');
-            throw new DatabaseOperationException('user-org relationship creation', errorMessage);
-        }
-    }
 
     async findAll(userId?: Types.ObjectId, orgRole?: OrgRole, orgId?: Types.ObjectId): Promise<UserOrgRelation[]>
     {

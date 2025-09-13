@@ -28,6 +28,6 @@ export class Org extends Document
 
 export const OrgSchema = SchemaFactory.createForClass(Org);
 
-// Define indexes as required by coding guidelines
 OrgSchema.index({ ownerId: 1 });
 OrgSchema.index({ subscriptionId: 1 }, { unique: true });
+OrgSchema.index({ ownerId: 1, name: 1 }, { unique: true });

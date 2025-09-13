@@ -81,11 +81,8 @@ export class OrgController
             throw new SubscriptionNotActiveException(createData.subscriptionId.toString());
         }
         
-        // Create the organization
+        // Create the organization (now also creates the owner relation atomically)
         const org = await this.orgService.create(createData, user._id as Types.ObjectId, subscription._id as Types.ObjectId);
-        
-        // Create user-org relationship with OWNER role
-        await this.userOrgRelationService.create(user._id as Types.ObjectId, org._id as Types.ObjectId, OrgRole.OWNER);
         
         this.logger.debug(`Organization created successfully: ${org.name} with ID: ${org._id}`, 'OrgController#createOrganization');
         

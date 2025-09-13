@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Types, Connection } from 'mongoose';
+import { MongoServerError } from 'mongodb';
 import { Org } from './schemas/org.schema';
-import { UserOrgRelation } from './schemas/user-org-relation.schema';
+import { UserOrgRelation, OrgRole } from './schemas/user-org-relation.schema';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { CreateOrgDto } from './dto/in.create-org.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
@@ -16,64 +17,77 @@ export class OrgService
         @InjectModel(Org.name) private readonly orgModel: Model<Org>,
         @InjectModel(UserOrgRelation.name) private readonly relationshipModel: Model<UserOrgRelation>,
         private readonly logger: CustomLogger,
+        @InjectConnection() private readonly connection: Connection,
     ) {}
 
     async create(createData: CreateOrgDto, ownerId: Types.ObjectId, subscriptionId: Types.ObjectId): Promise<Org>
     {
         this.logger.debug(`Creating organization: ${createData.name} for owner: ${ownerId}`, 'OrgService#create');
         
-        // Check for duplicate organization names for this owner
+        // Create organization + owner relation atomically
+        const session = await this.connection.startSession();
+        this.logger.debug('Starting transaction for organization creation + owner relation', 'OrgService#create');
         try 
         {
-            const existingOrg = await this.orgModel.findOne({ 
-                name: createData.name, 
-                ownerId: ownerId, 
-            }).exec();
-            if (existingOrg)
+            const txOptions = { writeConcern: { w: 'majority' as const } };
+
+            const createdOrg = await session.withTransaction(async () => 
             {
-                this.logger.warn(`Organization with name "${createData.name}" already exists for owner: ${ownerId}`, 'OrgService#create');
-                throw new OrganizationNameExistsException(createData.name);
+                const org = new this.orgModel({
+                    name: createData.name,
+                    ownerId: ownerId,
+                    subscriptionId: subscriptionId,
+                    settings: createData.settings || { defaultCurrency: 'EUR' },
+                });
+                await org.save({ session });
+
+                const relation = new this.relationshipModel({
+                    userId: ownerId,
+                    orgId: org._id,
+                    orgRole: OrgRole.OWNER,
+                });
+                await relation.save({ session });
+
+                return org;
+            }, txOptions);
+
+            if (!createdOrg)
+            {
+                throw new DatabaseOperationException('organization creation', 'Transaction finished without created organization (unexpected)');
             }
+
+            this.logger.debug(`Organization created successfully: ${createdOrg.name} with ID: ${createdOrg._id}`, 'OrgService#create');
+            return createdOrg;
         }
         catch (error)
         {
-            if (error instanceof OrganizationNameExistsException)
+            if (error instanceof MongoServerError)
             {
-                throw error;
+                // Duplicate key detection (subscriptionId or (ownerId,name) compound index)
+                if (error.code === 11000)
+                {
+                    const keyPattern = error.keyPattern || {};
+                    if (keyPattern.subscriptionId)
+                    {
+                        this.logger.warn(`Subscription ${subscriptionId} is already being used by another organization`, 'OrgService#create');
+                        throw new SubscriptionAlreadyInUseException(subscriptionId.toString());
+                    }
+                    if (keyPattern.ownerId && keyPattern.name)
+                    {
+                        this.logger.warn(`Organization name conflict for owner ${ownerId}: ${createData.name}`, 'OrgService#create');
+                        throw new OrganizationNameExistsException(createData.name);
+                    }
+                }
             }
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
             const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Database error during organization name check: ${createData.name}`, errorStack, 'OrgService#create');
-            throw new DatabaseOperationException('organization name validation', errorMessage);
-        }
-        
-        // Create the organization
-        try 
-        {
-            const org = new this.orgModel({
-                name: createData.name,
-                ownerId: ownerId,
-                subscriptionId: subscriptionId,
-                settings: createData.settings || { defaultCurrency: 'EUR' },
-            });
-            
-            await org.save();
-            this.logger.debug(`Organization created successfully: ${org.name} with ID: ${org._id}`, 'OrgService#create');
-            return org;
-        }
-        catch (error)
-        {
-            // Handle MongoDB duplicate key error for subscription
-            if (error instanceof Error && error.message.includes('E11000') && error.message.includes('subscriptionId')) 
-            {
-                this.logger.warn(`Subscription ${subscriptionId} is already being used by another organization`, 'OrgService#create');
-                throw new SubscriptionAlreadyInUseException(subscriptionId.toString());
-            }
-            
-            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(`Database error during organization creation: ${createData.name}`, errorStack, 'OrgService#create');
+            this.logger.error(`Database error during organization creation (transaction): ${createData.name}`, errorStack, 'OrgService#create');
             throw new DatabaseOperationException('organization creation', errorMessage);
+        }
+        finally
+        {
+            await session.endSession();
+            this.logger.debug('Ended transaction for organization creation + owner relation', 'OrgService#create');
         }
     }
 

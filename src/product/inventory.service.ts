@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { InjectModel, InjectConnection } from '@nestjs/mongoose';
+import { Model, Types, Connection } from 'mongoose';
 import { InventoryLog } from './schemas/inventory-log.schema';
 import { Product } from './schemas/product.schema';
 import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
@@ -18,8 +18,9 @@ export class InventoryService
 {
     constructor(
         @InjectModel(InventoryLog.name) private readonly inventoryLogModel: Model<InventoryLog>,
-        @InjectModel(Product.name) private readonly productModel: Model<Product>,
-        private readonly logger: CustomLogger,
+    @InjectModel(Product.name) private readonly productModel: Model<Product>,
+    private readonly logger: CustomLogger,
+    @InjectConnection() private readonly connection: Connection,
     ) {}
 
     async adjustStock(
@@ -63,50 +64,60 @@ export class InventoryService
             throw new NegativeStockException(previousQuantity, adjustmentDto.quantity);
         }
 
-        // Create the inventory log entry
-        const inventoryLog = new this.inventoryLogModel({
-            orgId,
-            productId,
-            userId,
-            type: adjustmentDto.type,
-            quantity: adjustmentDto.quantity,
-            previousQuantity,
-            newQuantity,
-            note: adjustmentDto.note,
-        });
-
-        // Update the product quantity and save the log in a transaction-like approach
-        // Note: For production, consider using MongoDB transactions
+        // Execute atomic operation (log creation + product quantity update) with a manual session
+        const session = await this.connection.startSession();
+        this.logger.debug('Starting transaction session for inventory stock adjustment', 'InventoryService#adjustStock');
         try 
         {
-            const savedLog = await inventoryLog.save();
-            
-            try 
+            let savedLog: InventoryLog | null = null;
+            await session.withTransaction(async () => 
             {
-                await this.productModel.updateOne(
+                const log = new this.inventoryLogModel({
+                    orgId,
+                    productId,
+                    userId,
+                    type: adjustmentDto.type,
+                    quantity: adjustmentDto.quantity,
+                    previousQuantity,
+                    newQuantity,
+                    note: adjustmentDto.note,
+                });
+                await log.save({ session });
+
+                const updateResult = await this.productModel.updateOne(
                     { _id: productId, orgId },
-                    { currentQuantity: newQuantity }
+                    { currentQuantity: newQuantity },
+                    { session }
                 ).exec();
-                
-                this.logger.debug(`Stock adjusted for product ${productId}: ${previousQuantity} -> ${newQuantity}`, 'InventoryService#adjustStock');
-                return savedLog;
-            } 
-            catch (productUpdateError) 
+
+                if (updateResult.modifiedCount !== 1)
+                {
+                    throw new DatabaseOperationException('product stock update', 'Expected exactly one product document to be updated');
+                }
+
+                savedLog = log;
+            });
+
+            if (!savedLog)
             {
-                // If product update fails, remove the log entry to maintain consistency
-                await this.inventoryLogModel.deleteOne({ _id: savedLog._id }).exec();
-                const errorMessage = productUpdateError instanceof Error ? productUpdateError.message : 'Unknown error';
-                throw new DatabaseOperationException('product stock update', errorMessage);
+                throw new DatabaseOperationException('inventory stock adjustment', 'Transaction completed without persisted log');
             }
-        } 
-        catch (error) 
+            this.logger.debug(`Stock adjusted for product ${productId}: ${previousQuantity} -> ${newQuantity}`, 'InventoryService#adjustStock');
+            return savedLog;
+        }
+        catch (error)
         {
-            if (error instanceof DatabaseOperationException) 
+            if (error instanceof DatabaseOperationException)
             {
                 throw error;
             }
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            throw new DatabaseOperationException('inventory log creation', errorMessage);
+            throw new DatabaseOperationException('inventory stock adjustment transaction', errorMessage);
+        }
+        finally
+        {
+            await session.endSession();
+            this.logger.debug('Ended transaction session for inventory stock adjustment', 'InventoryService#adjustStock');
         }
     }
 
