@@ -342,17 +342,6 @@ export class StripeService
         }
     }
 
-    getAllPriceIds(): { basicMonthly: string; basicYearly: string } 
-    {
-        return { ...this.priceIds };
-    }
-
-    // Legacy method for backward compatibility - defaults to monthly
-    getBasicPlanPriceId(): string 
-    {
-        return this.priceIds.basicMonthly;
-    }
-
     /**
      * Helper method to handle Stripe errors consistently
      */
