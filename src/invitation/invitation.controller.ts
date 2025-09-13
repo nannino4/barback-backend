@@ -22,7 +22,6 @@ import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { User } from '../user/schemas/user.schema';
 import { plainToInstance } from 'class-transformer';
 import { Types } from 'mongoose';
-import { OutInvitationPublicDto } from './dto/out.invitation-public.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
 
 /**
@@ -52,7 +51,7 @@ export class InvitationController
     @UseGuards(OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async sendInvitation(
-        @Param('orgId', ObjectIdValidationPipe) orgId: string,
+        @Param('orgId', ObjectIdValidationPipe) orgId: Types.ObjectId,
         @Body() createInviteDto: InCreateInvitationDto,
         @CurrentUser() user: User,
     ): Promise<OutInvitationDto> 
@@ -63,19 +62,22 @@ export class InvitationController
         );
 
         // Get organization name for the email
-        const organization = await this.orgService.findById(new Types.ObjectId(orgId));
+        const organization = await this.orgService.findById(orgId);
         if (!organization) 
         {
             throw new NotFoundException('Organization not found');
         }
         
         const invitation = await this.invitationService.createInvitation(
-            new Types.ObjectId(orgId),
+            orgId,
             user._id as Types.ObjectId,
             createInviteDto,
             organization.name,
         );
-
+        this.logger.debug(
+            `Invitation ${(invitation._id as Types.ObjectId).toString()} created (status=${invitation.status}) for email=${invitation.invitedEmail}`,
+            'InvitationController#sendInvitation',
+        );
         return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
     }
 
@@ -89,12 +91,16 @@ export class InvitationController
     @UseGuards(OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async getOrganizationInvitations(
-        @Param('orgId', ObjectIdValidationPipe) orgId: string,
+        @Param('orgId', ObjectIdValidationPipe) orgId: Types.ObjectId,
     ): Promise<OutInvitationDto[]> 
     {
         this.logger.debug(`Getting invitations for organization ${orgId}`, 'InvitationController#getOrganizationInvitations');
         
-        const invitations = await this.invitationService.findPendingInvitationsByOrg(new Types.ObjectId(orgId));
+        const invitations = await this.invitationService.findPendingInvitationsByOrg(orgId);
+        this.logger.debug(
+            `Found ${invitations.length} pending invitations for orgId=${orgId.toString()}`,
+            'InvitationController#getOrganizationInvitations',
+        );
         return plainToInstance(OutInvitationDto, invitations, { excludeExtraneousValues: true });
     }
 
@@ -109,18 +115,21 @@ export class InvitationController
     @UseGuards(OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER)
     async revokeInvitation(
-        @Param('orgId', ObjectIdValidationPipe) orgId: string,
-        @Param('invitationId', ObjectIdValidationPipe) invitationId: string,
-    ): Promise<{ message: string }> 
+        @Param('orgId', ObjectIdValidationPipe) orgId: Types.ObjectId,
+        @Param('invitationId', ObjectIdValidationPipe) invitationId: Types.ObjectId,
+    ): Promise<OutInvitationDto> 
     {
         this.logger.debug(
             `Revoking invitation ${invitationId} for organization ${orgId}`,
             'InvitationController#revokeInvitation',
         );
         
-        await this.invitationService.revokeInvitation(invitationId, new Types.ObjectId(orgId));
-        
-        return { message: 'Invitation revoked successfully' };
+        const invitation = await this.invitationService.revokeInvitation(invitationId, orgId);
+        this.logger.debug(
+            `Invitation ${(invitation._id as Types.ObjectId).toString()} revoked (status=${invitation.status})`,
+            'InvitationController#revokeInvitation',
+        );
+        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
     }
 
     /**
@@ -129,45 +138,55 @@ export class InvitationController
      * @returns List of pending invitations for the user
      */
     @Get('invites')
-    async getUserPendingInvitations(@CurrentUser() user: User): Promise<OutInvitationPublicDto[]> 
+    async getUserPendingInvitations(@CurrentUser() user: User): Promise<OutInvitationDto[]> 
     {
         this.logger.debug(`Getting pending invitations for user ${user._id}`, 'InvitationController#getUserPendingInvitations');
         
         const invitations = await this.invitationService.findPendingInvitationsByEmail(user.email);
-        return plainToInstance(OutInvitationPublicDto, invitations, { excludeExtraneousValues: true });
+        this.logger.debug(
+            `Found ${invitations.length} pending invitations for userId=${(user._id as Types.ObjectId).toString()}`,
+            'InvitationController#getUserPendingInvitations',
+        );
+        return plainToInstance(OutInvitationDto, invitations, { excludeExtraneousValues: true });
     }
 
     /**
      * Accept an invitation as an authenticated user.
-     * @param token - The invitation token
+     * @param invitationId - The invitation id
      * @param user - The authenticated user
      * @returns Success message
      */
-    @Post('invites/accept/:token')
+    @Post('invites/:invitationId/accept')
     async acceptInvitation(
-        @Param('token') token: string,
+        @Param('invitationId', ObjectIdValidationPipe) invitationId: Types.ObjectId,
         @CurrentUser() user: User,
-    ): Promise<{ message: string }> 
+    ): Promise<OutInvitationDto> 
     {
-        this.logger.debug(`User ${user._id} accepting invitation with token`, 'InvitationController#acceptInvitation');
+        this.logger.debug(`User ${user._id} accepting invitation ${invitationId}`, 'InvitationController#acceptInvitation');
         
-        await this.invitationService.acceptInvitation(token, user._id as Types.ObjectId);
-        
-        return { message: 'Invitation accepted successfully' };
+        const invitation = await this.invitationService.acceptInvitation(invitationId, user._id as Types.ObjectId);
+        this.logger.debug(
+            `Invitation ${(invitation._id as Types.ObjectId).toString()} accepted (status=${invitation.status}) by user ${(user._id as Types.ObjectId).toString()}`,
+            'InvitationController#acceptInvitation',
+        );
+        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
     }
 
     /**
      * Decline an invitation as an authenticated user.
-     * @param token - The invitation token
+     * @param invitationId - The invitation id
      * @returns Success message
      */
-    @Post('invites/decline/:token')
-    async declineInvitation(@Param('token') token: string): Promise<{ message: string }> 
+    @Post('invites/:invitationId/decline')
+    async declineInvitation(@Param('invitationId', ObjectIdValidationPipe) invitationId: Types.ObjectId): Promise<OutInvitationDto> 
     {
-        this.logger.debug('Declining invitation with token', 'InvitationController#declineInvitation');
+        this.logger.debug(`Declining invitation ${invitationId}`, 'InvitationController#declineInvitation');
         
-        await this.invitationService.declineInvitation(token);
-        
-        return { message: 'Invitation declined successfully' };
+        const invitation = await this.invitationService.declineInvitation(invitationId);
+        this.logger.debug(
+            `Invitation ${(invitation._id as Types.ObjectId).toString()} declined (status=${invitation.status})`,
+            'InvitationController#declineInvitation',
+        );
+        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
     }
 }

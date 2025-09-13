@@ -3,7 +3,6 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { Invitation, InvitationSchema } from "./schemas/invitation.schema";
 import { EmailModule } from "../email/email.module";
 import { InvitationController } from "./invitation.controller";
-import { InvitationPublicController } from "./invitation-public.controller";
 import { InvitationService } from "./invitation.service";
 import { UserOrgRelation, UserOrgRelationSchema } from "src/org/schemas/user-org-relation.schema";
 import { UserModule } from "../user/user.module";
@@ -21,7 +20,7 @@ import { OrgModule } from "src/org/org.module";
         UserModule, // Used for user operations
         OrgModule,
     ],
-    controllers: [InvitationController, InvitationPublicController],
+    controllers: [InvitationController],
     providers: [InvitationService],
     exports: [InvitationService],
 })

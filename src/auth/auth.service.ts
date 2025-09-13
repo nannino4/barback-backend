@@ -229,23 +229,6 @@ export class AuthService
         const newUser = await this.userService.create(userData);
         this.logger.debug(`New user created: ${newUser.email}`, 'AuthService#registerEmail');
         
-        // Process pending invitations for this user
-        try 
-        {
-            await this.invitationService.processPendingInvitationsForUser(
-                newUser._id as Types.ObjectId,
-                newUser.email,
-            );
-            this.logger.debug(`Processed pending invitations for user: ${newUser.email}`, 'AuthService#registerEmail');
-        } 
-        catch (error) 
-        {
-            this.logger.warn(
-                `Failed to process pending invitations for user: ${newUser.email}`, 'AuthService#registerEmail',
-            );
-            // Don't fail registration if invitation processing fails
-        }
-        
         // Send verification email
         try 
         {

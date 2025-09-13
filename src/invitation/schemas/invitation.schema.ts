@@ -6,7 +6,6 @@ export enum InvitationStatus {
     PENDING = 'pending',
     DECLINED = 'declined',
     REVOKED = 'revoked',
-    ACCEPTED_PENDING_REGISTRATION = 'accepted_pending_registration',
     ACCEPTED = 'accepted',
 }
 
@@ -24,9 +23,6 @@ export class Invitation extends Document
 
     @Prop({ type: String, enum: InvitationStatus, default: InvitationStatus.PENDING })
     status!: InvitationStatus;
-
-    @Prop({ type: String, required: false })
-    invitationToken?: string;
 
     @Prop({ type: Date, required: false })
     invitationExpires?: Date;

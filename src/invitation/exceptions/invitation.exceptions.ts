@@ -22,28 +22,13 @@ export class InvitationNotFoundException extends NotFoundException
 /**
  * Exception thrown when an invitation token is invalid or expired
  */
-export class InvalidInvitationTokenException extends BadRequestException
+export class InvalidInvitationException extends BadRequestException
 {
     constructor()
     {
         super({
-            message: 'Invalid or expired invitation token',
-            error: 'INVALID_INVITATION_TOKEN',
-            statusCode: 400,
-        });
-    }
-}
-
-/**
- * Exception thrown when an invitation has already expired
- */
-export class InvitationExpiredException extends BadRequestException
-{
-    constructor()
-    {
-        super({
-            message: 'Invitation has expired',
-            error: 'INVITATION_EXPIRED',
+            message: 'Invalid or expired invitation',
+            error: 'INVALID_INVITATION',
             statusCode: 400,
         });
     }
@@ -60,21 +45,6 @@ export class InvitationAlreadyExistsException extends ConflictException
             message: `A pending invitation already exists for email "${email}"`,
             error: 'INVITATION_ALREADY_EXISTS',
             statusCode: 409,
-        });
-    }
-}
-
-/**
- * Exception thrown when an invitation has already been processed (accepted/declined/revoked)
- */
-export class InvitationAlreadyProcessedException extends BadRequestException
-{
-    constructor(status: string)
-    {
-        super({
-            message: `Invitation has already been ${status.toLowerCase()}`,
-            error: 'INVITATION_ALREADY_PROCESSED',
-            statusCode: 400,
         });
     }
 }
@@ -125,20 +95,5 @@ export class InvitationEmailFailedException extends HttpException
             },
             HttpStatus.INTERNAL_SERVER_ERROR,
         );
-    }
-}
-
-/**
- * Exception thrown when trying to accept an invitation with mismatched user email
- */
-export class InvitationEmailMismatchException extends BadRequestException
-{
-    constructor()
-    {
-        super({
-            message: 'This invitation was sent to a different email address',
-            error: 'INVITATION_EMAIL_MISMATCH',
-            statusCode: 400,
-        });
     }
 }

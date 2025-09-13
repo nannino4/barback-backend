@@ -7,7 +7,6 @@ import { GoogleTokenResponseDto } from '../dto/google-token-response.dto';
 import { User, AuthProvider } from '../../user/schemas/user.schema';
 import { UserService } from '../../user/user.service';
 import { InvitationService } from '../../invitation/invitation.service';
-import { Types } from 'mongoose';
 import { OutGoogleAuthUrlDto } from '../dto/out.google-auth-url.dto';
 import { CustomLogger } from 'src/common/logger/custom.logger';
 import {
@@ -195,24 +194,6 @@ export class GoogleService
             authProvider: AuthProvider.GOOGLE,
             isEmailVerified: true, // Google emails are pre-verified
         });
-
-        // Process pending invitations for this new user
-        try 
-        {
-            await this.invitationService.processPendingInvitationsForUser(
-                user._id as Types.ObjectId,
-                user.email,
-            );
-            this.logger.debug(`Processed pending invitations for Google user: ${user.email}`, 'GoogleService#findOrCreateUser');
-        } 
-        catch (error) 
-        {
-            this.logger.warn(
-                `Failed to process pending invitations for Google user: ${user.email}`,
-                'GoogleService#findOrCreateUser',
-            );
-            // Don't fail authentication if invitation processing fails
-        }
 
         this.logger.debug(`User created successfully: ${user.email}`, 'GoogleService#findOrCreateUser');
         return user;

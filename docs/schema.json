@@ -95,22 +95,20 @@
     "OrgInvite": {
         "collection": "org_invites",
         "fields": {
-            "_id": { "type": "ObjectId", "description": "Unique identifier for the organization invite" },
-            "orgId": { "type": "ObjectId", "description": "Reference to the organization being invited to" },
-            "invitedEmail": { "type": "string", "description": "Email address of the invited user" },
-            "invitationToken": { "type": ["string", "null"], "description": "Token for the invitation (optional)" },
-            "invitationExpires": { "type": ["Date", "null"], "description": "Expiration date for the invitation (optional)" },
-            "status": { "type": "string", "description": "Status of the invite", "enum": ["pending", "declined", "revoked", "accepted_pending_registration", "accepted"], "default": "pending" },
-            "invitedBy": { "type": ["ObjectId", "null"], "description": "Reference to the user who sent the invitation (null for owner/direct relationships)" },
-            "createdAt": { "type": "Date", "description": "Timestamp of when the invite was created" },
-            "updatedAt": { "type": "Date", "description": "Timestamp of when the invite was last updated" }
+        "_id": { "type": "ObjectId", "description": "Unique identifier for the organization invite" },
+        "orgId": { "type": "ObjectId", "description": "Reference to the organization being invited to" },
+        "invitedEmail": { "type": "string", "description": "Email address of the invited user" },
+        "invitationExpires": { "type": ["Date", "null"], "description": "Expiration date for the invitation (optional)" },
+        "status": { "type": "string", "description": "Status of the invite", "enum": ["pending", "declined", "revoked", "accepted"], "default": "pending" },
+        "invitedBy": { "type": ["ObjectId", "null"], "description": "Reference to the user who sent the invitation" },
+        "createdAt": { "type": "Date", "description": "Timestamp of when the invite was created" },
+        "updatedAt": { "type": "Date", "description": "Timestamp of when the invite was last updated" }
         },
         "indexes": [
-            { "fields": { "orgId": 1, "invitedEmail": 1 }, "options": { "unique": true } },
-            { "fields": { "invitedEmail": 1 } },
-            { "fields": { "orgId": 1 } },
-            { "fields": { "status": 1 } },
-            { "fields": { "invitationToken": 1 }, "options": { "unique": true, "sparse": true } }
+        { "fields": { "orgId": 1, "invitedEmail": 1 }, "options": { "unique": true } },
+        { "fields": { "invitedEmail": 1 } },
+        { "fields": { "orgId": 1 } },
+        { "fields": { "status": 1 } }
         ]
     },
     "Category": {

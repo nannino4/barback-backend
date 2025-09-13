@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { randomBytes } from 'crypto';
 import { Invitation, InvitationStatus } from './schemas/invitation.schema';
 import { UserOrgRelation, OrgRole } from '../org/schemas/user-org-relation.schema';
 import { UserService } from '../user/user.service';
@@ -11,7 +10,7 @@ import { CustomLogger } from '../common/logger/custom.logger';
 import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
 import { 
     InvitationNotFoundException,
-    InvalidInvitationTokenException,
+    InvalidInvitationException,
     InvitationAlreadyExistsException,
     UserAlreadyMemberException,
     CannotInviteAsOwnerException,
@@ -36,6 +35,10 @@ export class InvitationService
         organizationName: string,
     ): Promise<Invitation> 
     {
+        this.logger.debug(
+            `Creating invitation for email=${createInviteDto.invitedEmail} orgId=${orgId} role=${createInviteDto.role}`,
+            'InvitationService#createInvitation',
+        );
         const { invitedEmail, role } = createInviteDto;
 
         // Prevent inviting owners through this system
@@ -73,8 +76,7 @@ export class InvitationService
                 throw new InvitationAlreadyExistsException(invitedEmail);
             }
 
-            // Generate invitation token and expiration
-            const invitationToken = this.generateInvitationToken();
+            // Generate expiration timestamp
             const invitationExpires = new Date();
             invitationExpires.setDate(invitationExpires.getDate() + 7); // 7 days expiration
 
@@ -84,7 +86,6 @@ export class InvitationService
                 invitedEmail,
                 role,
                 status: InvitationStatus.PENDING,
-                invitationToken,
                 invitationExpires,
                 invitedBy,
             });
@@ -96,7 +97,7 @@ export class InvitationService
             {
                 const emailOptions = this.emailService.generateOrganizationInvitationEmail(
                     invitedEmail,
-                    invitationToken,
+                    invitation.id,
                     organizationName,
                     role,
                 );
@@ -119,6 +120,10 @@ export class InvitationService
                 throw new InvitationEmailFailedException(invitedEmail, errorDetails);
             }
 
+            this.logger.debug(
+                `Invitation ${invitation.id} created successfully for email=${invitedEmail}`,
+                'InvitationService#createInvitation',
+            );
             return invitation;
         }
         catch (error)
@@ -148,6 +153,7 @@ export class InvitationService
     {
         try 
         {
+            this.logger.debug(`Finding pending invitations by email=${email}`, 'InvitationService#findPendingInvitationsByEmail');
             return this.invitationModel
                 .find({
                     invitedEmail: email,
@@ -174,6 +180,7 @@ export class InvitationService
     {
         try 
         {
+            this.logger.debug(`Finding pending invitations for orgId=${orgId}`, 'InvitationService#findPendingInvitationsByOrg');
             return this.invitationModel
                 .find({
                     orgId,
@@ -195,37 +202,50 @@ export class InvitationService
         }
     }
 
-    async acceptInvitation(token: string, userId?: Types.ObjectId): Promise<void> 
+    async acceptInvitation(invitationId: Types.ObjectId, userId: Types.ObjectId): Promise<Invitation> 
     {
         try 
         {
+            this.logger.debug(
+                `Accepting invitation invitationId=${invitationId} userId=${userId}`,
+                'InvitationService#acceptInvitation',
+            );
             const invitation = await this.invitationModel.findOne({
-                invitationToken: token,
+                _id: invitationId,
                 status: InvitationStatus.PENDING,
                 invitationExpires: { $gt: new Date() },
             });
 
             if (!invitation) 
             {
-                throw new InvalidInvitationTokenException();
+                throw new InvalidInvitationException();
             }
-
-            if (userId) 
+            // Check if user already a member
+            const existingRelation = await this.userOrgRelationModel.findOne({
+                userId,
+                orgId: invitation.orgId,
+            });
+            if (!existingRelation)
             {
-                // User is logged in - complete the invitation immediately
-                await this.completeInvitationAcceptance(invitation, userId);
-            } 
-            else 
-            {
-                // User needs to register first - mark as accepted pending registration
-                invitation.status = InvitationStatus.ACCEPTED_PENDING_REGISTRATION;
-                await invitation.save();
+                const userOrgRelation = new this.userOrgRelationModel({
+                    userId,
+                    orgId: invitation.orgId,
+                    role: invitation.role,
+                });
+                await userOrgRelation.save();
             }
+            invitation.status = InvitationStatus.ACCEPTED;
+            await invitation.save();
+            this.logger.debug(
+                `Invitation ${invitation.id} accepted by userId=${userId}`,
+                'InvitationService#acceptInvitation',
+            );
+            return invitation;
         }
         catch (error)
         {
             // Re-throw known exceptions
-            if (error instanceof InvalidInvitationTokenException) 
+            if (error instanceof InvalidInvitationException) 
             {
                 throw error;
             }
@@ -234,7 +254,7 @@ export class InvitationService
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
             const errorStack = error instanceof Error ? error.stack : undefined;
             this.logger.error(
-                `Database error during invitation acceptance with token`,
+                `Database error during invitation acceptance by id`,
                 errorStack,
                 'InvitationService#acceptInvitation',
             );
@@ -242,19 +262,23 @@ export class InvitationService
         }
     }
 
-    async declineInvitation(token: string): Promise<void> 
+    async declineInvitation(invitationId: Types.ObjectId): Promise<Invitation> 
     {
         try 
         {
+            this.logger.debug(
+                `Declining invitation invitationId=${invitationId}`,
+                'InvitationService#declineInvitation',
+            );
             const invitation = await this.invitationModel.findOne({
-                invitationToken: token,
+                _id: invitationId,
                 status: InvitationStatus.PENDING,
                 invitationExpires: { $gt: new Date() },
             });
 
             if (!invitation) 
             {
-                throw new InvalidInvitationTokenException();
+                throw new InvalidInvitationException();
             }
 
             invitation.status = InvitationStatus.DECLINED;
@@ -264,11 +288,12 @@ export class InvitationService
                 `Invitation declined for email ${invitation.invitedEmail}`,
                 'InvitationService#declineInvitation',
             );
+            return invitation;
         }
         catch (error)
         {
             // Re-throw known exceptions
-            if (error instanceof InvalidInvitationTokenException) 
+            if (error instanceof InvalidInvitationException) 
             {
                 throw error;
             }
@@ -277,7 +302,7 @@ export class InvitationService
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
             const errorStack = error instanceof Error ? error.stack : undefined;
             this.logger.error(
-                `Database error during invitation decline with token`,
+                `Database error during invitation decline by id`,
                 errorStack,
                 'InvitationService#declineInvitation',
             );
@@ -285,10 +310,14 @@ export class InvitationService
         }
     }
 
-    async revokeInvitation(invitationId: string, orgId: Types.ObjectId): Promise<void> 
+    async revokeInvitation(invitationId: Types.ObjectId, orgId: Types.ObjectId): Promise<Invitation> 
     {
         try 
         {
+            this.logger.debug(
+                `Revoking invitation invitationId=${invitationId} orgId=${orgId}`,
+                'InvitationService#revokeInvitation',
+            );
             const invitation = await this.invitationModel.findOne({
                 _id: invitationId,
                 orgId,
@@ -297,7 +326,7 @@ export class InvitationService
 
             if (!invitation) 
             {
-                throw new InvitationNotFoundException(invitationId);
+                throw new InvitationNotFoundException(invitationId.toString());
             }
 
             invitation.status = InvitationStatus.REVOKED;
@@ -307,6 +336,7 @@ export class InvitationService
                 `Invitation revoked for email ${invitation.invitedEmail}`,
                 'InvitationService#revokeInvitation',
             );
+            return invitation;
         }
         catch (error)
         {
@@ -326,103 +356,5 @@ export class InvitationService
             );
             throw new DatabaseOperationException('invitation revocation', errorMessage);
         }
-    }
-
-    async processPendingInvitationsForUser(userId: Types.ObjectId, email: string): Promise<void> 
-    {
-        const pendingInvitations = await this.invitationModel.find({
-            invitedEmail: email,
-            status: InvitationStatus.ACCEPTED_PENDING_REGISTRATION,
-        });
-
-        for (const invitation of pendingInvitations) 
-        {
-            await this.completeInvitationAcceptance(invitation, userId);
-        }
-
-        this.logger.debug(
-            `Processed ${pendingInvitations.length} pending invitations for user ${userId}`,
-            'InvitationService#processPendingInvitationsForUser',
-        );
-    }
-
-    async getInvitationByToken(token: string): Promise<Invitation | null> 
-    {
-        try 
-        {
-            return this.invitationModel
-                .findOne({
-                    invitationToken: token,
-                    status: InvitationStatus.PENDING,
-                    invitationExpires: { $gt: new Date() },
-                })
-                .populate('orgId', 'name')
-                .exec();
-        }
-        catch (error)
-        {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(
-                `Database error while finding invitation by token`,
-                errorStack,
-                'InvitationService#getInvitationByToken',
-            );
-            throw new DatabaseOperationException('invitation lookup by token', errorMessage);
-        }
-    }
-
-    private async completeInvitationAcceptance(invitation: Invitation, userId: Types.ObjectId): Promise<void> 
-    {
-        try 
-        {
-            // Check if user is already a member
-            const existingRelation = await this.userOrgRelationModel.findOne({
-                userId,
-                orgId: invitation.orgId,
-            });
-
-            if (existingRelation) 
-            {
-                // User is already a member, just mark invitation as accepted
-                invitation.status = InvitationStatus.ACCEPTED;
-                await invitation.save();
-                return;
-            }
-
-            // Create the organization relationship
-            const userOrgRelation = new this.userOrgRelationModel({
-                userId,
-                orgId: invitation.orgId,
-                role: invitation.role,
-            });
-
-            await userOrgRelation.save();
-
-            // Mark invitation as accepted
-            invitation.status = InvitationStatus.ACCEPTED;
-            await invitation.save();
-
-            this.logger.debug(
-                `User ${userId} added to organization ${invitation.orgId} with role ${invitation.role}`,
-                'InvitationService#completeInvitationAcceptance',
-            );
-        }
-        catch (error)
-        {
-            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            const errorStack = error instanceof Error ? error.stack : undefined;
-            this.logger.error(
-                `Database error during invitation completion for user ${userId}`,
-                errorStack,
-                'InvitationService#completeInvitationAcceptance',
-            );
-            throw new DatabaseOperationException('invitation completion', errorMessage);
-        }
-    }
-
-    private generateInvitationToken(): string 
-    {
-        return randomBytes(32).toString('hex');
     }
 }
