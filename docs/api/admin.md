@@ -15,7 +15,7 @@ The Admin Management module provides administrative operations for managing user
 ### GET /api/admin/users
 Get list of all users in the platform.
 
-**Authentication**: Required (JWT)
+**Authentication**: Required (JWT) + email verified
 **Authorization**: ADMIN role only
 
 **Query Parameters**:
@@ -65,7 +65,7 @@ Get list of all users in the platform.
 ### GET /api/admin/users/:id
 Get detailed information about a specific user.
 
-**Authentication**: Required (JWT)
+**Authentication**: Required (JWT) + email verified
 **Authorization**: ADMIN role only
 
 **Parameters**:
@@ -95,7 +95,7 @@ Get detailed information about a specific user.
 ### PUT /api/admin/users/:id/profile
 Update a user's profile information (admin override).
 
-**Authentication**: Required (JWT)
+**Authentication**: Required (JWT) + email verified
 **Authorization**: ADMIN role only
 
 **Parameters**:
@@ -145,7 +145,7 @@ Update a user's profile information (admin override).
 ### PUT /api/admin/users/:id/role
 Update a user's role (promote/demote).
 
-**Authentication**: Required (JWT)
+**Authentication**: Required (JWT) + email verified
 **Authorization**: ADMIN role only
 
 **Parameters**:
@@ -262,6 +262,15 @@ Update a user's role (promote/demote).
 
 ## Error Handling
 
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
 **Access Denied** (403):
 ```json
 {
@@ -299,179 +308,3 @@ Update a user's role (promote/demote).
   "error": "Bad Request"
 }
 ```
-
-## Integration Notes
-
-### Frontend Implementation
-
-1. **Admin Dashboard**:
-```javascript
-// Get users list with pagination
-const getUsers = async (limit = 10, offset = 0) => {
-  const response = await fetch(`/api/admin/users?limit=${limit}&offset=${offset}`, {
-    headers: { 'Authorization': `Bearer ${adminToken}` }
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch users');
-  }
-  
-  return response.json();
-};
-
-// Update user role
-const updateUserRole = async (userId, newRole) => {
-  const response = await fetch(`/api/admin/users/${userId}/role`, {
-    method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${adminToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ role: newRole })
-  });
-  
-  return response.json();
-};
-```
-
-2. **User Management Table**:
-```javascript
-const UserManagementTable = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = 25;
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const userData = await getUsers(pageSize, currentPage * pageSize);
-        setUsers(userData);
-      } catch (error) {
-        console.error('Failed to fetch users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsers();
-  }, [currentPage]);
-
-  const handleRoleChange = async (userId, newRole) => {
-    try {
-      await updateUserRole(userId, newRole);
-      // Refresh users list
-      const userData = await getUsers(pageSize, currentPage * pageSize);
-      setUsers(userData);
-    } catch (error) {
-      alert('Failed to update user role');
-    }
-  };
-
-  // Render table implementation...
-};
-```
-
-3. **Admin Route Protection**:
-```javascript
-const AdminRoute = ({ children }) => {
-  const { user } = useAuth();
-  
-  if (!user || user.role !== 'ADMIN') {
-    return <Navigate to="/unauthorized" replace />;
-  }
-  
-  return children;
-};
-
-// Usage in routing
-<Route 
-  path="/admin/*" 
-  element={
-    <AdminRoute>
-      <AdminDashboard />
-    </AdminRoute>
-  } 
-/>
-```
-
-### Search and Filtering
-```javascript
-// Client-side user filtering
-const filterUsers = (users, searchTerm) => {
-  if (!searchTerm) return users;
-  
-  const term = searchTerm.toLowerCase();
-  return users.filter(user => 
-    user.firstName.toLowerCase().includes(term) ||
-    user.lastName.toLowerCase().includes(term) ||
-    user.email.toLowerCase().includes(term)
-  );
-};
-
-// Advanced filtering by role, verification status, etc.
-const advancedFilter = (users, filters) => {
-  return users.filter(user => {
-    if (filters.role && user.role !== filters.role) return false;
-    if (filters.emailVerified !== undefined && user.emailVerified !== filters.emailVerified) return false;
-    if (filters.dateRange) {
-      const userDate = new Date(user.createdAt);
-      if (userDate < filters.dateRange.start || userDate > filters.dateRange.end) return false;
-    }
-    return true;
-  });
-};
-```
-
-## Security Considerations
-
-1. **Admin Authentication**: Verify admin role on every request
-2. **Self-Protection**: Prevent admins from demoting themselves
-3. **Audit Logging**: Log all admin actions for compliance
-4. **Rate Limiting**: Apply stricter rate limits to admin endpoints
-5. **Session Management**: Consider shorter session timeouts for admin users
-6. **Two-Factor Authentication**: Recommend 2FA for admin accounts
-
-## Audit and Compliance
-
-### Recommended Audit Logging
-```javascript
-// Log admin actions for audit trail
-const auditLog = {
-  adminUserId: currentUser.id,
-  action: 'UPDATE_USER_ROLE',
-  targetUserId: targetUser.id,
-  previousValue: targetUser.role,
-  newValue: newRole,
-  timestamp: new Date().toISOString(),
-  ipAddress: req.ip,
-  userAgent: req.get('User-Agent')
-};
-
-// Store in audit log collection
-await auditLogService.create(auditLog);
-```
-
-### Compliance Considerations
-- GDPR compliance for user data access
-- Data retention policies for audit logs
-- User consent for admin data access
-- Right to data portability and deletion
-
-## Performance Considerations
-
-1. **Pagination**: Always use pagination for user lists
-2. **Indexing**: Database indexes on frequently queried fields
-3. **Rate Limiting**: Protect against admin endpoint abuse
-4. **Caching**: Cache user counts and statistics
-
-## Future Enhancements
-
-1. **Advanced Search**: Full-text search across user fields
-2. **Bulk Operations**: Bulk user role updates and operations
-3. **User Analytics**: Platform usage statistics and insights
-4. **Export Functionality**: Export user data for compliance
-5. **Admin Notifications**: Alerts for suspicious user activity
-6. **Impersonation**: Secure user impersonation for support
-7. **User Lifecycle**: Account suspension and reactivation
-8. **Advanced Filtering**: Filter by subscription status, organization membership, etc.

@@ -57,11 +57,11 @@ Get all categories for an organization.
 }
 ```
 
-**401 Unauthorized** - Invalid or Missing Token:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
-  "error": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -125,11 +125,11 @@ Get a specific category.
 }
 ```
 
-**401 Unauthorized** - Invalid or Missing Token:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
-  "error": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -231,11 +231,11 @@ Create a new category.
 }
 ```
 
-**401 Unauthorized** - Invalid or Missing Token:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
-  "error": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -362,11 +362,11 @@ Update an existing category.
 }
 ```
 
-**401 Unauthorized** - Invalid or Missing Token:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
-  "error": "Unauthorized", 
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -457,11 +457,11 @@ Delete a category.
 }
 ```
 
-**401 Unauthorized** - Invalid or Missing Token:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
-  "error": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```

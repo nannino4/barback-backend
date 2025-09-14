@@ -34,10 +34,11 @@ Check if current user is eligible for a trial subscription.
 
 **Error Responses**:
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -89,10 +90,11 @@ Create either a trial or paid subscription using a unified endpoint.
 
 **Error Responses**:
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -201,10 +203,11 @@ Get all subscriptions for the current user.
 
 **Error Responses**:
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -433,10 +436,11 @@ Handle Stripe webhook events (internal use).
 
 ### Common Error Responses
 
-**Authentication Error** (401):
+**401 Unauthorized** (401):
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -542,55 +546,6 @@ STRIPE_BASIC_MONTHLY_PRICE_ID=price_...
 STRIPE_BASIC_YEARLY_PRICE_ID=price_...
 ```
 
-### Frontend Integration Steps
-
-1. **Check Trial Eligibility**:
-   ```javascript
-   const response = await fetch('/api/subscription/trial-eligibility');
-   const { eligible } = await response.json();
-   ```
-
-2. **Create Subscription (Trial or Paid)**:
-   ```javascript
-   // Trial example
-   const trialResponse = await fetch('/api/subscriptions', {
-     method: 'POST',
-     headers: {
-       'Authorization': `Bearer ${token}`,
-       'Content-Type': 'application/json'
-     },
-     body: JSON.stringify({
-       billingInterval: 'monthly',
-       isTrial: true
-     })
-   });
-
-   // Paid example
-   const paidResponse = await fetch('/api/subscriptions', {
-     method: 'POST',
-     headers: {
-       'Authorization': `Bearer ${token}`,
-       'Content-Type': 'application/json'
-     },
-     body: JSON.stringify({
-       billingInterval: 'yearly'
-     })
-   });
-   ```
-
-3. **Payment Method Setup** (using Stripe Elements):
-   ```javascript
-   // After Stripe Elements confirms payment method
-   const response = await fetch('/api/payment/methods', {
-     method: 'POST',
-     headers: { 'Content-Type': 'application/json' },
-     body: JSON.stringify({
-       paymentMethodId: result.paymentMethod.id,
-       setAsDefault: true
-     })
-   });
-   ```
-
 ## Security Notes
 
 1. **Stripe Integration**: All payment processing through Stripe
@@ -601,10 +556,8 @@ STRIPE_BASIC_YEARLY_PRICE_ID=price_...
 
 ## Business Rules
 
-1. **Trial Period**: 3 months for first subscription only
-2. **Multiple Subscriptions**: Users can have multiple subscriptions (one per organization)
-3. **Trial Eligibility**: Only first subscription per user gets trial period
-4. **Auto-Conversion**: Trial automatically converts to paid plan
-5. **Pricing**: $29.99/month for Basic Plan
-6. **Cancellation**: Immediate cancellation, access until period end
-7. **Organization Ownership**: Each organization requires its own active subscription
+1. **Multiple Subscriptions**: Users can have multiple subscriptions (one per organization)
+2. **Trial Eligibility**: Only first subscription per user gets trial period
+3. **Auto-Conversion**: Trial automatically converts to paid plan
+4. **Cancellation**: Immediate cancellation, access until period end
+5. **Organization Ownership**: Each organization requires its own active subscription

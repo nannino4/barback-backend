@@ -1,10 +1,11 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { User } from 'src/user/schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
+import { JwtAuthException } from '../exceptions/jwt-auth.exception';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate
@@ -22,7 +23,7 @@ export class JwtAuthGuard implements CanActivate
 
         if (!token)
         {
-            throw new UnauthorizedException('No token provided');
+            throw new JwtAuthException('No token provided');
         }
 
         try
@@ -36,7 +37,7 @@ export class JwtAuthGuard implements CanActivate
 
             if (payload.type !== 'access')
             {
-                throw new UnauthorizedException('Invalid token type: Must be an access token');
+                throw new JwtAuthException('Invalid token type: Must be an access token');
             }
 
             // Assign the current user to the request object
@@ -44,20 +45,20 @@ export class JwtAuthGuard implements CanActivate
             const user = await this.userModel.findById(payload.sub);
             if (!user)
             {
-                throw new UnauthorizedException('Invalid or expired token');
+                throw new JwtAuthException('Invalid or expired token');
             }
             request['user'] = user;
         }
         catch (error)
         {
             // Re-throw UnauthorizedException with specific messages
-            if (error instanceof UnauthorizedException)
+            if (error instanceof JwtAuthException)
             {
                 throw error;
             }
             // Log the error for debugging if needed
             // console.error('JWT Verification Error:', error.message);
-            throw new UnauthorizedException('Invalid or expired token');
+            throw new JwtAuthException('Invalid or expired token');
         }
         return true;
     }

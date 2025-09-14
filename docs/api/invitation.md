@@ -1,7 +1,7 @@
 # Invitation Management API Documentation
 
 ## Overview
-The Invitation Management module handles organization invitations, allowing owners and managers to invite users via email. As of 2025-09 refactor, invitations can only be accepted or declined by existing, authenticated users. Anonymous (pre-registration) acceptance/decline has been removed to ensure explicit account ownership and reduce orphaned membership scenarios. Email notification now contains a generic "View Invitations" CTA; the previous token-based public accept/decline flow was removed—actions require authentication and invitation lookup is by ObjectId only.
+The Invitation Management module handles organization invitations, allowing owners and managers to invite users via email. Invitations can only be accepted or declined by existing, authenticated users.
 
 ## Invitation Workflow
 
@@ -51,39 +51,10 @@ Send an invitation to join the organization.
     "id": "64a1b2c3d4e5f6789def789",
     "name": "My Bar Organization"
   },
-    "createdAt": "2024-01-01T00:00:00.000Z",
+  "createdAt": "2024-01-01T00:00:00.000Z",
   "expiresAt": "2024-01-08T00:00:00.000Z"
 }
 ```
-
-**Error Responses**:
-
-**404 Not Found** - Invalid/Expired Token:
-```json
-{
-  "message": "Invalid or expired invitation token",
-  "error": "Not Found",
-  "statusCode": 404
-}
-```
-
-**500 Internal Server Error** - Database Operation Failed:
-```json
-{
-  "message": "Database operation failed: invitation lookup by token - Query timeout",
-  "error": "DATABASE_OPERATION_FAILED",
-  "statusCode": 500
-}
-```
-
-**Purpose**:
-- Allows frontend to display invitation details before requiring user to register/login
-- Used to show organization name and inviter information on invitation pages
-
-**Notes**:
-- No authentication required - token acts as authorization
-- Returns minimal, safe information only
-- Used for preview before user decides to register/login
 
 ---
 
@@ -141,10 +112,11 @@ Get all pending invitations for the organization.
 }
 ```
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -210,10 +182,11 @@ Revoke a pending invitation.
 }
 ```
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -278,10 +251,11 @@ Get current user's pending invitations.
 
 **Error Responses**:
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -336,10 +310,11 @@ Accept an invitation (authenticated users) by id.
 }
 ```
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -400,10 +375,11 @@ Decline an invitation (authenticated users) by id.
 }
 ```
 
-**401 Unauthorized** - Authentication Required:
+**401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```

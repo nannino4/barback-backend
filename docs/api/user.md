@@ -37,7 +37,8 @@ Get current user's profile information.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -108,7 +109,8 @@ Update current user's profile information.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -198,7 +200,8 @@ Change current user's password.
 **401 Unauthorized** - Invalid JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -267,7 +270,8 @@ Delete current user's account.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```

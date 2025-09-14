@@ -62,7 +62,8 @@ Create a new organization.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -172,7 +173,8 @@ Get organizations user is a member of.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -280,7 +282,8 @@ Get organization members.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -402,7 +405,8 @@ Update organization details.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
@@ -542,7 +546,8 @@ Update member role in organization.
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
 {
-  "message": "Unauthorized",
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
 }
 ```
