@@ -18,6 +18,7 @@ import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
 import { OutProductDto } from './dto/out.product.dto';
 import { OutInventoryLogDto } from './dto/out.inventory-log.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
 import { OrgSubscriptionGuard } from '../org/guards/org-subscription.guard';
 import { OrgRoles } from '../org/decorators/org-roles.decorator';
@@ -30,7 +31,7 @@ import { CustomLogger } from '../common/logger/custom.logger';
 import { InvalidDateRangeException } from './exceptions/product.exceptions';
 
 @Controller('orgs/:orgId/products')
-@UseGuards(JwtAuthGuard, OrgRolesGuard, OrgSubscriptionGuard)
+@UseGuards(JwtAuthGuard, EmailVerifiedGuard, OrgRolesGuard, OrgSubscriptionGuard)
 export class ProductController 
 {
     constructor(

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
 import { OrgService } from './org.service';
@@ -42,7 +43,7 @@ import {
 } from './exceptions/org.exceptions';
 
 @Controller('orgs')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, EmailVerifiedGuard)
 export class OrgController
 {
     constructor(

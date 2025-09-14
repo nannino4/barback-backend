@@ -1,5 +1,6 @@
 import { Controller, Get, Post, UseGuards, Body } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
 import { SubscriptionService } from './subscription.service';
@@ -20,7 +21,7 @@ export class SubscriptionController
         this.logger.debug('SubscriptionController initialized', 'SubscriptionController#constructor');
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
     @Get()
     async getAllSubscriptions(@CurrentUser() user: User): Promise<OutSubscriptionDto[]> 
     {
@@ -30,7 +31,7 @@ export class SubscriptionController
         return plainToInstance(OutSubscriptionDto, subscriptions.map(sub => sub.toObject()), { excludeExtraneousValues: true });
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
     @Post()
     async startPaidSubscription(
         @CurrentUser() user: User,
@@ -56,7 +57,7 @@ export class SubscriptionController
         return plainToInstance(OutSubscriptionPlanDto, plans, { excludeExtraneousValues: true });
     }
 
-    @UseGuards(JwtAuthGuard)
+    @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
     @Get('trial-eligibility')
     async checkTrialEligibility(@CurrentUser() user: User): Promise<{ eligible: boolean }> 
     {

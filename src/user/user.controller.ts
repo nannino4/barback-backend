@@ -1,6 +1,7 @@
 import { Controller, Get, UseGuards, Delete, HttpCode, HttpStatus, Put, Body } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { ChangePasswordDto } from './dto/in.change-password.dto';
@@ -10,7 +11,7 @@ import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, EmailVerifiedGuard)
 export class UserController
 {
     constructor(

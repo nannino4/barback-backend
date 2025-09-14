@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Body, Param, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../user/schemas/user.schema';
 import { PaymentService } from './payment.service';
@@ -10,7 +11,7 @@ import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('payment')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, EmailVerifiedGuard)
 export class PaymentController 
 {
     constructor(

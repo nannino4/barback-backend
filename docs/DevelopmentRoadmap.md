@@ -79,48 +79,31 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Allow users to delete their own account (consider implications and data retention policies).
   - [X] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
 
-#### Email Verification Access Control (New)
-Currently users can use most authenticated features before verifying email. We will introduce a unified guard to restrict sensitive operations until verification.
+#### Email Verification Access Control
+Unified guard now restricts authenticated operations until email is verified. Explicit controller-level composition used instead of global `APP_GUARD` for clarity.
 
-- [ ] **Define Policy**:
-  - [ ] Agree final rule: all authenticated endpoints require verified email except explicitly whitelisted (registration, login, token refresh, email verification & resend, password reset, subscription plan listing, Stripe webhooks).
-- [ ] **Implement `EmailVerifiedGuard`**:
-  - [ ] Guard checks `request.user.isEmailVerified` (populated by JWT auth) and throws `ForbiddenException` with code `EMAIL_NOT_VERIFIED`.
-  - [ ] Return payload: `{ statusCode: 403, error: 'EMAIL_NOT_VERIFIED', message: 'Email must be verified to access this resource.' }`.
-- [ ] **Skip Decorator**:
-  - [ ] Create `@SkipEmailVerification()` (sets custom metadata) for endpoints exempt from verification.
-  - [ ] Add helper constant for metadata key (e.g., `SKIP_EMAIL_VERIFICATION_KEY`).
-- [ ] **Global Registration**:
-  - [ ] Provide guard via `APP_GUARD` after JWT guard so user is already resolved.
-  - [ ] Ensure ordering does not affect public endpoints (guard should early-return if no auth user present).
-- [ ] **Apply Decorator to Exempt Endpoints** (see lists below).
-- [ ] **Add Error Documentation** to each protected API doc (single shared snippet) referencing new 403 response.
-- [ ] **Testing**:
-  - [ ] Unit test guard logic (verified vs unverified, skip metadata).
-  - [ ] E2E tests: unverified user hitting protected endpoint (e.g., create org) -> 403; after verification -> success.
-  - [ ] Regression: exempt endpoints remain accessible (login, resend verification email, etc.).
-
-**Endpoints Requiring Email Verification (Protected)**
-- User Self: `GET /api/users/me`, `PUT /api/users/me`, `PUT /api/users/me/password`, `DELETE /api/users/me`
-- Admin: All `/api/admin/*` endpoints (role management & user data)
-- Subscription (except public plans): `GET /api/subscription`, `GET /api/subscription/trial-eligibility`, `POST /api/subscription/start-trial`, `DELETE /api/subscription/cancel`, Payment methods endpoints (`GET/POST/DELETE /api/payment/methods*`)
-- Organization: `POST /api/orgs`, `GET /api/orgs`, `GET /api/orgs/:id/members`, `PUT /api/orgs/:id`, `PUT /api/orgs/:id/members/:userId/role`
-- Invitations (authenticated org/member flows): `POST /api/orgs/:orgId/invitations`, `GET /api/orgs/:orgId/invitations`, `DELETE /api/orgs/:orgId/invitations/:invitationId`, `GET /api/invites`, `POST /api/invites/accept/:token`, `POST /api/invites/decline/:token`
-- Categories: All `/api/orgs/:orgId/categories*` endpoints
-- Products: All `/api/orgs/:orgId/products*` endpoints and related inventory: `POST /api/orgs/:orgId/products/:id/adjust-stock`, `GET /api/orgs/:orgId/products/:id/logs`
-- (Future) Alerts, Analytics: all organization-scoped endpoints once implemented
-
-**Endpoints Exempt From Email Verification**
-- Auth Registration/Login: `POST /api/auth/register/email`, `POST /api/auth/login/email`, Google OAuth endpoints, `POST /api/auth/refresh-token`
-- Email Verification Flow: `POST /api/auth/send-verification-email`, `POST /api/auth/verify-email`, `GET /api/auth/verify-email/:token`
-- Password Reset: `POST /api/auth/forgot-password`, `POST /api/auth/reset-password`, `GET /api/auth/reset-password/:token`
-- Public Invitations: `GET /api/public/invitations/details/:token`, `POST /api/public/invitations/accept/:token`, `POST /api/public/invitations/decline/:token`, anonymous invitation accept/decline endpoints
-- Subscription Plans (public): `GET /api/subscription/plans`
-- Webhooks: `POST /webhooks/stripe`
-
-**Design Notes**
-- Simpler maintenance via global guard + skip decorator vs manually adding guard to each controller.
-- Keeps future feature additions safe by default (new authenticated endpoints will require verified email unless explicitly skipped).
+- [X] **Implement `EmailVerifiedGuard`**:
+  - [X] Guard checks `request.user.isEmailVerified` and throws `EmailNotVerifiedException` (`EMAIL_NOT_VERIFIED`).
+  - [X] Standard payload: `{ statusCode: 403, error: 'EMAIL_NOT_VERIFIED', message: 'Email must be verified to access this resource.' }`.
+- [X] **Skip Decorator**:
+  - [X] `@SkipEmailVerification()` created with `SKIP_EMAIL_VERIFICATION_KEY` metadata constant.
+- [X] **Registration Strategy**:
+  - [X] Added explicitly to protected controllers immediately after `JwtAuthGuard` (not using global `APP_GUARD`).
+  - [X] Ensures no impact to public controllers/endpoints.
+- [X] **Apply Decorator to Exempt Endpoints**:
+  - [X] Applied to `GET /subscriptions/plans` (public).
+  - [ ] Pending: add to other exempt endpoints in auth/password/public invitation flows.
+- [ ] **Add Error Documentation**:
+  - [ ] Add shared snippet to API docs referencing 403 response & requirement rationale.
+- [X] **Testing (Unit)**:
+  - [X] Guard unit tests added (`email-verified.guard.spec.ts`).
+- [ ] **Testing (E2E)**:
+  - [ ] Unverified user blocked from protected endpoint (e.g., create org) -> 403.
+  - [ ] After verification (or manual flag) -> success.
+  - [ ] Exempt endpoints remain accessible (login, refresh token, verification endpoints, public invites, subscription plans).
+  - [ ] Reflection-style safety test (optional) to ensure new authenticated routes include guard or decorator.
+  
+Follow-ups (Post-MVP / Optional): feature flag to disable enforcement locally, auto-resend verification email on first denial (cool-down based), add `emailVerifiedAt` timestamp.
 
 #### Subscription Management
 - [X] **Stripe Setup**:

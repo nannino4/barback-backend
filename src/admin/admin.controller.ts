@@ -13,6 +13,7 @@ import {
 import { Types } from 'mongoose';
 import { UserService } from '../user/user.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { UserRolesGuard } from '../auth/guards/user-roles.guard';
 import { UserRoles } from '../auth/decorators/user-roles.decorator';
 import { UserRole } from '../user/schemas/user.schema';
@@ -25,7 +26,7 @@ import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('admin/users')
-@UseGuards(JwtAuthGuard, UserRolesGuard)
+@UseGuards(JwtAuthGuard, EmailVerifiedGuard, UserRolesGuard)
 @UserRoles(UserRole.ADMIN)
 export class AdminController
 {

@@ -9,6 +9,7 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
 import { OrgSubscriptionGuard } from '../org/guards/org-subscription.guard';
 import { OrgRoles } from '../org/decorators/org-roles.decorator';
@@ -30,7 +31,7 @@ import { CustomLogger } from '../common/logger/custom.logger';
  * All endpoints require authentication and appropriate organization roles.
  */
 @Controller()
-@UseGuards(JwtAuthGuard, OrgRolesGuard)
+@UseGuards(JwtAuthGuard, EmailVerifiedGuard, OrgRolesGuard)
 export class InvitationController 
 {
     constructor(

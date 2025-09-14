@@ -14,6 +14,7 @@ import { InCreateCategoryDto } from './dto/in.create-category.dto';
 import { InUpdateCategoryDto } from './dto/in.update-category.dto';
 import { OutCategoryDto } from './dto/out.category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { OrgRolesGuard } from '../org/guards/org-roles.guard';
 import { OrgSubscriptionGuard } from '../org/guards/org-subscription.guard';
 import { OrgRoles } from '../org/decorators/org-roles.decorator';
@@ -23,7 +24,7 @@ import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
 
 @Controller('orgs/:orgId/categories')
-@UseGuards(JwtAuthGuard, OrgRolesGuard, OrgSubscriptionGuard)
+@UseGuards(JwtAuthGuard, EmailVerifiedGuard, OrgRolesGuard, OrgSubscriptionGuard)
 export class CategoryController 
 {
     constructor(
