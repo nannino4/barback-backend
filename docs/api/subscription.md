@@ -43,6 +43,15 @@ Check if current user is eligible for a trial subscription.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **500 Internal Server Error** - Database Operation Failed:
 ```json
 {
@@ -96,6 +105,15 @@ Create either a trial or paid subscription using a unified endpoint.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -209,6 +227,15 @@ Get all subscriptions for the current user.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -442,6 +469,15 @@ Handle Stripe webhook events (internal use).
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** (403):
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 

@@ -271,6 +271,15 @@ Update a user's role (promote/demote).
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **Access Denied** (403):
 ```json
 {

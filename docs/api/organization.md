@@ -68,6 +68,15 @@ Create a new organization.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **404 Not Found** - Subscription Not Found:
 ```json
 {
@@ -179,6 +188,15 @@ Get organizations user is a member of.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **409 Conflict** - Corrupted User-Organization Relationship:
 ```json
 {
@@ -285,6 +303,15 @@ Get organization members.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -408,6 +435,15 @@ Update organization details.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -549,6 +585,15 @@ Update member role in organization.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 

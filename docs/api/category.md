@@ -66,6 +66,15 @@ Get all categories for an organization.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **403 Forbidden** - Insufficient Organization Permissions:
 ```json
 {
@@ -131,6 +140,15 @@ Get a specific category.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -237,6 +255,15 @@ Create a new category.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -371,6 +398,15 @@ Update an existing category.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **403 Forbidden** - Insufficient Permissions:
 ```json
 {
@@ -463,6 +499,15 @@ Delete a category.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 

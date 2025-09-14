@@ -43,6 +43,15 @@ Get current user's profile information.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **500 Internal Server Error** - DTO Transformation Failed:
 ```json
 {
@@ -112,6 +121,15 @@ Update current user's profile information.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -276,6 +294,15 @@ Delete current user's account.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **404 Not Found** - User Not Found:
 ```json
 {
@@ -390,7 +417,16 @@ The User Management API follows consistent error response patterns:
 - DTO validation failures (handled by global validation pipes)
 - Business logic violations (wrong auth provider, etc.)
 
-### Not Found Errors (404)
+### Not Found Errors (40
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```4)
 - User not found by ID (typically shouldn't happen with valid JWTs)
 
 ### Conflict Errors (409)

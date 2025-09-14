@@ -121,6 +121,15 @@ Get all pending invitations for the organization.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **403 Forbidden** - Insufficient Role:
 ```json
 {
@@ -188,6 +197,15 @@ Revoke a pending invitation.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -260,6 +278,15 @@ Get current user's pending invitations.
 }
 ```
 
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
 **500 Internal Server Error** - Database Operation Failed:
 ```json
 {
@@ -316,6 +343,15 @@ Accept an invitation (authenticated users) by id.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
@@ -381,6 +417,15 @@ Decline an invitation (authenticated users) by id.
   "message": "Invalid or expired token",
   "error": "INVALID_AUTH_TOKEN",
   "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
 }
 ```
 
