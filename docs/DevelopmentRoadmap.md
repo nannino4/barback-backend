@@ -90,21 +90,11 @@ Unified guard now restricts authenticated operations until email is verified. Ex
 - [X] **Registration Strategy**:
   - [X] Added explicitly to protected controllers immediately after `JwtAuthGuard` (not using global `APP_GUARD`).
   - [X] Ensures no impact to public controllers/endpoints.
-- [X] **Apply Decorator to Exempt Endpoints**:
-  - [X] Applied to `GET /subscriptions/plans` (public).
-  - [ ] Pending: add to other exempt endpoints in auth/password/public invitation flows.
-- [ ] **Add Error Documentation**:
-  - [ ] Add shared snippet to API docs referencing 403 response & requirement rationale.
+- [X] **Add Error Documentation**:
+  - [X] Add shared snippet to API docs referencing 403 response & requirement rationale.
 - [X] **Testing (Unit)**:
   - [X] Guard unit tests added (`email-verified.guard.spec.ts`).
-- [ ] **Testing (E2E)**:
-  - [ ] Unverified user blocked from protected endpoint (e.g., create org) -> 403.
-  - [ ] After verification (or manual flag) -> success.
-  - [ ] Exempt endpoints remain accessible (login, refresh token, verification endpoints, public invites, subscription plans).
-  - [ ] Reflection-style safety test (optional) to ensure new authenticated routes include guard or decorator.
   
-Follow-ups (Post-MVP / Optional): feature flag to disable enforcement locally, auto-resend verification email on first denial (cool-down based), add `emailVerifiedAt` timestamp.
-
 #### Subscription Management
 - [X] **Stripe Setup**:
   - [X] Set up Stripe account and configure API keys.
