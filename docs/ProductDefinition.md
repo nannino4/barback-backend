@@ -33,7 +33,7 @@ This document outlines the product vision, target users, and feature roadmap for
 - Organization owners and managers can invite users via email
 - Invited users receive email invitations with accept/decline options
 - Invitations can be revoked by the inviter before acceptance
-- Users can accept invitations before completing registration
+- Users can accept or refuse invitations after completing registration
 - Users can view organizations they're invited to and part of
 
 #### Inventory

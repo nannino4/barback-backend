@@ -2,12 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import * as crypto from 'crypto';
-import { GoogleUserInfoDto } from '../dto/google-user-info.dto';
-import { GoogleTokenResponseDto } from '../dto/google-token-response.dto';
-import { User, AuthProvider } from '../../user/schemas/user.schema';
-import { UserService } from '../../user/user.service';
-import { InvitationService } from '../../invitation/invitation.service';
-import { OutGoogleAuthUrlDto } from '../dto/out.google-auth-url.dto';
+import { GoogleUserInfoDto } from './dto/google-user-info.dto';
+import { GoogleTokenResponseDto } from './dto/google-token-response.dto';
+import { User, AuthProvider } from '../user/schemas/user.schema';
+import { UserService } from '../user/user.service';
+import { OutGoogleAuthUrlDto } from './dto/out.google-auth-url.dto';
 import { CustomLogger } from 'src/common/logger/custom.logger';
 import {
     GoogleConfigurationException,
@@ -16,7 +15,7 @@ import {
     GoogleTokenInvalidException,
     GoogleEmailNotVerifiedException,
     GoogleAccountLinkingException,
-} from '../exceptions/oauth.exceptions';
+} from './exceptions/oauth.exceptions';
 
 @Injectable()
 export class GoogleService 
@@ -29,7 +28,6 @@ export class GoogleService
     constructor(
         private readonly configService: ConfigService,
         private readonly userService: UserService,
-        private readonly invitationService: InvitationService,
         private readonly logger : CustomLogger,
     ) 
     {

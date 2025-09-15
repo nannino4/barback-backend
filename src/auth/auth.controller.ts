@@ -10,7 +10,7 @@ import { ResetPasswordDto } from './dto/in.reset-password.dto';
 import { OutAuthResponseDto } from './dto/out.auth-response.dto';
 import { OutGoogleAuthUrlDto } from './dto/out.google-auth-url.dto';
 import { GoogleCallbackDto } from './dto/in.google-callback.dto';
-import { GoogleService } from './services/google.service';
+import { GoogleService } from './google.service';
 import { CustomLogger } from 'src/common/logger/custom.logger';
 
 @Controller('auth')

@@ -13,7 +13,6 @@ import { OutTokensDto } from './dto/out.tokens.dto';
 import { OutAuthResponseDto } from './dto/out.auth-response.dto';
 import { OutUserDto } from '../user/dto/out.user.dto';
 import { EmailService } from '../email/email.service';
-import { InvitationService } from '../invitation/invitation.service';
 import { plainToClass } from 'class-transformer';
 import {
     JwtConfigurationException,
@@ -43,7 +42,6 @@ export class AuthService
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         private readonly emailService: EmailService,
-        private readonly invitationService: InvitationService,
         private readonly logger: CustomLogger,
     )
     {

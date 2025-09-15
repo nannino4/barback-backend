@@ -16,7 +16,7 @@ import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { EmailService } from '../email/email.service';
 import { InvitationService } from '../invitation/invitation.service';
-import { GoogleService } from './services/google.service';
+import { GoogleService } from './google.service';
 import { CustomLogger } from '../common/logger/custom.logger';
 
 describe('AuthController - Integration Tests', () => 

@@ -2,10 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { GoogleService } from './google.service';
-import { UserService } from '../../user/user.service';
-import { InvitationService } from '../../invitation/invitation.service';
-import { CustomLogger } from '../../common/logger/custom.logger';
-import { User, AuthProvider } from '../../user/schemas/user.schema';
+import { UserService } from '../user/user.service';
+import { CustomLogger } from '../common/logger/custom.logger';
+import { User, AuthProvider } from '../user/schemas/user.schema';
 import { Types } from 'mongoose';
 import {
     GoogleConfigurationException,
@@ -14,7 +13,7 @@ import {
     GoogleTokenInvalidException,
     GoogleEmailNotVerifiedException,
     GoogleAccountLinkingException,
-} from '../exceptions/oauth.exceptions';
+} from './exceptions/oauth.exceptions';
 
 // Mock axios
 jest.mock('axios');
@@ -24,7 +23,6 @@ describe('GoogleService', () =>
 {
     let service: GoogleService;
     let userService: jest.Mocked<UserService>;
-    let invitationService: jest.Mocked<InvitationService>;
     let logger: jest.Mocked<CustomLogger>;
 
     const mockConfig = {
@@ -74,10 +72,6 @@ describe('GoogleService', () =>
             create: jest.fn(),
         };
 
-        const mockInvitationService = {
-            processPendingInvitationsForUser: jest.fn(),
-        };
-
         const mockLogger = {
             debug: jest.fn(),
             error: jest.fn(),
@@ -89,14 +83,12 @@ describe('GoogleService', () =>
                 GoogleService,
                 { provide: ConfigService, useValue: mockConfigService },
                 { provide: UserService, useValue: mockUserService },
-                { provide: InvitationService, useValue: mockInvitationService },
                 { provide: CustomLogger, useValue: mockLogger },
             ],
         }).compile();
 
         service = module.get<GoogleService>(GoogleService);
         userService = module.get(UserService);
-        invitationService = module.get(InvitationService);
         logger = module.get(CustomLogger);
     });
 
@@ -120,7 +112,6 @@ describe('GoogleService', () =>
                         GoogleService,
                         { provide: ConfigService, useValue: mockConfigMissing },
                         { provide: UserService, useValue: userService },
-                        { provide: InvitationService, useValue: invitationService },
                         { provide: CustomLogger, useValue: logger },
                     ],
                 }).compile();
@@ -283,7 +274,6 @@ describe('GoogleService', () =>
             userService.findByGoogleId.mockResolvedValueOnce(null);
             userService.findByEmail.mockResolvedValueOnce(null);
             userService.create.mockResolvedValueOnce(mockUser);
-            invitationService.processPendingInvitationsForUser.mockResolvedValueOnce();
 
             const result = await service.findOrCreateUser(mockGoogleUserInfo);
 
@@ -297,28 +287,7 @@ describe('GoogleService', () =>
                 authProvider: AuthProvider.GOOGLE,
                 isEmailVerified: true,
             });
-            expect(invitationService.processPendingInvitationsForUser).toHaveBeenCalledWith(
-                mockUser._id,
-                'test@example.com'
-            );
         });
 
-        it('should continue if invitation processing fails', async () => 
-        {
-            userService.findByGoogleId.mockResolvedValueOnce(null);
-            userService.findByEmail.mockResolvedValueOnce(null);
-            userService.create.mockResolvedValueOnce(mockUser);
-            invitationService.processPendingInvitationsForUser.mockRejectedValueOnce(
-                new Error('Invitation service error')
-            );
-
-            const result = await service.findOrCreateUser(mockGoogleUserInfo);
-
-            expect(result).toEqual(mockUser);
-            expect(logger.warn).toHaveBeenCalledWith(
-                `Failed to process pending invitations for Google user: ${mockUser.email}`,
-                'GoogleService#findOrCreateUser'
-            );
-        });
     });
 });

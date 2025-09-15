@@ -163,11 +163,9 @@ The Google OAuth integration intelligently handles different account scenarios:
 *   ~~**Email Verification**: Implementing email verification for new user accounts with secure tokens and automated email sending.~~ ✅ **Implemented**
 *   ~~**Password Reset**: Implementing secure password reset functionality via email with token-based validation.~~ ✅ **Implemented**
 *   ~~**Google OAuth Integration**: Adding Google OAuth as an alternative authentication method alongside email/password.~~ ✅ **Implemented**
-*   **Email Verification Enforcement**: Option to require email verification before allowing access to certain features.
+*   ~~**Email Verification Enforcement**: Option to require email verification before allowing access to certain features.~~ ✅ **Implemented**
 *   **Advanced Email Templates**: More sophisticated HTML email templates with branding and responsive design.
 *   **Email Rate Limiting**: Implementing rate limiting for email sending to prevent abuse.
-*   **HTTP-only Cookies for Refresh Tokens (Web Clients)**: For web applications, storing refresh tokens in HTTP-only cookies can provide better protection against XSS attacks compared to `localStorage`.
-*   **Multi-factor Authentication (MFA)**: Adding SMS or TOTP-based two-factor authentication for enhanced security.
 
 ## Environment Variables
 
