@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import * as request from 'supertest';
 import { Types } from 'mongoose';
 import { ProductController } from './product.controller';
@@ -24,7 +24,7 @@ import { EmailVerifiedGuard } from 'src/auth/guards/email-verified.guard';
 describe('ProductController (Integration)', () =>
 {
     let app: INestApplication;
-    let mongoServer: MongoMemoryServer;
+    let mongoServer: MongoMemoryReplSet;
     let productService: ProductService;
     let mockLogger: jest.Mocked<CustomLogger>;
 
@@ -41,7 +41,9 @@ describe('ProductController (Integration)', () =>
 
     beforeAll(async () =>
     {
-        mongoServer = await MongoMemoryServer.create();
+        mongoServer = await MongoMemoryReplSet.create({
+            replSet: { count: 1, storageEngine: 'wiredTiger' },
+        });
         const mongoUri = mongoServer.getUri();
 
         mockLogger = {

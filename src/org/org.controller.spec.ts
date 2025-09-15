@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import * as request from 'supertest';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -27,7 +27,7 @@ import { EmailVerifiedGuard } from 'src/auth/guards/email-verified.guard';
 describe('OrgController (Integration)', () => 
 {
     let app: INestApplication;
-    let mongoServer: MongoMemoryServer;
+    let mongoServer: MongoMemoryReplSet;
     let userService: UserService;
     let testUser: User;
     let testUser2: User; // Second user to own Organization 2
@@ -42,7 +42,9 @@ describe('OrgController (Integration)', () =>
 
     beforeAll(async () => 
     {
-        mongoServer = await MongoMemoryServer.create();
+        mongoServer = await MongoMemoryReplSet.create({
+            replSet: { count: 1, storageEngine: 'wiredTiger' },
+        });
         const mongoUri = mongoServer.getUri();
 
         mockLogger = {

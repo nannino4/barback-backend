@@ -1,13 +1,15 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { MongooseModule } from '@nestjs/mongoose';
 
 export class DatabaseTestHelper
 {
-    private static mongoServer: MongoMemoryServer;
+    private static mongoServer: MongoMemoryReplSet;
 
     static async startInMemoryDatabase(): Promise<string>
     {
-        this.mongoServer = await MongoMemoryServer.create();
+        this.mongoServer = await MongoMemoryReplSet.create({
+            replSet: { count: 1, storageEngine: 'wiredTiger' },
+        });
         return this.mongoServer.getUri();
     }
 
