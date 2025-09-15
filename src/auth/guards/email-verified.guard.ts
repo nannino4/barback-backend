@@ -32,8 +32,7 @@ export class EmailVerifiedGuard implements CanActivate
         if (!user)
         {
             this.logger.debug('No user on request, blocking access', 'EmailVerifiedGuard#canActivate');
-            // return true;
-            return false; // Changed to false to enforce authentication
+            throw new EmailNotVerifiedException();
         }
 
         if (!user.isEmailVerified)

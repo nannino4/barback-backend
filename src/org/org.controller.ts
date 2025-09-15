@@ -70,7 +70,7 @@ export class OrgController
             throw new NotFoundException('Subscription not found');
         }
         
-        if (subscription.userId.toString() !== (user._id as Types.ObjectId).toString())
+        if (subscription.userId.toString() !== user.id)
         {
             this.logger.error(`Subscription ${createData.subscriptionId} does not belong to user: ${user.email}`, 'OrgController#createOrganization');
             throw new SubscriptionOwnershipException(createData.subscriptionId.toString());

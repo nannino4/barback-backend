@@ -531,6 +531,54 @@ describe('OrgController (Integration)', () =>
                 .send(createData)
                 .expect(409); // ConflictException: Subscription is not active
         });
+
+        it('should return 409 when trying to create two organizations with same name for same user', async () => 
+        {
+            // Arrange - Create two separate subscriptions for the user
+            const subscription1 = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_samename123',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const subscription2 = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_samename456',
+                status: 'active',
+                autoRenew: true,
+            });
+
+            const createData1 = { 
+                name: 'Duplicate Name Organization',
+                subscriptionId: subscription1._id,
+            };
+            const createData2 = { 
+                name: 'Duplicate Name Organization', // Same name as first
+                subscriptionId: subscription2._id,
+            };
+
+            // Act - Create first organization (should succeed)
+            const response1 = await request(app.getHttpServer())
+                .post('/api/orgs')
+                .send(createData1)
+                .expect(201);
+
+            // Act - Try to create second organization with same name (should fail due to unique constraint)
+            await request(app.getHttpServer())
+                .post('/api/orgs')
+                .send(createData2)
+                .expect(409); // Conflict: Organization name already exists for this user
+
+            // Assert - Only one organization should exist
+            expect(response1.body.name).toBe('Duplicate Name Organization');
+
+            // Verify only one organization exists in database with this name for this user
+            const orgsInDb = await orgModel.find({ ownerId: testUser._id, name: 'Duplicate Name Organization' });
+            expect(orgsInDb).toHaveLength(1);
+            expect(orgsInDb[0].name).toBe('Duplicate Name Organization');
+            expect(orgsInDb[0].subscriptionId.toString()).toBe(subscription1._id.toString());
+        });
     });
 
     describe('GET /orgs', () => 

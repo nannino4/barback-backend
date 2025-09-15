@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { Model, Types, Connection } from 'mongoose';
-import { MongoServerError } from 'mongodb';
 import { Org } from './schemas/org.schema';
 import { UserOrgRelation, OrgRole } from './schemas/user-org-relation.schema';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
@@ -61,23 +60,17 @@ export class OrgService
         }
         catch (error)
         {
-            if (error instanceof MongoServerError)
+            // Duplicate key detection (subscriptionId or (ownerId,name) compound index)
+            this.logger.warn('Duplicate key error during organization creation', 'OrgService#create');
+            if (error instanceof Error && error.message.includes('E11000') && error.message.includes('subscriptionId'))
             {
-                // Duplicate key detection (subscriptionId or (ownerId,name) compound index)
-                if (error.code === 11000)
-                {
-                    const keyPattern = error.keyPattern || {};
-                    if (keyPattern.subscriptionId)
-                    {
-                        this.logger.warn(`Subscription ${subscriptionId} is already being used by another organization`, 'OrgService#create');
-                        throw new SubscriptionAlreadyInUseException(subscriptionId.toString());
-                    }
-                    if (keyPattern.ownerId && keyPattern.name)
-                    {
-                        this.logger.warn(`Organization name conflict for owner ${ownerId}: ${createData.name}`, 'OrgService#create');
-                        throw new OrganizationNameExistsException(createData.name);
-                    }
-                }
+                this.logger.warn(`Subscription ${subscriptionId} is already being used by another organization`, 'OrgService#create');
+                throw new SubscriptionAlreadyInUseException(subscriptionId.toString());
+            }
+            if (error instanceof Error && error.message.includes('E11000') && error.message.includes('ownerId') && error.message.includes('name'))
+            {
+                this.logger.warn(`Organization name conflict for owner ${ownerId}: ${createData.name}`, 'OrgService#create');
+                throw new OrganizationNameExistsException(createData.name);
             }
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
             const errorStack = error instanceof Error ? error.stack : undefined;

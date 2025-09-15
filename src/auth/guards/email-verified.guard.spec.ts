@@ -37,10 +37,10 @@ describe('EmailVerifiedGuard', () =>
         guard = new EmailVerifiedGuard(reflector, new MockLogger() as unknown as CustomLogger);
     });
 
-    it('allows when no user (public route fall-through)', () =>
+    it('throws when no user', () =>
     {
         const ctx = makeContext(undefined, false);
-        expect(guard.canActivate(ctx)).toBe(true);
+        expect(() => guard.canActivate(ctx)).toThrow(EmailNotVerifiedException);
     });
 
     it('allows when skip metadata present', () =>
