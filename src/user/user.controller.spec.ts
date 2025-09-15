@@ -12,6 +12,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UpdateUserProfileDto } from './dto/in.update-user-profile.dto';
 import { ChangePasswordDto } from './dto/in.change-password.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { EmailVerifiedGuard } from 'src/auth/guards/email-verified.guard';
 
 describe('UserController (Integration)', () =>
 {
@@ -55,6 +56,10 @@ describe('UserController (Integration)', () =>
             .overrideGuard(JwtAuthGuard)
             .useValue({
                 canActivate: () => true, // Will be overridden in beforeEach
+            })
+            .overrideGuard(EmailVerifiedGuard)
+            .useValue({
+                canActivate: () => true,
             })
             .compile();
 

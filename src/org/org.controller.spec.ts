@@ -22,6 +22,7 @@ import { Types } from 'mongoose';
 import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
 import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { EmailVerifiedGuard } from 'src/auth/guards/email-verified.guard';
 
 describe('OrgController (Integration)', () => 
 {
@@ -90,6 +91,10 @@ describe('OrgController (Integration)', () =>
             .overrideGuard(JwtAuthGuard)
             .useValue({
                 canActivate: () => true, // Will be overridden in beforeEach
+            })
+            .overrideGuard(EmailVerifiedGuard)
+            .useValue({
+                canActivate: () => true,
             })
             .overrideGuard(OrgSubscriptionGuard)
             .useValue({

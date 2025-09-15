@@ -19,6 +19,7 @@ import { InCreateProductDto } from './dto/in.create-product.dto';
 import { InUpdateProductDto } from './dto/in.update-product.dto';
 import { InStockAdjustmentDto } from './dto/in.stock-adjustment.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { EmailVerifiedGuard } from 'src/auth/guards/email-verified.guard';
 
 describe('ProductController (Integration)', () =>
 {
@@ -80,6 +81,10 @@ describe('ProductController (Integration)', () =>
                     request.user = mockUser; // Provide mock user
                     return true;
                 },
+            })
+            .overrideGuard(EmailVerifiedGuard)
+            .useValue({
+                canActivate: () => true,
             })
             .overrideGuard(OrgRolesGuard)
             .useValue({

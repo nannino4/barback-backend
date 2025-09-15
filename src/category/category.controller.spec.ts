@@ -14,6 +14,7 @@ import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { InCreateCategoryDto } from './dto/in.create-category.dto';
 import { InUpdateCategoryDto } from './dto/in.update-category.dto';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { EmailVerifiedGuard } from 'src/auth/guards/email-verified.guard';
 
 describe('CategoryController (Integration)', () =>
 {
@@ -54,6 +55,10 @@ describe('CategoryController (Integration)', () =>
             ],
         })
             .overrideGuard(JwtAuthGuard)
+            .useValue({
+                canActivate: () => true,
+            })
+            .overrideGuard(EmailVerifiedGuard)
             .useValue({
                 canActivate: () => true,
             })
