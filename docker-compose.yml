@@ -9,7 +9,7 @@ services:
             - mongo-data:/data/db
             - mongo-config:/data/configdb
         environment:
-            MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-barback}
+            MONGO_INITDB_DATABASE: barback_${NODE_ENV:-dev}
         command: [ "mongod", "--replSet", "rs0", "--bind_ip_all" ]
         networks:
             - barback-network
@@ -28,16 +28,21 @@ services:
                 condition: service_healthy
         command: >
             mongosh --host mongo:27017 --eval '
-              if (rs.status().ok !== 1) {
-                rs.initiate({
-                  _id: "rs0",
-                  members: [
-                    { _id: 0, host: "mongo:27017" }
-                  ]
-                });
-                print("Replica set initiated");
-              } else {
+              try {
+                const status = rs.status();
                 print("Replica set already initiated");
+              } catch (err) {
+                if (err.codeName === "NotYetInitialized") {
+                  rs.initiate({
+                    _id: "rs0",
+                    members: [
+                      { _id: 0, host: "mongo:27017" }
+                    ]
+                  });
+                  print("Replica set initiated successfully");
+                } else {
+                  throw err;
+                }
               }
             '
         networks:
@@ -58,8 +63,6 @@ services:
                 condition: service_healthy
             mongo-setup:
                 condition: service_completed_successfully
-        environment:
-            - NODE_ENV=${NODE_ENV}
         networks:
             - barback-network
         healthcheck:
