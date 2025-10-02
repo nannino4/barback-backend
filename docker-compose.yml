@@ -1,29 +1,80 @@
 services:
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - barback-network
+    mongo:
+        image: mongo:7.0-jammy
+        container_name: barback-mongo
+        restart: unless-stopped
+        ports:
+            - "27017:27017"
+        volumes:
+            - mongo-data:/data/db
+            - mongo-config:/data/configdb
+        environment:
+            MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-barback}
+        command: [ "mongod", "--replSet", "rs0", "--bind_ip_all" ]
+        networks:
+            - barback-network
+        healthcheck:
+            test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+            interval: 10s
+            timeout: 5s
+            retries: 3
+            start_period: 30s
 
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "${BACKEND_PORT:-3000}:${BACKEND_PORT:-3000}"
-    depends_on:
-      - mongo
-    environment:
-      - MONGODB_URI=${MONGODB_URI}
-      - NODE_ENV=${NODE_ENV:-dev}
-    networks:
-      - barback-network
+    mongo-setup:
+        image: mongo:7.0-jammy
+        container_name: barback-mongo-setup
+        depends_on:
+            mongo:
+                condition: service_healthy
+        command: >
+            mongosh --host mongo:27017 --eval '
+              if (rs.status().ok !== 1) {
+                rs.initiate({
+                  _id: "rs0",
+                  members: [
+                    { _id: 0, host: "mongo:27017" }
+                  ]
+                });
+                print("Replica set initiated");
+              } else {
+                print("Replica set already initiated");
+              }
+            '
+        networks:
+            - barback-network
+        restart: "no"
+
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            target: ${NODE_ENV:-prod}
+        container_name: barback-backend
+        restart: unless-stopped
+        ports:
+            - "${BACKEND_PORT:-3000}:3000"
+        depends_on:
+            mongo:
+                condition: service_healthy
+            mongo-setup:
+                condition: service_completed_successfully
+        environment:
+            - NODE_ENV=${NODE_ENV}
+        networks:
+            - barback-network
+        healthcheck:
+            test: [ "CMD", "curl", "-f", "http://localhost:3000/health" ]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
 
 volumes:
-  mongo-data:
+    mongo-data:
+        driver: local
+    mongo-config:
+        driver: local
 
 networks:
-  barback-network:
+    barback-network:
+        driver: bridge

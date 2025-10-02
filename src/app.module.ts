@@ -11,6 +11,7 @@ import { OrgModule } from './org/org.module';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
+import { AppController } from './app.controller';
 
 @Module({
     imports: [
@@ -34,7 +35,7 @@ import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.i
         CategoryModule,
         ProductModule,
     ],
-    controllers: [],
+    controllers: [AppController],
     providers: [
         // Global interceptor for correlation ID tracking
         {

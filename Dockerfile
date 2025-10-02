@@ -1,36 +1,43 @@
-FROM node:latest AS builder
-
+# Build stage
+FROM node:18.19.0-alpine AS builder
 WORKDIR /usr/src/app
-
-# Copy package files
 COPY package*.json ./
-
-# Install all dependencies (including devDependencies) for building
-RUN npm install
-
-# Copy the rest of the application source code
+# Install ALL dependencies (needed for building TypeScript)
+RUN npm ci --silent && \
+    npm cache clean --force
 COPY . .
-
-# Build the application
 RUN npm run build
 
-CMD [ "tail", "-f", "/dev/null" ]
-
-# --- Production Stage ---
-FROM node:18-alpine AS production
-
-ARG NODE_ENV=prod
-ENV NODE_ENV=${NODE_ENV}
-
+# Test stage
+FROM node:18.19.0-alpine AS test
+# Install security updates and utilities
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S nodejs -u 1001
 WORKDIR /usr/src/app
+COPY --from=builder --chown=nodejs:nodejs /usr/src/app ./
+USER nodejs
+EXPOSE 3000
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "dist/main"]
 
-# Copy package files again for installing only production dependencies
+# Production stage
+FROM node:18.19.0-alpine AS prod
+# Install security updates and utilities
+RUN apk add --no-cache \
+    dumb-init \
+    curl \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S nodejs -u 1001
+WORKDIR /usr/src/app
 COPY package*.json ./
-RUN npm install --only=production
-
-# Copy the built application from the builder stage
-COPY --from=builder /usr/src/app/dist ./dist
-
-EXPOSE ${BACKEND_PORT:-3000}
-
+RUN npm ci --only=production --silent && \
+    npm cache clean --force && \
+    rm -rf /tmp/*
+COPY --from=builder --chown=nodejs:nodejs /usr/src/app/dist ./dist
+USER nodejs
+EXPOSE 3000
+ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/main"]
