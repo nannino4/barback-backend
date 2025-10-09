@@ -28,6 +28,12 @@ import { UserModule } from 'src/user/user.module';
     ],
     controllers: [OrgController],
     providers: [OrgService, UserOrgRelationService, OrgRolesGuard, OrgSubscriptionGuard],
-    exports: [OrgService, UserOrgRelationService, OrgRolesGuard, OrgSubscriptionGuard],
+    exports: [
+        OrgService, 
+        UserOrgRelationService, 
+        OrgRolesGuard, 
+        OrgSubscriptionGuard,
+        SubscriptionModule, // Re-export to make SubscriptionService available to modules using OrgSubscriptionGuard
+    ],
 })
 export class OrgModule { }

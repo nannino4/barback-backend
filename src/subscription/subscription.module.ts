@@ -15,7 +15,6 @@ import { StripeService } from 'src/common/services/stripe.service';
         MongooseModule.forFeature([{ name: Subscription.name, schema: SubscriptionSchema }]),
         AuthGuardModule,
         UserModule,
-        StripeService,
     ],
     controllers: [SubscriptionController, PaymentController, WebhookController],
     providers: [SubscriptionService, PaymentService, StripeService],
