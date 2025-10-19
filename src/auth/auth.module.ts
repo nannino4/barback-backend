@@ -5,12 +5,14 @@ import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { EmailModule } from '../email/email.module';
 import { GoogleService } from './google.service';
+import { AuthGuardModule } from './auth-guard.module';
 
 @Module({
     imports: [
         JwtModule, // Used by AuthService for token generation
         UserModule,
         EmailModule,
+        AuthGuardModule,
     ],
     providers: [AuthService, GoogleService],
     controllers: [AuthController],
