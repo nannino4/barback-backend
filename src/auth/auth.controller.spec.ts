@@ -429,20 +429,21 @@ describe('AuthController - Integration Tests', () =>
 
     describe('/auth/send-verification-email (POST)', () => 
     {
-        it('should send verification email for registered user', async () => 
+        it('should send verification email for authenticated user', async () => 
         {
-            // Arrange
-            await request(app.getHttpServer())
+            // Arrange - Register and login
+            const registerResponse = await request(app.getHttpServer())
                 .post('/api/auth/register/email')
                 .send(mockRegisterDto)
                 .expect(201);
 
+            const accessToken = registerResponse.body.access_token;
             jest.clearAllMocks(); // Clear mocks from registration
 
-            // Act
+            // Act - Send verification email (requires authentication)
             const response = await request(app.getHttpServer())
                 .post('/api/auth/send-verification-email')
-                .send({ email: mockRegisterDto.email })
+                .set('Authorization', `Bearer ${accessToken}`)
                 .expect(200);
 
             // Assert
@@ -454,13 +455,12 @@ describe('AuthController - Integration Tests', () =>
             expect(mockEmailService.sendEmail).toHaveBeenCalled();
         });
 
-        it('should return 404 for non-existent user', async () => 
+        it('should return 401 for unauthenticated request', async () => 
         {
-            // Act & Assert
+            // Act & Assert - No authorization header
             await request(app.getHttpServer())
                 .post('/api/auth/send-verification-email')
-                .send({ email: 'nonexistent@example.com' })
-                .expect(404);
+                .expect(401);
 
             expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
         });

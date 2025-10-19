@@ -1,9 +1,8 @@
-import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, UnauthorizedException, HttpCode, HttpStatus, Get, Param, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginEmailDto } from './dto/in.login-email.dto';
 import { RefreshTokenDto } from './dto/in.refresh-token.dto';
 import { RegisterEmailDto } from './dto/in.register-email.dto';
-import { SendVerificationEmailDto } from './dto/in.send-verification-email.dto';
 import { VerifyEmailDto } from './dto/in.verify-email.dto';
 import { ForgotPasswordDto } from './dto/in.forgot-password.dto';
 import { ResetPasswordDto } from './dto/in.reset-password.dto';
@@ -12,6 +11,11 @@ import { OutGoogleAuthUrlDto } from './dto/out.google-auth-url.dto';
 import { GoogleCallbackDto } from './dto/in.google-callback.dto';
 import { GoogleService } from './google.service';
 import { CustomLogger } from 'src/common/logger/custom.logger';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { SkipEmailVerification } from './decorators/skip-email-verification.decorator';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { User } from '../user/schemas/user.schema';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController
@@ -24,6 +28,8 @@ export class AuthController
     ) {}
 
     @Post('register/email')
+    @UseGuards(ThrottlerGuard)
+    @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 requests per 5 minutes
     @HttpCode(HttpStatus.CREATED)
     async register(@Body() registerUserDto: RegisterEmailDto): Promise<OutAuthResponseDto>
     {
@@ -34,6 +40,8 @@ export class AuthController
     }
 
     @Post('login/email')
+    @UseGuards(ThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 requests per minute
     @HttpCode(HttpStatus.OK)
     async emailLogin(@Body() loginDto: LoginEmailDto): Promise<OutAuthResponseDto>
     {
@@ -59,12 +67,15 @@ export class AuthController
     }
 
     @Post('send-verification-email')
+    @UseGuards(JwtAuthGuard, ThrottlerGuard)
+    @SkipEmailVerification()
+    @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
     @HttpCode(HttpStatus.OK)
-    async sendVerificationEmail(@Body() sendVerificationEmailDto: SendVerificationEmailDto): Promise<void>
+    async sendVerificationEmail(@CurrentUser() user: User): Promise<void>
     {
-        this.logger.debug(`Sending verification email to: ${sendVerificationEmailDto.email}`, 'AuthController#sendVerificationEmail');
-        await this.authService.sendVerificationEmail(sendVerificationEmailDto.email);
-        this.logger.debug(`Verification email sent to: ${sendVerificationEmailDto.email}`, 'AuthController#sendVerificationEmail');
+        this.logger.debug(`Sending verification email to: ${user.email}`, 'AuthController#sendVerificationEmail');
+        await this.authService.sendVerificationEmail(user.email);
+        this.logger.debug(`Verification email sent to: ${user.email}`, 'AuthController#sendVerificationEmail');
     }
 
     @Post('verify-email')
@@ -86,6 +97,8 @@ export class AuthController
     }
 
     @Post('forgot-password')
+    @UseGuards(ThrottlerGuard)
+    @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 requests per minute
     @HttpCode(HttpStatus.OK)
     async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto): Promise<void>
     {

@@ -241,7 +241,19 @@ Unified guard now restricts authenticated operations until email is verified. Ex
 - [ ] Configure connection pool settings for optimal transaction performance
 
 ### Next steps**:
-  - [ ] Rate limiting
+  - [X] **Rate Limiting** (COMPLETED)
+    - [X] Install `@nestjs/throttler` package
+    - [X] Configure `ThrottlerModule` in app.module
+    - [X] Apply rate limits to critical authentication endpoints:
+      - [X] `POST /auth/register/email` (3 per 5 minutes)
+      - [X] `POST /auth/login/email` (5 per minute)
+      - [X] `POST /auth/send-verification-email` (3 per minute) - Now requires authentication
+      - [X] `POST /auth/forgot-password` (3 per minute)
+    - [X] Update `send-verification-email` to require authentication (prevents email bombing)
+    - [X] Update documentation
+    - [ ] Write integration tests for rate limiting
+    - [ ] Test rate limiting manually
+    - [ ] (Optional - Future) Consider Redis storage for distributed systems
 
 ---
 This roadmap will be updated as development progresses.

@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { CommonModule } from './common/common.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
@@ -26,6 +27,12 @@ import { AppController } from './app.controller';
             }),
             inject: [ConfigService],
         }),
+        ThrottlerModule.forRoot([
+            {
+                ttl: 60000, // 60 seconds
+                limit: 10, // Default limit (can be overridden per endpoint)
+            },
+        ]),
         CommonModule,
         UserModule,
         AuthModule,
@@ -42,6 +49,8 @@ import { AppController } from './app.controller';
             provide: APP_INTERCEPTOR,
             useClass: CorrelationIdInterceptor,
         },
+        // Note: ThrottlerGuard is NOT applied globally
+        // It's only applied to specific endpoints via @UseGuards(ThrottlerGuard)
     ],
 })
 export class AppModule {}

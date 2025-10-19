@@ -95,11 +95,21 @@ Register a new user with email and password.
 }
 ```
 
+**429 Too Many Requests** - Rate Limit Exceeded:
+```json
+{
+  "statusCode": 429,
+  "error": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many requests. Please try again later."
+}
+```
+
 **Notes**:
 - Automatically sends email verification after registration
 - User can use the app immediately but should verify email
 - Email verification token expires in 24 hours
 - Invitation processing and email sending failures don't block registration
+- **Rate Limiting**: 3 registrations per 5 minutes per IP address to prevent spam
 
 ---
 
@@ -174,9 +184,18 @@ Login with email and password.
 }
 ```
 
-**Security Notes**:
+**429 Too Many Requests** - Rate Limit Exceeded:
+```json
+{
+  "statusCode": 429,
+  "error": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many requests. Please try again later."
+}
+```
+
+**Notes**:
 - Invalid email and wrong password return the same error to prevent user enumeration
-- Rate limiting may apply to prevent brute force attacks
+- **Rate Limiting**: 5 login attempts per minute per IP address
 
 ---
 
@@ -240,7 +259,7 @@ Refresh an expired access token using a valid refresh token.
 }
 ```
 
-**Security Notes**:
+**Notes**:
 - All invalid refresh token scenarios return the same 401 error to prevent information disclosure
 - This includes cases where the user no longer exists, token is expired, or token is malformed
 
@@ -251,29 +270,13 @@ Refresh an expired access token using a valid refresh token.
 ### POST /api/auth/send-verification-email
 Send or resend email verification.
 
-**Authentication**: Not required
+**Authentication**: Required (JWT)
 
-**Request Body**:
-```json
-{
-  "email": "user@example.com"
-}
-```
+**Request Body**: None (uses authenticated user's email)
 
 **Response** (200 OK): Empty response
 
 **Error Responses**:
-
-**400 Bad Request** - Validation Errors:
-```json
-{
-  "message": [
-    "email must be an email"
-  ],
-  "error": "Bad Request",
-  "statusCode": 400
-}
-```
 
 **400 Bad Request** - Email Already Verified:
 ```json
@@ -293,12 +296,12 @@ Send or resend email verification.
 }
 ```
 
-**500 Internal Server Error** - Database Operation Failed:
+**401 Unauthorized** - Invalid or Missing Token:
 ```json
 {
-  "message": "Database operation failed: email verification token generation - [details]",
-  "error": "DATABASE_OPERATION_FAILED",
-  "statusCode": 500
+  "message": "Invalid or expired access token",
+  "error": "INVALID_ACCESS_TOKEN",
+  "statusCode": 401
 }
 ```
 
@@ -311,9 +314,30 @@ Send or resend email verification.
 }
 ```
 
+**500 Internal Server Error** - Email Configuration Error:
+```json
+{
+  "message": "Email configuration error: [missing_config] is not configured",
+  "error": "EMAIL_CONFIGURATION_ERROR",
+  "statusCode": 500
+}
+```
+
+**429 Too Many Requests** - Rate Limit Exceeded:
+```json
+{
+  "statusCode": 429,
+  "error": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many requests. Please try again later."
+}
+```
+
 **Notes**:
-- Rate limiting: 1 email per minute per email address
-- Verification token expires in 24 hours
+- User must be authenticated (logged in)
+- Email verification is NOT required to use this endpoint (uses `@SkipEmailVerification()`)
+- Prevents email bombing attacks (user can only request verification for their own email)
+- Token expires in 24 hours
+- **Rate Limiting**: 3 requests per minute per IP address
 
 ---
 
@@ -409,17 +433,16 @@ Browser-friendly email verification link.
 ```json
 {
   "error": "Database Operation Failed",
-  "message": "Database operation failed during email verification update",
+  "message": "Database operation failed during email verification lookup",
   "details": "[error details]",
   "statusCode": 500
 }
 ```
 
-**Implementation Notes**:
-- Both routes use the same underlying verification logic
-- Database operations are wrapped in try-catch blocks for proper error handling
-- Business logic validation prevents verification of already verified emails
-- Security consideration: Invalid tokens return 400, not 404, to avoid token enumeration
+**Notes**:
+- Used for email verification links sent to user's inbox
+- Same validation as POST endpoint but via URL parameter
+- Token expires in 24 hours
 
 ---
 
@@ -463,12 +486,21 @@ Request password reset email.
 }
 ```
 
-**Security Notes**:
+**429 Too Many Requests** - Rate Limit Exceeded:
+```json
+{
+  "statusCode": 429,
+  "error": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many requests. Please try again later."
+}
+```
+
+**Notes**:
 - Always returns 200 even if email doesn't exist (prevents user enumeration)
-- Email sending failures are logged but don't affect the response (security)
+- Email sending failures are logged but don't affect the response
 - Only users with email authentication provider can request password reset
 - Reset token expires in 1 hour
-- Rate limiting should be applied (1 request per minute per email)
+- **Rate Limiting**: 3 requests per minute per IP address
 
 ---
 
@@ -530,7 +562,7 @@ Reset password using reset token.
 }
 ```
 
-**Implementation Notes**:
+**Notes**:
 - Token validation includes expiration check
 - Token is automatically invalidated after successful reset
 

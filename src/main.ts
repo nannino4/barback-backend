@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConsoleLogger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 
 async function bootstrap() 
 {
@@ -20,6 +21,9 @@ async function bootstrap()
         transform: true, // Automatically transform payloads to DTO instances
         disableErrorMessages: false, // Keep error messages for debugging
     }));
+
+    // Register custom throttler exception filter for consistent error format
+    app.useGlobalFilters(app.get(ThrottlerExceptionFilter));
 
     const configService = app.get(ConfigService);
     const corsOrigin = configService.get<string>('FRONTEND_URL');
