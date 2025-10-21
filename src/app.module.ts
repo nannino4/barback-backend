@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_FILTER } from '@nestjs/core';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerExceptionFilter } from './common/filters/throttler-exception.filter';
 import { CommonModule } from './common/common.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
@@ -29,7 +30,7 @@ import { AppController } from './app.controller';
         }),
         ThrottlerModule.forRoot([
             {
-                ttl: 60000, // 60 seconds
+                ttl: 60000, // 60 seconds in milliseconds
                 limit: 10, // Default limit (can be overridden per endpoint)
             },
         ]),
@@ -48,6 +49,11 @@ import { AppController } from './app.controller';
         {
             provide: APP_INTERCEPTOR,
             useClass: CorrelationIdInterceptor,
+        },
+        // Global exception filter for throttler errors
+        {
+            provide: APP_FILTER,
+            useClass: ThrottlerExceptionFilter,
         },
         // Note: ThrottlerGuard is NOT applied globally
         // It's only applied to specific endpoints via @UseGuards(ThrottlerGuard)

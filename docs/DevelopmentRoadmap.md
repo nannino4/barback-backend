@@ -250,8 +250,11 @@ Unified guard now restricts authenticated operations until email is verified. Ex
       - [X] `POST /auth/send-verification-email` (3 per minute) - Now requires authentication
       - [X] `POST /auth/forgot-password` (3 per minute)
     - [X] Update `send-verification-email` to require authentication (prevents email bombing)
-    - [X] Update documentation
-    - [ ] Write integration tests for rate limiting
+    - [X] Fix logger injection using APP_FILTER provider token
+    - [X] Add rate limit response headers (X-RateLimit-Limit, Retry-After, etc.)
+    - [X] Simplify TTL configuration to use seconds instead of milliseconds
+    - [X] Write integration tests for rate limiting
+    - [X] Create comprehensive API documentation for rate limiting
     - [ ] Test rate limiting manually
     - [ ] (Optional - Future) Consider Redis storage for distributed systems
 

@@ -4,6 +4,7 @@ import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import * as request from 'supertest';
 import * as jwt from 'jsonwebtoken';
 import { AuthController } from './auth.controller';
@@ -68,6 +69,12 @@ describe('AuthController - Integration Tests', () =>
                     envFilePath: '.env.test',
                     isGlobal: true,
                 }),
+                ThrottlerModule.forRoot([
+                    {
+                        ttl: 60000, // 60 seconds
+                        limit: 100, // High limit for tests to avoid interference
+                    },
+                ]),
                 // CommonModule, // Remove CommonModule to avoid real logger
             ],
             controllers: [AuthController],
@@ -107,7 +114,10 @@ describe('AuthController - Integration Tests', () =>
                     },
                 },
             ],
-        }).compile();
+        })
+            .overrideGuard(ThrottlerGuard)
+            .useValue({ canActivate: () => true }) // Bypass throttling for integration tests
+            .compile();
 
         app = module.createNestApplication({
             logger: false, // Disable logging for tests
