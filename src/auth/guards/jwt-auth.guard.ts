@@ -6,6 +6,7 @@ import { User } from 'src/user/schemas/user.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtAuthException } from '../exceptions/jwt-auth.exception';
+import { CustomLogger } from '../../common/logger/custom.logger';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate
@@ -14,15 +15,19 @@ export class JwtAuthGuard implements CanActivate
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         @InjectModel(User.name) private readonly userModel: Model<User>,
+        private readonly logger: CustomLogger,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean>
     {
+        this.logger.debug('Validating JWT token', 'JwtAuthGuard#canActivate');
+        
         const request = context.switchToHttp().getRequest<Request>();
         const token = this.extractTokenFromHeader(request);
 
         if (!token)
         {
+            this.logger.warn('No token provided in request', 'JwtAuthGuard#canActivate');
             throw new JwtAuthException('No token provided');
         }
 
@@ -37,6 +42,7 @@ export class JwtAuthGuard implements CanActivate
 
             if (payload.type !== 'access')
             {
+                this.logger.warn(`Invalid token type: ${payload.type}`, 'JwtAuthGuard#canActivate');
                 throw new JwtAuthException('Invalid token type: Must be an access token');
             }
 
@@ -45,19 +51,25 @@ export class JwtAuthGuard implements CanActivate
             const user = await this.userModel.findById(payload.sub);
             if (!user)
             {
+                this.logger.warn(`User not found for token subject: ${payload.sub}`, 'JwtAuthGuard#canActivate');
                 throw new JwtAuthException('Invalid or expired token');
             }
+            
             request['user'] = user;
+            this.logger.debug(`User ${user.email} authenticated successfully`, 'JwtAuthGuard#canActivate');
         }
         catch (error)
         {
-            // Re-throw UnauthorizedException with specific messages
+            // Re-throw JwtAuthException with specific messages
             if (error instanceof JwtAuthException)
             {
                 throw error;
             }
-            // Log the error for debugging if needed
-            // console.error('JWT Verification Error:', error.message);
+            
+            // Log the error for debugging
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`JWT verification failed: ${errorMessage}`, errorStack, 'JwtAuthGuard#canActivate');
             throw new JwtAuthException('Invalid or expired token');
         }
         return true;
