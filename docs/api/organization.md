@@ -51,13 +51,18 @@ Create a new organization.
 ```json
 {
   "message": [
-    "name should not be empty",
-    "subscriptionId must be a mongodb id"
+    "validation.org.name.required",
+    "validation.org.subscriptionId.invalidObjectId"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys. Organization validation keys:
+- `validation.org.name.*` - name validation (required, mustBeString)
+- `validation.org.subscriptionId.*` - subscriptionId validation (required, invalidObjectId)
+- `validation.org.settings.*` - settings validation (required, mustBeObject)
 
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
@@ -411,12 +416,14 @@ Update organization details.
 ```json
 {
   "message": [
-    "name must be shorter than or equal to 100 characters"
+    "validation.org.name.maxLength"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **400 Bad Request** - Invalid Organization ID:
 ```json
@@ -543,12 +550,14 @@ Update member role in organization.
 ```json
 {
   "message": [
-    "role must be one of the following values: MANAGER, STAFF"
+    "validation.org.role.invalid"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys. Valid roles are: MANAGER, STAFF.
 
 **400 Bad Request** - Invalid Object IDs:
 ```json

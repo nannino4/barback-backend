@@ -3,6 +3,6 @@ import { OrgRole } from '../schemas/user-org-relation.schema';
 
 export class UpdateMemberRoleDto 
 {
-    @IsEnum(OrgRole)
+    @IsEnum(OrgRole, { message: 'validation.org.role.invalid' })
     role!: OrgRole;
 }

@@ -107,13 +107,19 @@ Update current user's profile information.
 ```json
 {
   "message": [
-    "firstName must be longer than or equal to 1 characters",
-    "phoneNumber must be a valid phone number"
+    "validation.firstName.minLength",
+    "validation.phoneNumber.invalid"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys. Common keys include:
+- `validation.firstName.*` - firstName validation (required, mustBeString, minLength, maxLength)
+- `validation.lastName.*` - lastName validation
+- `validation.phoneNumber.*` - phoneNumber validation (required, invalid)
+- `validation.profilePictureUrl.*` - profilePictureUrl validation (mustBeString)
 
 **401 Unauthorized** - Invalid or Missing JWT:
 ```json
@@ -198,13 +204,17 @@ Change current user's password.
 ```json
 {
   "message": [
-    "currentPassword should not be empty",
-    "newPassword is not strong enough"
+    "validation.currentPassword.required",
+    "validation.newPassword.weak"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys. Password validation keys:
+- `validation.currentPassword.*` - currentPassword validation (required, mustBeString)
+- `validation.newPassword.*` - newPassword validation (required, weak, maxLength)
 
 **400 Bad Request** - Wrong Authentication Provider:
 ```json

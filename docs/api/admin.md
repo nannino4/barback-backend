@@ -312,8 +312,10 @@ Update a user's role (promote/demote).
 {
   "statusCode": 400,
   "message": [
-    "phoneNumber must be a valid phone number"
+    "validation.user.phoneNumber.isPhoneNumber"
   ],
   "error": "Bad Request"
 }
 ```
+
+> **Note:** Error messages are returned as translation keys (e.g., `validation.user.phoneNumber.isPhoneNumber`). The frontend should translate these keys to user-friendly messages in the appropriate language.

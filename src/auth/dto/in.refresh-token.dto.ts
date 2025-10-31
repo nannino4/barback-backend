@@ -2,6 +2,6 @@ import { IsJWT } from 'class-validator';
 
 export class RefreshTokenDto 
 {
-    @IsJWT()
+    @IsJWT({ message: 'validation.refreshToken.invalidJWT' })
     refresh_token!: string;
 }

@@ -2,32 +2,32 @@ import { IsEmail, IsMobilePhone, IsNotEmpty, IsStrongPassword, MaxLength, Valida
 
 export class RegisterEmailDto
 {
-    @IsNotEmpty()
-    @IsEmail(undefined)
-    @MaxLength(255)
+    @IsNotEmpty({ message: 'validation.email.required' })
+    @IsEmail(undefined, { message: 'validation.email.invalid' })
+    @MaxLength(255, { message: 'validation.email.maxLength' })
     email!: string;
 
-    @IsNotEmpty()
-    @MaxLength(20)
+    @IsNotEmpty({ message: 'validation.password.required' })
+    @MaxLength(20, { message: 'validation.password.maxLength' })
     @IsStrongPassword({
         minLength: 8,
         minLowercase: 1,
         minUppercase: 1,
         minNumbers: 1,
         minSymbols: 1,
-    })
+    }, { message: 'validation.password.weak' })
     password!: string;
 
-    @IsNotEmpty()
-    @MaxLength(50)
+    @IsNotEmpty({ message: 'validation.firstName.required' })
+    @MaxLength(50, { message: 'validation.firstName.maxLength' })
     firstName!: string;
 
-    @IsNotEmpty()
-    @MaxLength(50)
+    @IsNotEmpty({ message: 'validation.lastName.required' })
+    @MaxLength(50, { message: 'validation.lastName.maxLength' })
     lastName!: string;
 
     @ValidateIf((o, value) => value !== undefined)
-    @IsNotEmpty()
-    @IsMobilePhone('it-IT', { strictMode: true })
+    @IsNotEmpty({ message: 'validation.phoneNumber.required' })
+    @IsMobilePhone('it-IT', { strictMode: true }, { message: 'validation.phoneNumber.invalid' })
     phoneNumber?: string;
 }

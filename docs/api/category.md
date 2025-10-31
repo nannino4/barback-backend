@@ -5,7 +5,21 @@ The Category Management module handles product categorization within organizatio
 
 ## Features
 - Hierarchical category structure (parent-child relationships)
-- Organization-scoped categories
+- Organizati**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "validation.category.name.required",
+    "validation.category.description.mustBeString"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**Note**: Validation error messages are returned as translation keys.
+
+**400 Bad Request** - Invalid Organization ID:ategories
 - Role-based access control
 - Circular reference prevention
 - Cascade deletion handling
@@ -223,13 +237,18 @@ Create a new category.
 ```json
 {
   "message": [
-    "name should not be empty",
-    "parentId must be a mongodb id"
+    "validation.category.name.required",
+    "validation.category.parentId.invalidObjectId"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys. Category validation keys:
+- `validation.category.name.*` - name validation (required, mustBeString)
+- `validation.category.description.*` - description validation (required, mustBeString)
+- `validation.category.parentId.*` - parentId validation (invalidObjectId)
 
 **400 Bad Request** - Invalid Organization ID:
 ```json

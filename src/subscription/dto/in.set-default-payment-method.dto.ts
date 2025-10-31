@@ -2,6 +2,6 @@ import { IsString } from 'class-validator';
 
 export class InSetDefaultPaymentMethodDto 
 {
-    @IsString()
+    @IsString({ message: 'validation.subscription.paymentMethodId.mustBeString' })
     paymentMethodId!: string;
 }

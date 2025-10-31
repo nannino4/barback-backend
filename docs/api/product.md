@@ -220,14 +220,24 @@ Create a new product.
 ```json
 {
   "message": [
-    "name should not be empty",
-    "defaultUnit should not be empty",
-    "currentQuantity must be a positive number"
+    "validation.product.name.required",
+    "validation.product.defaultUnit.required",
+    "validation.product.currentQuantity.min"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys. Product validation keys:
+- `validation.product.name.*` - name validation (required, mustBeString)
+- `validation.product.description.*` - description validation (required, mustBeString)
+- `validation.product.brand.*` - brand validation (required, mustBeString)
+- `validation.product.defaultUnit.*` - defaultUnit validation (required, mustBeString)
+- `validation.product.defaultPurchasePrice.*` - defaultPurchasePrice validation (mustBeNumber, min)
+- `validation.product.currentQuantity.*` - currentQuantity validation (mustBeNumber, min)
+- `validation.product.categoryIds.*` - categoryIds validation (mustBeArray, invalidObjectId)
+- `validation.product.imageUrl.*` - imageUrl validation (invalidUrl)
 
 **400 Bad Request** - Invalid Category:
 ```json
@@ -331,8 +341,8 @@ Update an existing product.
 ```json
 {
   "message": [
-    "name should not be empty",
-    "defaultPurchasePrice must be a positive number"
+    "validation.product.name.required",
+    "validation.product.defaultPurchasePrice.min"
   ],
   "error": "Bad Request",
   "statusCode": 400
@@ -533,13 +543,15 @@ Adjust product stock quantity.
 ```json
 {
   "message": [
-    "type must be a valid enum value",
-    "quantity should not be empty"
+    "validation.stockAdjustment.type.isEnum",
+    "validation.stockAdjustment.quantity.required"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+> **Note:** Error messages are returned as translation keys (e.g., `validation.stockAdjustment.type.isEnum`). The frontend should translate these keys to user-friendly messages in the appropriate language.
 
 **400 Bad Request** - Zero Stock Adjustment:
 ```json

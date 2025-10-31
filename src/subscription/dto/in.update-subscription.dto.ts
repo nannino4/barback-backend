@@ -4,12 +4,12 @@ import { SubscriptionStatus } from '../schemas/subscription.schema';
 export class InUpdateSubscriptionDto 
 {
     @ValidateIf((o, value) => value !== undefined)
-    @IsNotEmpty()
-    @IsEnum(SubscriptionStatus)
+    @IsNotEmpty({ message: 'validation.subscription.status.required' })
+    @IsEnum(SubscriptionStatus, { message: 'validation.subscription.status.invalid' })
     status?: SubscriptionStatus;
 
     @ValidateIf((o, value) => value !== undefined)
-    @IsNotEmpty()
-    @IsBoolean()
+    @IsNotEmpty({ message: 'validation.subscription.autoRenew.required' })
+    @IsBoolean({ message: 'validation.subscription.autoRenew.mustBeBoolean' })
     autoRenew?: boolean;
 }

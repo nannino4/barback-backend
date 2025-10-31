@@ -3,11 +3,11 @@ import { OrgRole } from '../../org/schemas/user-org-relation.schema';
 
 export class InCreateInvitationDto 
 {
-    @IsEmail()
-    @IsNotEmpty()
+    @IsEmail({}, { message: 'validation.invitation.invitedEmail.invalid' })
+    @IsNotEmpty({ message: 'validation.invitation.invitedEmail.required' })
     invitedEmail!: string;
 
-    @IsEnum(OrgRole)
-    @IsNotEmpty()
+    @IsEnum(OrgRole, { message: 'validation.invitation.role.invalid' })
+    @IsNotEmpty({ message: 'validation.invitation.role.required' })
     role!: OrgRole;
 }

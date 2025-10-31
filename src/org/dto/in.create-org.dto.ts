@@ -4,16 +4,16 @@ import { Types } from 'mongoose';
 
 export class CreateOrgDto 
 {
-    @IsString()
-    @IsNotEmpty()
+    @IsString({ message: 'validation.org.name.mustBeString' })
+    @IsNotEmpty({ message: 'validation.org.name.required' })
     name!: string;
 
-    @IsMongoId()
-    @IsNotEmpty()
+    @IsMongoId({ message: 'validation.org.subscriptionId.invalidObjectId' })
+    @IsNotEmpty({ message: 'validation.org.subscriptionId.required' })
     subscriptionId!: Types.ObjectId;
 
     @ValidateIf(o => o.settings !== undefined)
-    @IsNotEmpty()
-    @IsObject()
+    @IsNotEmpty({ message: 'validation.org.settings.required' })
+    @IsObject({ message: 'validation.org.settings.mustBeObject' })
     settings?: OrgSettings;
 }

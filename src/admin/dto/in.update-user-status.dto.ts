@@ -2,6 +2,6 @@ import { IsBoolean } from 'class-validator';
 
 export class UpdateUserStatusDto
 {
-    @IsBoolean()
+    @IsBoolean({ message: 'validation.admin.isActive.mustBeBoolean' })
     isActive!: boolean;
 }

@@ -50,14 +50,16 @@ Register a new user with email and password.
 ```json
 {
   "message": [
-    "email must be an email",
-    "password must be longer than or equal to 8 characters",
-    "firstName should not be empty"
+    "validation.email.invalid",
+    "validation.password.weak",
+    "validation.firstName.required"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys. Map these keys to user-friendly messages on the client side.
 
 **409 Conflict** - Email Already Exists:
 ```json
@@ -149,13 +151,15 @@ Login with email and password.
 ```json
 {
   "message": [
-    "email must be an email",
-    "password should not be empty"
+    "validation.email.invalid",
+    "validation.password.required"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **401 Unauthorized** - Invalid Credentials:
 ```json
@@ -234,12 +238,14 @@ Refresh an expired access token using a valid refresh token.
 ```json
 {
   "message": [
-    "refresh_token should not be empty"
+    "validation.refreshToken.invalidJWT"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **401 Unauthorized** - Invalid or Expired Refresh Token:
 ```json
@@ -363,11 +369,16 @@ Verify email with token (for API calls).
 **400 Bad Request** - Validation Error:
 ```json
 {
-  "message": ["token should not be empty", "token must be a string"],
+  "message": [
+    "validation.token.required",
+    "validation.token.mustBeString"
+  ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **400 Bad Request** - Invalid/Expired Token:
 ```json
@@ -470,11 +481,16 @@ Request password reset email.
 **400 Bad Request** - Validation Error:
 ```json
 {
-  "message": ["email should not be empty", "email must be an email"],
+  "message": [
+    "validation.email.required",
+    "validation.email.invalid"
+  ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **500 Internal Server Error** - Database Operation Failed:
 ```json
@@ -528,11 +544,16 @@ Reset password using reset token.
 **400 Bad Request** - Validation Error:
 ```json
 {
-  "message": ["token should not be empty", "newPassword is not strong enough"],
+  "message": [
+    "validation.token.required",
+    "validation.newPassword.weak"
+  ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **400 Bad Request** - Invalid/Expired Token:
 ```json
@@ -678,13 +699,15 @@ Handle Google OAuth authorization code and authenticate user.
 ```json
 {
   "message": [
-    "code should not be empty",
-    "code must be a string"
+    "validation.code.required",
+    "validation.code.mustBeString"
   ],
   "error": "Bad Request", 
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **400 Bad Request** - Token Exchange Failed:
 ```json
