@@ -543,15 +543,18 @@ Adjust product stock quantity.
 ```json
 {
   "message": [
-    "validation.stockAdjustment.type.isEnum",
-    "validation.stockAdjustment.quantity.required"
+    "validation.inventory.type.invalid",
+    "validation.inventory.quantity.mustBeNumber"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
 
-> **Note:** Error messages are returned as translation keys (e.g., `validation.stockAdjustment.type.isEnum`). The frontend should translate these keys to user-friendly messages in the appropriate language.
+**Note**: Validation error messages are returned as translation keys. Inventory validation keys:
+- `validation.inventory.type.*` - type validation (invalid)
+- `validation.inventory.quantity.*` - quantity validation (mustBeNumber)
+- `validation.inventory.note.*` - note validation (required, mustBeString)
 
 **400 Bad Request** - Zero Stock Adjustment:
 ```json

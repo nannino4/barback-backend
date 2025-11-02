@@ -56,6 +56,101 @@ Send an invitation to join the organization.
 }
 ```
 
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "validation.invitation.invitedEmail.invalid",
+    "validation.invitation.role.required"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**Note**: Validation error messages are returned as translation keys. Invitation validation keys:
+- `validation.invitation.invitedEmail.*` - invitedEmail validation (invalid, required)
+- `validation.invitation.role.*` - role validation (invalid, required)
+
+**400 Bad Request** - Invalid Organization ID:
+```json
+{
+  "message": "Invalid ObjectId format",
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
+**403 Forbidden** - Insufficient Role:
+```json
+{
+  "message": "Insufficient role for this operation",
+  "error": "INSUFFICIENT_ROLE", 
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Organization Not Found:
+```json
+{
+  "message": "Organization with ID \"64a1b2c3d4e5f6789def789\" not found",
+  "error": "ORGANIZATION_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - User Already Member:
+```json
+{
+  "message": "User is already a member of this organization",
+  "error": "USER_ALREADY_MEMBER",
+  "statusCode": 409
+}
+```
+
+**409 Conflict** - Invitation Already Exists:
+```json
+{
+  "message": "Active invitation already exists for this email",
+  "error": "INVITATION_ALREADY_EXISTS",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: invitation creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Notes**:
+- Email sending failures don't block invitation creation
+- Invitations expire in 7 days
+- User must complete registration (if needed) before accepting invitation
+
 ---
 
 ### GET /api/orgs/:orgId/invitations

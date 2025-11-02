@@ -344,6 +344,10 @@ Add a new payment method.
 }
 ```
 
+**Validation Rules**:
+- `paymentMethodId`: Required, must be a string (Stripe payment method ID)
+- `setAsDefault`: Optional, boolean, defaults to false
+
 **Response** (201 Created):
 ```json
 {
@@ -357,6 +361,57 @@ Add a new payment method.
   },
   "isDefault": true,
   "createdAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "validation.subscription.paymentMethodId.mustBeString"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**Note**: Validation error messages are returned as translation keys.
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
+**400 Bad Request** - Stripe Payment Method Failed:
+```json
+{
+  "message": "Stripe payment method operation failed: attach payment method - [details]",
+  "error": "STRIPE_PAYMENT_METHOD_FAILED",
+  "statusCode": 400
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: payment method save - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
 }
 ```
 
@@ -394,7 +449,52 @@ Set default payment method.
 }
 ```
 
+**Validation Rules**:
+- `paymentMethodId`: Required, must be a string (Stripe payment method ID)
+
 **Response** (204 No Content): Empty response
+
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "validation.subscription.paymentMethodId.mustBeString"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**Note**: Validation error messages are returned as translation keys.
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Payment Method Not Found:
+```json
+{
+  "message": "Payment method not found or doesn't belong to user",
+  "error": "Not Found",
+  "statusCode": 404
+}
+```
 
 **Errors**:
 - `404 Not Found`: Payment method not found or doesn't belong to user

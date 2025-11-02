@@ -3,28 +3,6 @@
 ## Overview
 The Category Management module handles product categorization within organizations. Categories support hierarchical structures with parent-child relationships and provide organization-scoped access control.
 
-## Features
-- Hierarchical category structure (parent-child relationships)
-- Organizati**400 Bad Request** - Validation Errors:
-```json
-{
-  "message": [
-    "validation.category.name.required",
-    "validation.category.description.mustBeString"
-  ],
-  "error": "Bad Request",
-  "statusCode": 400
-}
-```
-
-**Note**: Validation error messages are returned as translation keys.
-
-**400 Bad Request** - Invalid Organization ID:ategories
-- Role-based access control
-- Circular reference prevention
-- Cascade deletion handling
-- Duplicate name prevention
-
 ## Core Endpoints
 
 ### GET /api/orgs/:orgId/categories
@@ -364,13 +342,15 @@ Update an existing category.
 ```json
 {
   "message": [
-    "name should not be empty",
-    "parentId must be a mongodb id"
+    "validation.category.name.required",
+    "validation.category.parentId.invalidObjectId"
   ],
   "error": "Bad Request",
   "statusCode": 400
 }
 ```
+
+**Note**: Validation error messages are returned as translation keys.
 
 **400 Bad Request** - Invalid ID Format:
 ```json
