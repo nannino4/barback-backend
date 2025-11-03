@@ -1,13 +1,12 @@
-import { ExceptionFilter, Catch, ArgumentsHost, Injectable } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, Injectable, Logger } from '@nestjs/common';
 import { ThrottlerException } from '@nestjs/throttler';
 import { Response } from 'express';
-import { CustomLogger } from '../logger/custom.logger';
 
 @Injectable()
 @Catch(ThrottlerException)
 export class ThrottlerExceptionFilter implements ExceptionFilter
 {
-    constructor(private readonly logger: CustomLogger) {}
+    private readonly logger = new Logger(ThrottlerExceptionFilter.name);
 
     catch(exception: ThrottlerException, host: ArgumentsHost): void
     {
@@ -21,7 +20,6 @@ export class ThrottlerExceptionFilter implements ExceptionFilter
         // Log the rate limit violation
         this.logger.warn(
             `Rate limit exceeded: ${request.method} ${request.url} from IP: ${request.ip}`,
-            'ThrottlerExceptionFilter',
         );
 
         // Add standard rate limit headers for client feedback
