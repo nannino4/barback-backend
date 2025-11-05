@@ -85,7 +85,7 @@ Update current user's profile information.
 **Validation Rules**:
 - `firstName`: Optional, string, min 1 char, max 100 chars
 - `lastName`: Optional, string, min 1 char, max 100 chars  
-- `phoneNumber`: Optional, must be valid Italian mobile format (strict mode)
+- `phoneNumber`: Optional, must be valid international mobile phone format (E.164)
 - `profilePictureUrl`: Optional, string
 
 **Response** (200 OK):
@@ -170,7 +170,7 @@ Update current user's profile information.
 - All fields are optional - only send fields you want to update
 - Email cannot be changed through this endpoint
 - Password changes require separate endpoint
-- Phone number validation uses Italian mobile format (IT-IT) in strict mode
+- Phone number validation uses international mobile format (E.164)
 
 ---
 
@@ -250,6 +250,17 @@ Change current user's password.
   "statusCode": 404
 }
 ```
+
+**409 Conflict** - Concurrent Password Change:
+```json
+{
+  "message": "Password was changed by another request. Please try again with your current password.",
+  "error": "PASSWORD_CONCURRENT_CHANGE",
+  "statusCode": 409
+}
+```
+
+**Note**: This error occurs when the password is changed by another request between verification and update. The atomic update ensures data consistency.
 
 **500 Internal Server Error** - Database Operation Failed:
 ```json
@@ -375,7 +386,7 @@ Delete current user's account.
   "email": "string",            // User's email address
   "firstName": "string",        // First name (max 100 chars)
   "lastName": "string",         // Last name (max 100 chars)
-  "phoneNumber": "string",      // Optional Italian mobile number
+  "phoneNumber": "string",      // Optional international mobile number (E.164)
   "profilePictureUrl": "string", // Optional profile picture URL
   "isEmailVerified": "boolean"  // Email verification status
 }
@@ -392,9 +403,9 @@ Delete current user's account.
 ## Validation Rules
 
 ### Phone Number Format
-- Must be valid Italian mobile phone format
-- Examples: `+393331234567`, `+393901234567`
-- Follows ITU-T E.164 international format
+- Must be valid international mobile phone format
+- Follows ITU-T E.164 international format (e.g., +393331234567, +14155551234, +447911123456)
+- Can be from any country
 
 ### Name Fields
 - First and last names are optional for updates

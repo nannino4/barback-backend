@@ -28,6 +28,6 @@ export class RegisterEmailDto
 
     @ValidateIf((o, value) => value !== undefined)
     @IsNotEmpty({ message: 'validation.phoneNumber.required' })
-    @IsMobilePhone('it-IT', { strictMode: true }, { message: 'validation.phoneNumber.invalid' })
+    @IsMobilePhone(undefined, {}, { message: 'validation.phoneNumber.invalid' })
     phoneNumber?: string;
 }

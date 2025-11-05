@@ -42,7 +42,7 @@ Register a new user with email and password.
 - Email: Valid email format, max 255 characters
 - Password: Min 8 characters, at least 1 uppercase, 1 lowercase, 1 number, 1 symbol
 - FirstName/LastName: Max 50 characters each
-- PhoneNumber: Optional, must be valid Italian mobile format
+- PhoneNumber: Optional, must be valid international mobile phone format (E.164)
 
 **Error Responses**:
 

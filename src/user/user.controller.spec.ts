@@ -467,9 +467,10 @@ describe('UserController (Integration)', () =>
         it('should accept valid phone number formats', async () =>
         {
             const validPhoneNumbers = [
-                '+393123456789',    // Italian mobile format
-                '+393987654321',    // Italian mobile format  
-                '+393331234567',    // Italian mobile format
+                '+393123456789',    // Italian mobile (E.164)
+                '+14155551234',     // US mobile (E.164)
+                '+447911123456',    // UK mobile (E.164)
+                '+33612345678',     // French mobile (E.164)
             ];
 
             for (const phoneNumber of validPhoneNumbers)

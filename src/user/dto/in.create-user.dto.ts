@@ -1,6 +1,16 @@
-import { IsEmail, IsString, IsEnum, IsBoolean, IsUrl, IsNotEmpty, ValidateIf, IsMobilePhone } from 'class-validator';
+import { IsEmail, IsString, IsEnum, IsBoolean, IsUrl, IsNotEmpty, ValidateIf, IsMobilePhone, MinLength, MaxLength } from 'class-validator';
 import { AuthProvider, UserRole } from '../schemas/user.schema';
 
+/**
+ * Internal DTO for creating users
+ * 
+ * This DTO is used internally by the UserService and should not be directly 
+ * exposed to public API endpoints. It includes fields that are set by the 
+ * service layer (role, authProvider, isEmailVerified, etc.).
+ * 
+ * For public user registration, use RegisterEmailDto in the auth module.
+ * For Google OAuth registration, the GoogleService sets these fields internally.
+ */
 export class CreateUserDto
 {
     @IsNotEmpty()
@@ -13,15 +23,19 @@ export class CreateUserDto
 
     @IsNotEmpty()
     @IsString()
+    @MinLength(1)
+    @MaxLength(100)
     firstName!: string;
 
     @IsNotEmpty()
     @IsString()
+    @MinLength(1)
+    @MaxLength(100)
     lastName!: string;
 
     @ValidateIf((o, value) => value !== undefined)
     @IsNotEmpty()
-    @IsMobilePhone('it-IT', { strictMode: true })
+    @IsMobilePhone()
     phoneNumber?: string;
 
     @ValidateIf((o, value) => value !== undefined)

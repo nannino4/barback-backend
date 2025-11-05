@@ -78,6 +78,26 @@ This document outlines the development tasks for the Minimum Viable Product (MVP
   - [X] Allow users to change their password (after verifying current password).
   - [X] Allow users to delete their own account (consider implications and data retention policies).
   - [X] Develop API endpoints for these user profile management operations (e.g., under `/users/me`).
+  - [ ] **Future Enhancements**:
+    - [ ] Implement session invalidation on password change (security improvement)
+    - [ ] Implement soft delete for user accounts (mark inactive instead of hard delete)
+    - [ ] Add hard delete endpoint for admin use only
+    - [ ] Add PII (Personally Identifiable Information) logging policy and audit
+    - [ ] **Implement profile picture upload** (Hybrid Approach - Recommended):
+      - **Frontend**: Request presigned URL from backend endpoint
+      - **Backend**: Generate presigned URL with size/type restrictions (max 5MB, image types only)
+      - **Frontend**: Upload directly to cloud storage (Cloudinary or S3)
+      - **Frontend**: Send final URL to backend for validation and storage
+      - **Backend**: Validate URL pattern matches expected format before saving
+      - **Storage Options**:
+        - AWS S3 + CloudFront: Cost-effective for scale, requires more setup
+      - **Benefits**: Performance (direct upload), security (backend controls validation), simple backend (URL validation only)
+      - **Store both full and thumbnail URLs for optimization**
+  - [ ] **Account Deletion Business Logic** (planned for post-MVP):
+    - Organizations keep existing when sole owner deletes account
+    - Subscriptions auto-cancel on renewal (not immediately)
+    - No grace period for account recovery (immediate soft delete)
+    - Consider implementing transfer ownership flow before allowing deletion
 
 #### Email Verification Access Control
 Unified guard now restricts authenticated operations until email is verified. Explicit controller-level composition used instead of global `APP_GUARD` for clarity.

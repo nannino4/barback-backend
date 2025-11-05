@@ -119,3 +119,19 @@ export class UserDeletionConflictException extends ConflictException
         });
     }
 }
+
+/**
+ * Custom exception thrown when password change fails due to concurrent modification
+ * This happens when the password is changed by another request between verification and update
+ */
+export class PasswordConcurrentChangeException extends ConflictException
+{
+    constructor()
+    {
+        super({
+            message: 'Password was changed by another request. Please try again with your current password.',
+            error: 'PASSWORD_CONCURRENT_CHANGE',
+            statusCode: 409,
+        });
+    }
+}

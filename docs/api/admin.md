@@ -128,7 +128,7 @@ Update a user's profile information (admin override).
 **Validation Rules**:
 - `firstName`: Optional, max 50 characters if provided
 - `lastName`: Optional, max 50 characters if provided
-- `phoneNumber`: Optional, must be valid Italian mobile format if provided
+- `phoneNumber`: Optional, must be valid international mobile phone format (E.164) if provided
 
 **Notes**:
 - Partial updates supported - only send fields to update
@@ -197,7 +197,7 @@ Update a user's role (promote/demote).
   "email": "string",        // User email address
   "firstName": "string",    // First name (max 50 chars)
   "lastName": "string",     // Last name (max 50 chars)
-  "phoneNumber": "string",  // Optional Italian mobile number
+  "phoneNumber": "string",  // Optional international mobile number (E.164)
   "emailVerified": "boolean", // Email verification status
   "role": "USER|ADMIN",     // User role
   "createdAt": "string",    // ISO timestamp

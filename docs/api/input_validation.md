@@ -60,7 +60,7 @@ When validation fails, the backend returns a 400 Bad Request response with this 
 
 #### Phone Number
 - `validation.phoneNumber.required`
-- `validation.phoneNumber.invalid` - Not valid Italian mobile format
+- `validation.phoneNumber.invalid` - Not valid international mobile phone format (E.164)
 
 #### Profile Picture URL
 - `validation.profilePictureUrl.mustBeString`

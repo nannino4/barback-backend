@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserRole, AuthProvider } from './schemas/user.schema';
@@ -13,6 +13,7 @@ import {
     EmailAlreadyVerifiedException,
     PasswordChangeNotAllowedException,
     UserNotFoundByIdException,
+    PasswordConcurrentChangeException,
 } from './exceptions/user.exceptions';
 import { DatabaseOperationException } from '../common/exceptions/database.exceptions';
 import { PasswordHashingException } from '../auth/exceptions/auth.exceptions';
@@ -175,7 +176,7 @@ export class UserService
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found for role update`, 'UserService#updateRole');
-            throw new NotFoundException(`User with ID "${id}" not found`);
+            throw new UserNotFoundByIdException(id.toString());
         }
 
         this.logger.debug(`Role updated successfully for user: ${user.email} to role: ${role}`, 'UserService#updateRole');
@@ -193,7 +194,7 @@ export class UserService
         if (!user)
         {
             this.logger.warn(`User with ID "${id}" not found for status update`, 'UserService#updateStatus');
-            throw new NotFoundException(`User with ID "${id}" not found`);
+            throw new UserNotFoundByIdException(id.toString());
         }
 
         this.logger.debug(`Status updated successfully for user: ${user.email} to active: ${isActive}`, 'UserService#updateStatus');
@@ -271,14 +272,31 @@ export class UserService
         
         try 
         {
-            await this.userModel.findByIdAndUpdate(
-                userId,
+            // Atomic update with condition to prevent race condition
+            // Only update if the current password still matches (hasn't been changed by another request)
+            const result = await this.userModel.findOneAndUpdate(
+                { 
+                    _id: userId,
+                    hashedPassword: user.hashedPassword,  // Condition: current password must match
+                },
                 { $set: { hashedPassword: hashedNewPassword } },
                 { new: true, runValidators: true }
             ).exec();
+            
+            if (!result)
+            {
+                // Password was changed by another request or user was deleted
+                this.logger.warn(`Password update failed - password changed concurrently for user: ${user.email}`, 'UserService#changePassword');
+                throw new PasswordConcurrentChangeException();
+            }
         }
         catch (error)
         {
+            if (error instanceof PasswordConcurrentChangeException)
+            {
+                throw error;
+            }
+            
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
             const errorStack = error instanceof Error ? error.stack : undefined;
             this.logger.error(`Database error while updating password for user: ${user.email}`, errorStack, 'UserService#changePassword');
@@ -300,7 +318,7 @@ export class UserService
         if (!user)
         {
             this.logger.warn(`User with ID "${userId}" not found for Stripe customer ID update`, 'UserService#updateStripeCustomerId');
-            throw new NotFoundException(`User with ID "${userId}" not found`);
+            throw new UserNotFoundByIdException(userId.toString());
         }
         this.logger.debug(`Stripe customer ID updated successfully for user: ${user.email}`, 'UserService#updateStripeCustomerId');
         return user;
@@ -397,7 +415,7 @@ export class UserService
         if (!updatedUser)
         {
             this.logger.error(`Failed to update user after email verification for user ID: ${user.id}`, 'UserService#verifyEmail');
-            throw new NotFoundException('User not found');
+            throw new UserNotFoundByIdException(user.id.toString());
         }
 
         this.logger.debug(`Email verified successfully for user: ${updatedUser.email}`, 'UserService#verifyEmail');
@@ -542,7 +560,7 @@ export class UserService
         if (!updatedUser)
         {
             this.logger.error(`Failed to update user after password reset for user ID: ${user.id}`, 'UserService#resetPassword');
-            throw new NotFoundException('User not found');
+            throw new UserNotFoundByIdException(user.id.toString());
         }
 
         this.logger.debug(`Password reset successfully for user: ${updatedUser.email}`, 'UserService#resetPassword');
@@ -601,8 +619,8 @@ export class UserService
 
         if (!updatedUser) 
         {
-            this.logger.warn(`User with ID "${user._id}" not found for Google account linking`, 'UserService#linkGoogleAccount');
-            throw new NotFoundException(`User with ID "${user._id}" not found`);
+            this.logger.warn(`User with ID "${user.id}" not found for Google account linking`, 'UserService#linkGoogleAccount');
+            throw new UserNotFoundByIdException(user.id.toString());
         }
 
         this.logger.debug(`Google account linked successfully for user: ${updatedUser.email}`, 'UserService#linkGoogleAccount');
