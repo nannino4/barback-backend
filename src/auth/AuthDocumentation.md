@@ -101,22 +101,24 @@ Google OAuth 2.0 authentication is supported as an alternative to email/password
 
 1.  **Get Authorization URL (`/api/auth/oauth/google`)**:
     *   Frontend requests Google OAuth authorization URL from backend.
-    *   Backend generates OAuth URL with state parameter for CSRF protection.
+    *   Backend generates OAuth URL with signed JWT state parameter (10 min expiration) for CSRF protection.
     *   Returns authorization URL and state value to frontend.
 
 2.  **User Authorization at Google**:
     *   Frontend redirects user to Google authorization URL.
     *   User authenticates with Google and grants permissions.
-    *   Google redirects back to configured frontend callback URL with authorization code.
+    *   Google redirects back to configured frontend callback URL (`http://localhost:3001/oauth/google/callback`) with authorization code and state.
 
 3.  **Handle Authorization Code**:
-    *   Frontend extracts authorization code from URL parameters.
-    *   Frontend sends POST request to backend with authorization code and state.
+    *   Frontend extracts authorization code and state from URL parameters.
+    *   Frontend validates state matches stored value (UX protection).
+    *   Frontend sends POST request to backend (`/api/auth/oauth/google/callback`) with authorization code and state.
+    *   Backend validates state JWT signature and expiration (CSRF protection).
     *   Backend exchanges code for Google access token and retrieves user profile.
     *   System handles account linking scenarios automatically:
         - **New User**: Creates new account with Google authentication
         - **Existing Email Account**: Links Google account to existing email-based account  
-        - **Existing Google Account**: Normal authentication flow with profile updates
+        - **Existing Google Account**: Normal authentication flow
     *   Returns access and refresh tokens on successful authentication.
 
 #### Account Linking Scenarios
@@ -130,7 +132,8 @@ The Google OAuth integration intelligently handles different account scenarios:
 
 #### Security Considerations
 
-*   **State Parameter Validation**: CSRF protection using cryptographically secure random state parameters.
+*   **State Parameter Validation**: CSRF protection using stateless signed JWTs as state parameters. The state uses a dedicated secret (`JWT_OAUTH_STATE_SECRET`) separate from app authentication tokens for security isolation. Each state JWT is short-lived (10 minutes default), contains a purpose claim and cryptographic nonce, and is validated on callback without requiring server-side session storage.
+*   **Dedicated OAuth State Secret**: OAuth state tokens use a separate secret from access/refresh tokens. This ensures that if state tokens are compromised (e.g., from URL logging), app authentication remains secure.
 *   **Frontend-Initiated Flow**: Authorization code is handled by frontend, then securely sent to backend via POST.
 *   **Token Validation**: Google access tokens are validated and user profile information is verified before account creation/linking.
 *   **Email Verification**: Google users are automatically considered email-verified since Google handles email verification.
@@ -138,7 +141,7 @@ The Google OAuth integration intelligently handles different account scenarios:
 ## Security Considerations & Choices
 
 *   **Stateless JWTs**: Chosen for scalability and simplicity in not managing server-side sessions.
-*   **Separate Secrets for Token Types**: Using different secrets for access and refresh tokens enhances security. If one type of secret is compromised, the other remains secure.
+*   **Separate Secrets for Token Types**: Using different secrets for access tokens, refresh tokens, and OAuth state tokens enhances security through isolation. If one secret is compromised, the others remain secure. OAuth state tokens particularly benefit from isolation as they appear in URLs and are more exposed to logging.
 *   **Short-lived Access Tokens, Long-lived Refresh Tokens**: Balances security (minimizing impact of leaked access tokens) with user experience (reducing frequency of full re-authentication).
 *   **Explicit Token Type Checking**: Both `AuthService.validateRefreshToken()` and `JwtAuthGuard` explicitly check the `type` claim in the JWT payload to prevent misuse of tokens (e.g., using a refresh token to access a protected route directly).
 *   **Email Verification Security**:
@@ -175,14 +178,17 @@ JWT_ACCESS_TOKEN_SECRET=your-access-token-secret
 JWT_ACCESS_TOKEN_EXPIRATION_TIME=15m
 JWT_REFRESH_TOKEN_SECRET=your-refresh-token-secret
 JWT_REFRESH_TOKEN_EXPIRATION_TIME=7d
+JWT_OAUTH_STATE_SECRET=your-oauth-state-secret
+JWT_OAUTH_STATE_EXPIRATION_TIME=10m
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your-google-client-id-from-console
 GOOGLE_CLIENT_SECRET=your-google-client-secret-from-console
-GOOGLE_REDIRECT_URI=http://localhost:3001/auth/callback
+# Frontend callback URL - Google redirects users here after authentication
+GOOGLE_REDIRECT_URI=http://localhost:5173/oauth/google/callback
 
 # Frontend URL
-FRONTEND_URL=http://localhost:3001
+FRONTEND_URL=http://localhost:5173
 
 # Email Settings (see EmailServiceDocumentation.md for full email configuration)
 EMAIL_VERIFICATION_EXPIRY=24h

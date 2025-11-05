@@ -61,10 +61,7 @@ describe('AuthController - Integration Tests', () =>
             imports: [
                 DatabaseTestHelper.getMongooseTestModule(),
                 MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-                JwtModule.register({
-                    secret: 'test-secret',
-                    signOptions: { expiresIn: '1h' },
-                }),
+                JwtModule.register({}), // No default secret - secrets provided per operation
                 ConfigModule.forRoot({
                     envFilePath: '.env.test',
                     isGlobal: true,
@@ -108,6 +105,8 @@ describe('AuthController - Integration Tests', () =>
                                 GOOGLE_CLIENT_ID: 'test-google-client-id',
                                 GOOGLE_CLIENT_SECRET: 'test-google-client-secret',
                                 GOOGLE_REDIRECT_URI: 'http://localhost:3000/oauth/callback',
+                                JWT_OAUTH_STATE_SECRET: 'test-oauth-state-secret',
+                                JWT_OAUTH_STATE_EXPIRATION_TIME: '10m',
                             };
                             return config[key];
                         }),
@@ -812,37 +811,65 @@ describe('AuthController - Integration Tests', () =>
                 expect(response.body).toHaveProperty('authUrl');
                 expect(response.body).toHaveProperty('state');
                 expect(response.body.authUrl).toContain('https://accounts.google.com/o/oauth2/v2/auth');
-                expect(response.body.state).toHaveLength(64);
+                // State is now a JWT, should be a non-empty string
+                expect(typeof response.body.state).toBe('string');
+                expect(response.body.state.length).toBeGreaterThan(0);
+                // JWT has 3 parts separated by dots
+                expect(response.body.state.split('.').length).toBe(3);
             });
         });
 
         describe('POST /auth/oauth/google/callback', () => 
         {
+            it('should handle missing state parameter', async () => 
+            {
+                // Test missing state - should be caught by validation pipe
+                await request(app.getHttpServer())
+                    .post('/api/auth/oauth/google/callback')
+                    .send({ code: 'valid-code' })
+                    .expect(400);
+            });
+
             it('should handle invalid authorization code (validation errors)', async () => 
             {
+                // Get a valid state first
+                const stateResponse = await request(app.getHttpServer())
+                    .get('/api/auth/oauth/google')
+                    .expect(200);
+                const validState = stateResponse.body.state;
+
                 // Test empty code - should be caught by validation pipe
                 await request(app.getHttpServer())
                     .post('/api/auth/oauth/google/callback')
-                    .send({ code: '' })
+                    .send({ code: '', state: validState })
                     .expect(400);
 
                 // Test missing code - should be caught by validation pipe
                 await request(app.getHttpServer())
                     .post('/api/auth/oauth/google/callback')
-                    .send({})
+                    .send({ state: validState })
                     .expect(400);
 
                 // Test non-string code - should be caught by validation pipe
                 await request(app.getHttpServer())
                     .post('/api/auth/oauth/google/callback')
-                    .send({ code: 123 })
+                    .send({ code: 123, state: validState })
                     .expect(400);
 
                 // Test whitespace-only code - should be caught by validation pipe
                 await request(app.getHttpServer())
                     .post('/api/auth/oauth/google/callback')
-                    .send({ code: '   ' })
+                    .send({ code: '   ', state: validState })
                     .expect(400);
+            });
+
+            it('should reject invalid state parameter', async () => 
+            {
+                // Test with invalid JWT state
+                await request(app.getHttpServer())
+                    .post('/api/auth/oauth/google/callback')
+                    .send({ code: 'valid-code', state: 'invalid-state' })
+                    .expect(401);
             });
 
             // Note: Testing the full OAuth flow with external API calls would require

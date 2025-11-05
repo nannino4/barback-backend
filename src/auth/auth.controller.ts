@@ -142,16 +142,10 @@ export class AuthController
     {
         this.logger.debug('Processing Google OAuth POST callback', 'AuthController#googleCallback');
         
-        // Exchange code for tokens
+        await this.googleService.validateOAuthState(body.state);
         const tokens = await this.googleService.exchangeCodeForTokens(body.code);
-        
-        // Get user info from Google
         const googleUserInfo = await this.googleService.getUserInfo(tokens.access_token);
-        
-        // Find or create user
         const user = await this.googleService.findOrCreateUser(googleUserInfo);
-        
-        // Generate and return auth tokens
         const authResponse = await this.authService.generateAuthResponse(user);
 
         this.logger.debug('Google OAuth POST callback processed successfully', 'AuthController#googleCallback');

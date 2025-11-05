@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsString } from 'class-validator';
 
 export class GoogleCallbackDto 
 {
@@ -7,7 +7,7 @@ export class GoogleCallbackDto
     code!: string;
 
     @IsString({ message: 'validation.state.mustBeString' })
-    @IsOptional()
-    state?: string;
+    @IsNotEmpty({ message: 'validation.state.required' })
+    state!: string;
 }
 

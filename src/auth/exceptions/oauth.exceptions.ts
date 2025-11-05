@@ -98,14 +98,14 @@ export class GoogleAccountLinkingException extends ConflictException
 /**
  * Custom exception thrown when OAuth state parameter is invalid
  */
-export class InvalidOAuthStateException extends BadRequestException
+export class InvalidOAuthStateException extends UnauthorizedException
 {
     constructor()
     {
         super({
             message: 'Invalid OAuth state parameter',
             error: 'INVALID_OAUTH_STATE',
-            statusCode: 400,
+            statusCode: 401,
         });
     }
 }

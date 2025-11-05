@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
+import { JwtService, JwtModule } from '@nestjs/jwt';
 import axios from 'axios';
 import { GoogleService } from './google.service';
 import { UserService } from '../user/user.service';
@@ -13,6 +14,7 @@ import {
     GoogleTokenInvalidException,
     GoogleEmailNotVerifiedException,
     GoogleAccountLinkingException,
+    InvalidOAuthStateException,
 } from './exceptions/oauth.exceptions';
 
 // Mock axios
@@ -24,11 +26,15 @@ describe('GoogleService', () =>
     let service: GoogleService;
     let userService: jest.Mocked<UserService>;
     let logger: jest.Mocked<CustomLogger>;
+    let jwtService: JwtService;
+    let testingModule: TestingModule;
 
     const mockConfig = {
         GOOGLE_CLIENT_ID: 'test-client-id',
         GOOGLE_CLIENT_SECRET: 'test-client-secret',
         GOOGLE_REDIRECT_URI: 'http://localhost:3000/callback',
+        JWT_OAUTH_STATE_SECRET: 'test-oauth-state-secret',
+        JWT_OAUTH_STATE_EXPIRATION_TIME: '10m',
     };
 
     const mockUser = {
@@ -78,7 +84,10 @@ describe('GoogleService', () =>
             warn: jest.fn(),
         };
 
-        const module: TestingModule = await Test.createTestingModule({
+        testingModule = await Test.createTestingModule({
+            imports: [
+                JwtModule.register({}), // Register JwtModule without default secret
+            ],
             providers: [
                 GoogleService,
                 { provide: ConfigService, useValue: mockConfigService },
@@ -87,9 +96,10 @@ describe('GoogleService', () =>
             ],
         }).compile();
 
-        service = module.get<GoogleService>(GoogleService);
-        userService = module.get(UserService);
-        logger = module.get(CustomLogger);
+        service = testingModule.get<GoogleService>(GoogleService);
+        userService = testingModule.get(UserService);
+        logger = testingModule.get(CustomLogger);
+        jwtService = testingModule.get<JwtService>(JwtService);
     });
 
     afterEach(() => 
@@ -110,6 +120,7 @@ describe('GoogleService', () =>
                 await Test.createTestingModule({
                     providers: [
                         GoogleService,
+                        JwtService,
                         { provide: ConfigService, useValue: mockConfigMissing },
                         { provide: UserService, useValue: userService },
                         { provide: CustomLogger, useValue: logger },
@@ -130,7 +141,7 @@ describe('GoogleService', () =>
 
     describe('generateAuthUrl', () => 
     {
-        it('should generate valid auth URL with state', () => 
+        it('should generate valid auth URL with JWT state', () => 
         {
             const result = service.generateAuthUrl();
 
@@ -139,7 +150,67 @@ describe('GoogleService', () =>
             expect(result.authUrl).toContain('https://accounts.google.com/o/oauth2/v2/auth');
             expect(result.authUrl).toContain('client_id=test-client-id');
             expect(result.authUrl).toContain('redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fcallback');
-            expect(result.state).toHaveLength(64); // 32 bytes = 64 hex chars
+            // State should be a JWT (3 parts separated by dots)
+            expect(typeof result.state).toBe('string');
+            expect(result.state.split('.').length).toBe(3);
+        });
+    });
+
+    describe('validateOAuthState', () => 
+    {
+        it('should validate valid state JWT', async () => 
+        {
+            const { state } = service.generateAuthUrl();
+            
+            // Should not throw
+            await expect(service.validateOAuthState(state)).resolves.toBeUndefined();
+        });
+
+        it('should reject invalid state', async () => 
+        {
+            await expect(service.validateOAuthState('invalid-state')).rejects.toThrow(
+                InvalidOAuthStateException
+            );
+        });
+
+        it('should reject expired state', async () => 
+        {
+            // Create an expired JWT manually
+            const expiredPayload = {
+                purpose: 'google_oauth',
+                timestamp: Date.now(),
+                nonce: 'test-nonce',
+            };
+            
+            const expiredState = jwtService.sign(expiredPayload, {
+                secret: 'test-oauth-state-secret',
+                expiresIn: '0s', // Expired immediately
+            });
+
+            // Wait a bit to ensure it's expired
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            await expect(service.validateOAuthState(expiredState)).rejects.toThrow(
+                InvalidOAuthStateException
+            );
+        });
+
+        it('should reject state with wrong purpose', async () => 
+        {
+            const wrongPayload = {
+                purpose: 'wrong_purpose',
+                timestamp: Date.now(),
+                nonce: 'test-nonce',
+            };
+            
+            const wrongState = jwtService.sign(wrongPayload, {
+                secret: 'test-oauth-state-secret',
+                expiresIn: '10m',
+            });
+
+            await expect(service.validateOAuthState(wrongState)).rejects.toThrow(
+                InvalidOAuthStateException
+            );
         });
     });
 

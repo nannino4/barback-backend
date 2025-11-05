@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import axios from 'axios';
 import * as crypto from 'crypto';
 import { GoogleUserInfoDto } from './dto/google-user-info.dto';
@@ -15,6 +16,7 @@ import {
     GoogleTokenInvalidException,
     GoogleEmailNotVerifiedException,
     GoogleAccountLinkingException,
+    InvalidOAuthStateException,
 } from './exceptions/oauth.exceptions';
 
 @Injectable()
@@ -24,16 +26,21 @@ export class GoogleService
     private readonly clientId: string;
     private readonly clientSecret: string;
     private readonly redirectUri: string;
+    private readonly oauthStateSecret: string;
+    private readonly oauthStateExpiration: string;
 
     constructor(
         private readonly configService: ConfigService,
         private readonly userService: UserService,
+        private readonly jwtService: JwtService,
         private readonly logger : CustomLogger,
     ) 
     {
         this.clientId = this.configService.get<string>('GOOGLE_CLIENT_ID')!;
         this.clientSecret = this.configService.get<string>('GOOGLE_CLIENT_SECRET')!;
         this.redirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI')!;
+        this.oauthStateSecret = this.configService.get<string>('JWT_OAUTH_STATE_SECRET')!;
+        this.oauthStateExpiration = this.configService.get<string>('JWT_OAUTH_STATE_EXPIRATION_TIME')!;
 
         // Validate configuration and throw specific exceptions
         if (!this.clientId) 
@@ -54,27 +61,77 @@ export class GoogleService
             throw new GoogleConfigurationException('GOOGLE_REDIRECT_URI');
         }
 
+        if (!this.oauthStateSecret)
+        {
+            this.logger.error('Google OAuth configuration missing: JWT_OAUTH_STATE_SECRET', 'GoogleService#constructor');
+            throw new GoogleConfigurationException('JWT_OAUTH_STATE_SECRET');
+        }
+
+        if (!this.oauthStateExpiration)
+        {
+            this.logger.error('Google OAuth configuration missing: JWT_OAUTH_STATE_EXPIRATION_TIME', 'GoogleService#constructor');
+            throw new GoogleConfigurationException('JWT_OAUTH_STATE_EXPIRATION_TIME');
+        }
+
         this.logger.debug('GoogleService initialized with valid configuration', 'GoogleService#constructor');
     }
 
     generateAuthUrl(): OutGoogleAuthUrlDto
     {
-        const state = crypto.randomBytes(32).toString('hex');
+        // Generate signed JWT as state for stateless CSRF protection
+        const statePayload = {
+            purpose: 'google_oauth',
+            timestamp: Date.now(),
+            nonce: crypto.randomBytes(16).toString('hex'),
+        };
+        
+        const state = this.jwtService.sign(statePayload, {
+            secret: this.oauthStateSecret,
+            expiresIn: this.oauthStateExpiration,
+        });
         
         const params = new URLSearchParams({
             client_id: this.clientId,
             redirect_uri: this.redirectUri,
             response_type: 'code',
             scope: 'openid email profile',
-            access_type: 'offline',
-            prompt: 'consent',
             state: state,
         });
 
         const authUrl = `${this.googleOauthUrl}?${params.toString()}`;
         
-        this.logger.debug('Generated Google OAuth URL', 'GoogleService#generateAuthUrl');
+        this.logger.debug('Generated Google OAuth URL with signed state', 'GoogleService#generateAuthUrl');
         return { authUrl, state };
+    }
+
+    async validateOAuthState(state: string): Promise<void>
+    {
+        this.logger.debug('Validating OAuth state parameter', 'GoogleService#validateOAuthState');
+        
+        try 
+        {
+            const statePayload = await this.jwtService.verifyAsync(state, {
+                secret: this.oauthStateSecret,
+            });
+            
+            // Verify it's for OAuth purpose
+            if (statePayload.purpose !== 'google_oauth') 
+            {
+                this.logger.warn('Invalid OAuth state: wrong purpose', 'GoogleService#validateOAuthState');
+                throw new Error('Invalid state purpose');
+            }
+            
+            this.logger.debug('OAuth state validated successfully', 'GoogleService#validateOAuthState');
+        } 
+        catch (error) 
+        {
+            this.logger.error(
+                'OAuth state validation failed',
+                error instanceof Error ? error.stack : undefined,
+                'GoogleService#validateOAuthState'
+            );
+            throw new InvalidOAuthStateException();
+        }
     }
 
     async exchangeCodeForTokens(code: string): Promise<GoogleTokenResponseDto> 
