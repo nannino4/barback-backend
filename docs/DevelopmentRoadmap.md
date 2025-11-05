@@ -275,7 +275,7 @@ Unified guard now restricts authenticated operations until email is verified. Ex
     - [X] Simplify TTL configuration to use seconds instead of milliseconds
     - [X] Write integration tests for rate limiting
     - [X] Create comprehensive API documentation for rate limiting
-    - [ ] Test rate limiting manually
+    - [X] Test rate limiting manually
     - [ ] (Optional - Future) Consider Redis storage for distributed systems
 
 ---
