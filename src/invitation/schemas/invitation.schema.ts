@@ -25,7 +25,7 @@ export class Invitation extends Document
     status!: InvitationStatus;
 
     @Prop({ type: Date, required: false })
-    invitationExpires?: Date;
+    expiresAt?: Date;
 
     @Prop({ type: Types.ObjectId, ref: 'User', required: true })
     invitedBy!: Types.ObjectId;
@@ -40,4 +40,4 @@ InvitationSchema.index({ invitedEmail: 1, orgId: 1 }, { unique: true });
 InvitationSchema.index({ orgId: 1 });
 InvitationSchema.index({ status: 1 });
 InvitationSchema.index({ invitedEmail: 1 });
-InvitationSchema.index({ invitationExpires: 1 });
+InvitationSchema.index({ expiresAt: 1 });

@@ -119,6 +119,27 @@ export class OrgController
         return result;
     }
 
+    @Get(':id')
+    @UseGuards(OrgRolesGuard, OrgSubscriptionGuard)
+    @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)
+    async getOrganization(
+        @CurrentUser() user: User,
+        @Param('id', ObjectIdValidationPipe) orgId: Types.ObjectId,
+    ): Promise<OutOrgDto>
+    {
+        this.logger.debug(`Getting organization: ${orgId} by user: ${user.email}`, 'OrgController#getOrganization');
+        
+        const org = await this.orgService.findById(orgId);
+        if (!org) 
+        {
+            this.logger.warn(`Organization not found: ${orgId}`, 'OrgController#getOrganization');
+            throw new OrganizationNotFoundException(orgId.toString());
+        }
+        
+        this.logger.debug(`Returning organization: ${org.name}`, 'OrgController#getOrganization');
+        return plainToInstance(OutOrgDto, org.toObject(), { excludeExtraneousValues: true });
+    }
+
     @Get(':id/members')
     @UseGuards(OrgRolesGuard, OrgSubscriptionGuard)
     @OrgRoles(OrgRole.OWNER, OrgRole.MANAGER, OrgRole.STAFF)

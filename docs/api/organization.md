@@ -232,6 +232,93 @@ Get organizations user is a member of.
 
 ---
 
+### GET /api/orgs/:id
+Get a specific organization by ID.
+
+**Authentication**: Required (JWT)
+**Authorization**: Must be organization member (Owner, Manager, or Staff)
+
+**Parameters**:
+- `id` (path): Organization ID (must be valid ObjectId format)
+
+**Response** (200 OK):
+```json
+{
+  "id": "64a1b2c3d4e5f6789def456",
+  "name": "My Bar Organization",
+  "settings": {
+    "defaultCurrency": "EUR"
+  },
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**Error Responses**:
+
+**400 Bad Request** - Invalid Organization ID:
+```json
+{
+  "message": [
+    "Validation failed (ObjectId is expected)"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
+**403 Forbidden** - Insufficient Permissions:
+```json
+{
+  "message": "Insufficient permissions for organization access",
+  "error": "Forbidden",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Organization Not Found:
+```json
+{
+  "message": "Organization with ID \"64a1b2c3d4e5f6789def456\" not found",
+  "error": "ORGANIZATION_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: organization lookup by ID - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
+- Requires user to be a member of the organization (any role)
+- Returns complete organization details including settings
+- Useful for refreshing organization data or deep linking
+
+---
+
 ### GET /api/orgs/:id/members
 Get organization members.
 

@@ -1,16 +1,20 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Type, Transform } from 'class-transformer';
 import { OrgRole } from '../../org/schemas/user-org-relation.schema';
 import { InvitationStatus } from '../schemas/invitation.schema';
+import { OutUserPublicDto } from '../../user/dto/out.user.public.dto';
+import { OutOrgPublicDto } from '../../org/dto/out.org.public.dto';
 
+/**
+ * Standard invitation DTO with populated organization and inviter information.
+ * This is the only invitation DTO - all endpoints return fully populated invitations.
+ * Organization managers see who sent each invitation.
+ * Invited users see full organization and inviter details.
+ */
 export class OutInvitationDto 
 {
     @Expose()
-    @Transform(({ obj }) => obj._id.toString())
+    @Transform(({ obj }) => obj._id?.toString() || obj.id)
     id!: string;
-
-    @Expose()
-    @Transform(({ obj }) => obj.orgId.toString())
-    orgId!: string;
 
     @Expose()
     invitedEmail!: string;
@@ -22,15 +26,17 @@ export class OutInvitationDto
     status!: InvitationStatus;
 
     @Expose()
-    @Transform(({ obj }) => obj.invitedBy.toString())
-    invitedBy!: string;
+    @Type(() => OutUserPublicDto)
+    invitedBy!: OutUserPublicDto;
+
+    @Expose()
+    @Type(() => OutOrgPublicDto)
+    @Transform(({ obj }) => obj.orgId)
+    organization!: OutOrgPublicDto;
 
     @Expose()
     createdAt!: Date;
 
     @Expose()
-    updatedAt!: Date;
-
-    @Expose()
-    invitationExpires?: Date;
+    expiresAt!: Date;
 }

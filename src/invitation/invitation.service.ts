@@ -77,8 +77,8 @@ export class InvitationService
             }
 
             // Generate expiration timestamp
-            const invitationExpires = new Date();
-            invitationExpires.setDate(invitationExpires.getDate() + 7); // 7 days expiration
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiration
 
             // Create the invitation
             const invitation = new this.invitationModel({
@@ -86,7 +86,7 @@ export class InvitationService
                 invitedEmail,
                 role,
                 status: InvitationStatus.PENDING,
-                invitationExpires,
+                expiresAt,
                 invitedBy,
             });
 
@@ -124,6 +124,11 @@ export class InvitationService
                 `Invitation ${invitation.id} created successfully for email=${invitedEmail}`,
                 'InvitationService#createInvitation',
             );
+            
+            // Populate before returning
+            await invitation.populate('orgId', 'id name');
+            await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
+            
             return invitation;
         }
         catch (error)
@@ -158,9 +163,10 @@ export class InvitationService
                 .find({
                     invitedEmail: email,
                     status: InvitationStatus.PENDING,
-                    invitationExpires: { $gt: new Date() },
+                    expiresAt: { $gt: new Date() },
                 })
-                .populate('orgId', 'name')
+                .populate('orgId', 'id name')
+                .populate('invitedBy', 'id firstName lastName email profilePictureUrl')
                 .exec();
         }
         catch (error)
@@ -186,6 +192,8 @@ export class InvitationService
                     orgId,
                     status: { $in: [InvitationStatus.PENDING] },
                 })
+                .populate('orgId', 'id name')
+                .populate('invitedBy', 'id firstName lastName email profilePictureUrl')
                 .sort({ createdAt: -1 })
                 .exec();
         }
@@ -213,7 +221,7 @@ export class InvitationService
             const invitation = await this.invitationModel.findOne({
                 _id: invitationId,
                 status: InvitationStatus.PENDING,
-                invitationExpires: { $gt: new Date() },
+                expiresAt: { $gt: new Date() },
             });
 
             if (!invitation) 
@@ -240,6 +248,11 @@ export class InvitationService
                 `Invitation ${invitation.id} accepted by userId=${userId}`,
                 'InvitationService#acceptInvitation',
             );
+            
+            // Populate before returning
+            await invitation.populate('orgId', 'id name');
+            await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
+            
             return invitation;
         }
         catch (error)
@@ -273,7 +286,7 @@ export class InvitationService
             const invitation = await this.invitationModel.findOne({
                 _id: invitationId,
                 status: InvitationStatus.PENDING,
-                invitationExpires: { $gt: new Date() },
+                expiresAt: { $gt: new Date() },
             });
 
             if (!invitation) 
@@ -288,6 +301,11 @@ export class InvitationService
                 `Invitation declined for email ${invitation.invitedEmail}`,
                 'InvitationService#declineInvitation',
             );
+            
+            // Populate before returning
+            await invitation.populate('orgId', 'id name');
+            await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
+            
             return invitation;
         }
         catch (error)
@@ -336,6 +354,11 @@ export class InvitationService
                 `Invitation revoked for email ${invitation.invitedEmail}`,
                 'InvitationService#revokeInvitation',
             );
+            
+            // Populate before returning
+            await invitation.populate('orgId', 'id name');
+            await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
+            
             return invitation;
         }
         catch (error)

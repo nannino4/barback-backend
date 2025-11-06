@@ -85,8 +85,9 @@ export class InvitationController
     /**
      * Get all pending invitations for the organization.
      * Only organization owners and managers can view invitations.
+     * Returns populated data showing who sent each invitation.
      * @param orgId - The organization ID
-     * @returns List of pending invitations for the organization
+     * @returns List of pending invitations with populated inviter info
      */
     @Get('orgs/:orgId/invitations')
     @UseGuards(OrgSubscriptionGuard)
@@ -135,8 +136,9 @@ export class InvitationController
 
     /**
      * Get all pending invitations for the current user.
+     * Returns populated data with organization and inviter details.
      * @param user - The authenticated user
-     * @returns List of pending invitations for the user
+     * @returns List of pending invitations with populated fields
      */
     @Get('invites')
     async getUserPendingInvitations(@CurrentUser() user: User): Promise<OutInvitationDto[]> 

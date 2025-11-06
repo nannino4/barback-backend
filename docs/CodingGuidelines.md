@@ -90,6 +90,43 @@ DTOs (Data Transfer Objects) should follow a clear naming convention to indicate
 - **Output DTOs**: Prefix with `out.` for DTOs that define output data structure  
   - Example: `out.user-response.dto.ts`, `out.tokens.dto.ts`
 
+### DTO Field Optionality
+
+**Important**: DTO fields should use TypeScript's `optional` modifier (`?`), never `null` union types.
+
+- ✅ **Correct**: `profilePictureUrl?: string;`
+- ❌ **Incorrect**: `profilePictureUrl: string | null;`
+- ❌ **Incorrect**: `profilePictureUrl?: string | null;`
+
+**Rationale**:
+- DTOs represent API contracts where fields are either present or absent
+- Optional fields (`?`) correctly represent "may not be present" in the response
+- Null values add unnecessary complexity to type checking
+- Database schemas handle null values; DTOs should not expose this implementation detail
+
+**Examples**:
+```typescript
+// ✅ Good DTO
+export class OutUserPublicDto 
+{
+    @Expose()
+    id!: string;  // Required field
+    
+    @Expose()
+    profilePictureUrl?: string;  // Optional field - may not be in response
+}
+
+// ❌ Bad DTO
+export class OutUserPublicDto 
+{
+    @Expose()
+    id!: string;
+    
+    @Expose()
+    profilePictureUrl?: string | null;  // Don't use null in DTOs
+}
+```
+
 ## Documentation
 
 - Add JSDoc comments for public APIs

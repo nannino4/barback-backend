@@ -43,9 +43,9 @@ Send an invitation to join the organization.
   "status": "PENDING",
   "invitedBy": {
     "id": "64a1b2c3d4e5f6789abc456",
+    "email": "john@example.com",
     "firstName": "John",
-    "lastName": "Doe",
-    "email": "john@example.com"
+    "lastName": "Doe"
   },
   "organization": {
     "id": "64a1b2c3d4e5f6789def789",
@@ -172,9 +172,13 @@ Get all pending invitations for the organization.
     "status": "PENDING",
     "invitedBy": {
       "id": "64a1b2c3d4e5f6789abc456",
+      "email": "john@example.com",
       "firstName": "John",
-      "lastName": "Doe",
-      "email": "john@example.com"
+      "lastName": "Doe"
+    },
+    "organization": {
+      "id": "64a1b2c3d4e5f6789def789",
+      "name": "My Bar Organization"
     },
     "createdAt": "2024-01-01T00:00:00.000Z",
     "expiresAt": "2024-01-08T00:00:00.000Z"
@@ -186,9 +190,13 @@ Get all pending invitations for the organization.
     "status": "PENDING",
     "invitedBy": {
       "id": "64a1b2c3d4e5f6789abc456",
+      "email": "john@example.com",
       "firstName": "John",
-      "lastName": "Doe",
-      "email": "john@example.com"
+      "lastName": "Doe"
+    },
+    "organization": {
+      "id": "64a1b2c3d4e5f6789def789",
+      "name": "My Bar Organization"
     },
     "createdAt": "2024-01-02T00:00:00.000Z",
     "expiresAt": "2024-01-09T00:00:00.000Z"
@@ -267,11 +275,18 @@ Revoke a pending invitation.
   "invitedEmail": "user1@example.com",
   "role": "STAFF",
   "status": "REVOKED",
-  "invitedBy": "64a1b2c3d4e5f6789abc456",
-  "orgId": "64a1b2c3d4e5f6789def789",
+  "invitedBy": {
+    "id": "64a1b2c3d4e5f6789abc456",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "organization": {
+    "id": "64a1b2c3d4e5f6789def789",
+    "name": "My Bar Organization"
+  },
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-02T00:00:05.000Z",
-  "invitationExpires": "2024-01-08T00:00:00.000Z"
+  "expiresAt": "2024-01-08T00:00:00.000Z"
 }
 ```
 
@@ -352,12 +367,19 @@ Get current user's pending invitations.
     "id": "64a1b2c3d4e5f6789abc123",
     "invitedEmail": "user1@example.com",
     "role": "STAFF",
-    "status": "ACCEPTED",
-    "invitedBy": "64a1b2c3d4e5f6789abc456",
-    "orgId": "64a1b2c3d4e5f6789def789",
+    "status": "PENDING",
+    "invitedBy": {
+      "id": "64a1b2c3d4e5f6789abc456",
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe"
+    },
+    "organization": {
+      "id": "64a1b2c3d4e5f6789def789",
+      "name": "My Bar Organization"
+    },
     "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T12:00:00.000Z",
-    "invitationExpires": "2024-01-08T00:00:00.000Z"
+    "expiresAt": "2024-01-08T00:00:00.000Z"
   }
 ]
 ```
@@ -394,7 +416,7 @@ Get current user's pending invitations.
 **Notes**:
 - Shows invitations for the authenticated user's email address only
 - Only returns pending, non-expired invitations
-- Excludes sensitive information (inviter's email, internal IDs)
+- Returns fully populated data with organization and inviter details
 
 ---
 
@@ -413,11 +435,18 @@ Accept an invitation (authenticated users) by id.
   "invitedEmail": "user1@example.com",
   "role": "STAFF",
   "status": "ACCEPTED",
-  "invitedBy": "64a1b2c3d4e5f6789abc456",
-  "orgId": "64a1b2c3d4e5f6789def789",
+  "invitedBy": {
+    "id": "64a1b2c3d4e5f6789abc456",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "organization": {
+    "id": "64a1b2c3d4e5f6789def789",
+    "name": "My Bar Organization"
+  },
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T12:00:00.000Z",
-  "invitationExpires": "2024-01-08T00:00:00.000Z"
+  "expiresAt": "2024-01-08T00:00:00.000Z"
 }
 ```
 
@@ -487,11 +516,18 @@ Decline an invitation (authenticated users) by id.
   "invitedEmail": "user1@example.com",
   "role": "STAFF",
   "status": "DECLINED",
-  "invitedBy": "64a1b2c3d4e5f6789abc456",
-  "orgId": "64a1b2c3d4e5f6789def789",
+  "invitedBy": {
+    "id": "64a1b2c3d4e5f6789abc456",
+    "email": "john@example.com",
+    "firstName": "John",
+    "lastName": "Doe"
+  },
+  "organization": {
+    "id": "64a1b2c3d4e5f6789def789",
+    "name": "My Bar Organization"
+  },
   "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T12:00:00.000Z",
-  "invitationExpires": "2024-01-08T00:00:00.000Z"
+  "expiresAt": "2024-01-08T00:00:00.000Z"
 }
 ```
 
@@ -546,43 +582,36 @@ Decline an invitation (authenticated users) by id.
 
 ## Data Models
 
-### Invitation Object
+### Invitation DTO (OutInvitationDto)
+
+**Note**: All invitation endpoints return fully populated invitation objects. There is only one invitation DTO structure used across all endpoints. The `invitedBy` and `organization` fields use the standard `OutUserPublicDto` and `OutOrgPublicDto` types respectively.
+
 ```json
 {
-  "id": "string",           // MongoDB ObjectId
-  "email": "string",        // Invited email address
-  "orgRole": "MANAGER|STAFF", // Role in organization
-  "status": "PENDING|ACCEPTED|DECLINED|REVOKED|EXPIRED", // Invitation status
-  "invitedBy": {            // User who sent invitation
+  "id": "string",              // MongoDB ObjectId as string
+  "invitedEmail": "string",    // Email address of invited user
+  "role": "MANAGER|STAFF",     // Role in organization (cannot be OWNER)
+  "status": "PENDING|ACCEPTED|DECLINED|REVOKED", // Current invitation status
+  "invitedBy": {               // User who sent the invitation (OutUserPublicDto)
     "id": "string",
+    "email": "string",
     "firstName": "string",
     "lastName": "string",
-    "email": "string"
+    "profilePictureUrl": "string (optional)"  // Only present if user has a profile picture
   },
-  "organization": {         // Organization details
+  "organization": {            // Organization being joined (OutOrgPublicDto)
     "id": "string",
     "name": "string"
   },
-  "createdAt": "string",    // ISO timestamp
-  "expiresAt": "string"     // ISO timestamp (7 days from creation)
+  "createdAt": "string",       // ISO 8601 timestamp
+  "expiresAt": "string"        // ISO 8601 timestamp (7 days from creation)
 }
 ```
 
-### Public Invitation Object (limited fields)
-```json
-{
-  "id": "string",
-  "orgRole": "MANAGER|STAFF",
-  "status": "PENDING",
-  "organization": {
-    "id": "string",
-    "name": "string"
-  },
-  "invitedBy": {
-    "firstName": "string",
-    "lastName": "string"
-  },
-  "createdAt": "string",
-  "expiresAt": "string"
-}
-```
+**Key Design Decisions**:
+- All endpoints return the same fully populated DTO structure
+- No unpopulated ObjectId strings - always returns nested objects
+- Uses existing `OutUserPublicDto` for `invitedBy` (minimal user info)
+- Uses existing `OutOrgPublicDto` for `organization` (minimal org info)
+- Optional fields are omitted when not present (not set to `null`)
+- Field names use TypeScript optional modifier (`?`), not nullable unions

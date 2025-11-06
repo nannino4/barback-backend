@@ -183,6 +183,15 @@ Unified guard now restricts authenticated operations until email is verified. Ex
   - [X] `POST /public/invitations/decline/{token}` - Decline invitation (anonymous users)
   - [X] `GET /public/invitations/details/{token}` - Get invitation details
   - [X] `DELETE /api/orgs/{id}/invites/{invitationId}` - Revoke invitation
+- [X] **Invitation Data Enhancement**:
+  - [X] Update `GET /invitations` to return populated data (organization name, inviter name) instead of just IDs
+  - [X] Create OutInvitationPopulatedDto with nested organization and user objects
+  - [X] Update `GET /api/orgs/{id}/invitations` to return populated inviter data
+  - [X] Frontend can now display user-friendly invitation information without additional API calls
+- [X] **Missing Organization Endpoint**:
+  - [X] Add `GET /api/orgs/:id` endpoint to fetch single organization by ID
+  - [X] Includes proper authorization (any member can view)
+  - [X] Returns complete organization details with settings
 
 #### Category Management
 - [X] **Data Layer Setup**:
