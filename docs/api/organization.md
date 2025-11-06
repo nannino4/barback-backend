@@ -39,9 +39,7 @@ Create a new organization.
   "name": "My Bar Organization",
   "settings": {
     "defaultCurrency": "EUR"
-  },
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
 }
 ```
 
@@ -160,11 +158,13 @@ Get organizations user is a member of.
     "org": {
       "id": "64a1b2c3d4e5f6789def456",
       "name": "My Bar Organization",
-      "settings": {
-        "defaultCurrency": "EUR"
-      },
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
+      "owner": {
+        "id": "64a1b2c3d4e5f6789abc123",
+        "email": "owner@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "profilePictureUrl": null
+      }
     },
     "role": "OWNER"
   }
@@ -248,9 +248,7 @@ Get a specific organization by ID.
   "name": "My Bar Organization",
   "settings": {
     "defaultCurrency": "EUR"
-  },
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
 }
 ```
 
@@ -344,11 +342,13 @@ Get organization members.
     "org": {
       "id": "64a1b2c3d4e5f6789def456",
       "name": "My Bar Organization",
-      "settings": {
-        "defaultCurrency": "EUR"
-      },
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
+      "owner": {
+        "id": "64a1b2c3d4e5f6789abc123",
+        "email": "john@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "profilePictureUrl": null
+      }
     },
     "role": "OWNER"
   },
@@ -365,11 +365,13 @@ Get organization members.
     "org": {
       "id": "64a1b2c3d4e5f6789def456",
       "name": "My Bar Organization",
-      "settings": {
-        "defaultCurrency": "EUR"
-      },
-      "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
+      "owner": {
+        "id": "64a1b2c3d4e5f6789abc123",
+        "email": "john@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "profilePictureUrl": null
+      }
     },
     "role": "MANAGER"
   }
@@ -491,9 +493,7 @@ Update organization details.
   "name": "Updated Bar Name",
   "settings": {
     "defaultCurrency": "USD"
-  },
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T12:30:00.000Z"
+  }
 }
 ```
 
@@ -621,11 +621,13 @@ Update member role in organization.
   "org": {
     "id": "64a1b2c3d4e5f6789def456",
     "name": "My Bar Organization",
-    "settings": {
-      "defaultCurrency": "EUR"
-    },
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "owner": {
+      "id": "64a1b2c3d4e5f6789abc123",
+      "email": "john@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "profilePictureUrl": null
+    }
   },
   "role": "MANAGER"
 }
@@ -768,39 +770,54 @@ Update member role in organization.
 
 ## Data Structures
 
-### Organization Object (API Response)
+### Organization Object (OutOrgDto - Full Details)
 ```json
 {
   "id": "string",           // Organization ID
   "name": "string",         // Organization name
   "settings": {             // Organization settings
     "defaultCurrency": "string"
-  },
-  "createdAt": "string",    // ISO timestamp
-  "updatedAt": "string"     // ISO timestamp
+  }
 }
 ```
 
-### User-Organization Relationship Object
+Note: Organization DTOs do not include `createdAt` or `updatedAt` timestamps.
+
+### Organization Public Object (OutOrgPublicDto - Used in Lists)
 ```json
 {
-  "user": {                 // Complete user public information
+  "id": "string",           // Organization ID
+  "name": "string",         // Organization name
+  "owner": {                // Owner user information (always populated)
     "id": "string",
     "email": "string",
     "firstName": "string",
     "lastName": "string",
-    "phoneNumber": "string|null",
-    "profilePictureUrl": "string|null",
-    "isEmailVerified": "boolean"
+    "profilePictureUrl": "string|null"
+  }
+}
+```
+
+### User-Organization Relationship Object (OutUserOrgRelationDto)
+```json
+{
+  "user": {                 // User public information (current user or member)
+    "id": "string",
+    "email": "string",
+    "firstName": "string",
+    "lastName": "string",
+    "profilePictureUrl": "string|null"
   },
-  "org": {                  // Complete organization information
+  "org": {                  // Organization public information (OutOrgPublicDto)
     "id": "string",
     "name": "string",
-    "settings": {
-      "defaultCurrency": "string"
-    },
-    "createdAt": "string",
-    "updatedAt": "string"
+    "owner": {              // Owner information
+      "id": "string",
+      "email": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "profilePictureUrl": "string|null"
+    }
   },
   "role": "OWNER|MANAGER|STAFF" // User's role in organization
 }

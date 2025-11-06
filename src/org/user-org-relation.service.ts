@@ -40,6 +40,14 @@ export class UserOrgRelationService
             
             const userOrgRelations = await this.userOrgRelationModel
                 .find(query)
+                .populate('userId', 'id email firstName lastName profilePictureUrl')
+                .populate({
+                    path: 'orgId',
+                    populate: {
+                        path: 'ownerId',
+                        select: 'id email firstName lastName profilePictureUrl',
+                    },
+                })
                 .exec();
             this.logger.debug(`Found ${userOrgRelations.length} user-org relations`, 'UserOrgRelationService#findAll');
             return userOrgRelations;

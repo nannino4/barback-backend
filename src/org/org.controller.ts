@@ -99,18 +99,20 @@ export class OrgController
         this.logger.debug(`Getting organizations for user: ${user.email} with role filter: ${orgRole}`, 'OrgController#getUserOrgs');
         const userOrgRelations = await this.userOrgRelationService.findAll(user._id as Types.ObjectId, orgRole, undefined);
         const result: OutUserOrgRelationDto[] = [];
+        
         for (const relation of userOrgRelations) 
         {
-            const org = await this.orgService.findById(relation.orgId);
-            if (!org) 
+            // Validate populated data
+            if (!relation.orgId || !relation.userId) 
             {
-                this.logger.warn(`Organization not found for relation: ${relation.id}`, 'OrgController#getUserOrgs');
-                throw new CorruptedUserOrgRelationException(relation.id, 'organization');
+                this.logger.warn(`Corrupted relation found: ${relation.id}`, 'OrgController#getUserOrgs');
+                throw new CorruptedUserOrgRelationException(relation.id, !relation.orgId ? 'organization' : 'user');
             }
+            
             result.push(
                 plainToInstance(OutUserOrgRelationDto, {
-                    user: plainToInstance(OutUserPublicDto, user.toObject()),
-                    org: plainToInstance(OutOrgPublicDto, org.toObject()),
+                    user: plainToInstance(OutUserPublicDto, (relation.userId as any).toObject(), { excludeExtraneousValues: true }),
+                    org: plainToInstance(OutOrgPublicDto, (relation.orgId as any).toObject(), { excludeExtraneousValues: true }),
                     role: relation.orgRole,
                 }, { excludeExtraneousValues: true })
             );
@@ -150,7 +152,7 @@ export class OrgController
     {
         this.logger.debug(`Getting members for organization: ${orgId} by user: ${user.email}`, 'OrgController#getOrgMembers');
         
-        // Get the organization details
+        // Verify organization exists (guards already checked access)
         const org = await this.orgService.findById(orgId);
         if (!org) 
         {
@@ -158,23 +160,23 @@ export class OrgController
             throw new OrganizationNotFoundException(orgId.toString());
         }
         
-        // Get all user-org relations for this organization
+        // Get all populated user-org relations for this organization
         const orgRelations = await this.userOrgRelationService.findAll(undefined, undefined, orgId);
 
         const result: OutUserOrgRelationDto[] = [];
         for (const relation of orgRelations) 
         {
-            const relationUser = await this.userService.findById(relation.userId);
-            if (!relationUser) 
+            // Validate populated data
+            if (!relation.userId || !relation.orgId) 
             {
-                this.logger.warn(`User not found for relation: ${relation.id}`, 'OrgController#getOrgMembers');
-                throw new CorruptedUserOrgRelationException(relation.id, 'user');
+                this.logger.warn(`Corrupted relation found: ${relation.id}`, 'OrgController#getOrgMembers');
+                throw new CorruptedUserOrgRelationException(relation.id, !relation.userId ? 'user' : 'organization');
             }
             
             result.push(
                 plainToInstance(OutUserOrgRelationDto, {
-                    user: plainToInstance(OutUserPublicDto, relationUser.toObject()),
-                    org: plainToInstance(OutOrgPublicDto, org.toObject()),
+                    user: plainToInstance(OutUserPublicDto, (relation.userId as any).toObject(), { excludeExtraneousValues: true }),
+                    org: plainToInstance(OutOrgPublicDto, (relation.orgId as any).toObject(), { excludeExtraneousValues: true }),
                     role: relation.orgRole,
                 }, { excludeExtraneousValues: true })
             );
@@ -236,21 +238,26 @@ export class OrgController
         // Update the role
         const updatedRelation = await this.userOrgRelationService.updateRole(userId, orgId, updateData.role);
         
-        // Get organization and user details for response
-        const org = await this.orgService.findById(orgId);
-        const targetUser = await this.userService.findById(userId);
-        
-        if (!org || !targetUser)
+        // Get populated relation data for response
+        const populatedRelations = await this.userOrgRelationService.findAll(userId, undefined, orgId);
+        if (!populatedRelations.length)
         {
-            this.logger.error(`Failed to get organization or user data for response - org: ${!!org}, user: ${!!targetUser}`, 'OrgController#updateMemberRole');
-            throw new CorruptedUserOrgRelationException('unknown', !org ? 'organization' : 'user');
+            this.logger.error(`Failed to get populated relation data for response`, 'OrgController#updateMemberRole');
+            throw new CorruptedUserOrgRelationException(updatedRelation.id, 'organization');
+        }
+        
+        const populatedRelation = populatedRelations[0];
+        if (!populatedRelation.userId || !populatedRelation.orgId)
+        {
+            this.logger.error(`Populated relation missing user or org data`, 'OrgController#updateMemberRole');
+            throw new CorruptedUserOrgRelationException(updatedRelation.id, !populatedRelation.userId ? 'user' : 'organization');
         }
         
         this.logger.debug(`Member role updated successfully for user: ${userId} in org: ${orgId} to role: ${updateData.role}`, 'OrgController#updateMemberRole');
         
         return plainToInstance(OutUserOrgRelationDto, {
-            user: plainToInstance(OutUserPublicDto, targetUser.toObject()),
-            org: plainToInstance(OutOrgPublicDto, org.toObject()),
+            user: plainToInstance(OutUserPublicDto, (populatedRelation.userId as any).toObject(), { excludeExtraneousValues: true }),
+            org: plainToInstance(OutOrgPublicDto, (populatedRelation.orgId as any).toObject(), { excludeExtraneousValues: true }),
             role: updatedRelation.orgRole,
         }, { excludeExtraneousValues: true });
     }

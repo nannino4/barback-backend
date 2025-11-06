@@ -3,6 +3,8 @@ import { MongooseModule, getConnectionToken } from '@nestjs/mongoose';
 import { Connection, Types } from 'mongoose';
 import { UserOrgRelationService } from './user-org-relation.service';
 import { UserOrgRelation, UserOrgRelationSchema, OrgRole } from './schemas/user-org-relation.schema';
+import { User, UserSchema } from '../user/schemas/user.schema';
+import { Org, OrgSchema } from './schemas/org.schema';
 import { DatabaseTestHelper } from '../../test/utils/database.helper';
 import { CustomLogger } from '../common/logger/custom.logger';
 
@@ -17,6 +19,8 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
     const mockUserId2 = new Types.ObjectId();
     const mockOrgId1 = new Types.ObjectId();
     const mockOrgId2 = new Types.ObjectId();
+    const mockSubscriptionId1 = new Types.ObjectId();
+    const mockSubscriptionId2 = new Types.ObjectId();
 
     const mockRelationData = [
         {
@@ -51,6 +55,8 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
                 DatabaseTestHelper.getMongooseTestModule(),
                 MongooseModule.forFeature([
                     { name: UserOrgRelation.name, schema: UserOrgRelationSchema },
+                    { name: User.name, schema: UserSchema },
+                    { name: Org.name, schema: OrgSchema },
                 ]),
             ],
             providers: [
@@ -86,6 +92,46 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
     {
         beforeEach(async () => 
         {
+            // Create test users
+            const userModel = connection.model('User');
+            await userModel.insertMany([
+                {
+                    _id: mockUserId1,
+                    email: 'user1@test.com',
+                    firstName: 'User',
+                    lastName: 'One',
+                    hashedPassword: 'hashed',
+                    isEmailVerified: true,
+                },
+                {
+                    _id: mockUserId2,
+                    email: 'user2@test.com',
+                    firstName: 'User',
+                    lastName: 'Two',
+                    hashedPassword: 'hashed',
+                    isEmailVerified: true,
+                },
+            ]);
+
+            // Create test organizations
+            const orgModel = connection.model('Org');
+            await orgModel.insertMany([
+                {
+                    _id: mockOrgId1,
+                    name: 'Org One',
+                    ownerId: mockUserId1,
+                    subscriptionId: mockSubscriptionId1,
+                    settings: { defaultCurrency: 'EUR' },
+                },
+                {
+                    _id: mockOrgId2,
+                    name: 'Org Two',
+                    ownerId: mockUserId1,
+                    subscriptionId: mockSubscriptionId2,
+                    settings: { defaultCurrency: 'EUR' },
+                },
+            ]);
+
             // Create test relationships
             const relationModel = connection.model('UserOrgRelation');
             await relationModel.insertMany(mockRelationData);
@@ -98,11 +144,11 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
             // Assert
             expect(result).toHaveLength(2);
-            expect(result[0].userId.toString()).toBe(mockUserId1.toString());
-            expect(result[1].userId.toString()).toBe(mockUserId1.toString());
+            expect(result[0].userId._id.toString()).toBe(mockUserId1.toString());
+            expect(result[1].userId._id.toString()).toBe(mockUserId1.toString());
             
             // Verify both relations are returned
-            const orgIds = result.map(r => r.orgId.toString());
+            const orgIds = result.map(r => r.orgId._id.toString());
             expect(orgIds).toContain(mockOrgId1.toString());
             expect(orgIds).toContain(mockOrgId2.toString());
         });
@@ -114,8 +160,8 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
             // Assert
             expect(result).toHaveLength(1);
-            expect(result[0].userId.toString()).toBe(mockUserId1.toString());
-            expect(result[0].orgId.toString()).toBe(mockOrgId1.toString());
+            expect(result[0].userId._id.toString()).toBe(mockUserId1.toString());
+            expect(result[0].orgId._id.toString()).toBe(mockOrgId1.toString());
             expect(result[0].orgRole).toBe(OrgRole.OWNER);
         });
 
@@ -165,11 +211,11 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
             // Assert
             expect(result).toHaveLength(2); // Both mockUserId1 and mockUserId2 are related to mockOrgId1
-            expect(result[0].orgId.toString()).toBe(mockOrgId1.toString());
-            expect(result[1].orgId.toString()).toBe(mockOrgId1.toString());
+            expect(result[0].orgId._id.toString()).toBe(mockOrgId1.toString());
+            expect(result[1].orgId._id.toString()).toBe(mockOrgId1.toString());
             
             // Verify different users are included
-            const userIds = result.map(r => r.userId.toString());
+            const userIds = result.map(r => r.userId._id.toString());
             expect(userIds).toContain(mockUserId1.toString());
             expect(userIds).toContain(mockUserId2.toString());
         });
@@ -181,8 +227,8 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
             // Assert
             expect(result).toHaveLength(1);
-            expect(result[0].userId.toString()).toBe(mockUserId1.toString());
-            expect(result[0].orgId.toString()).toBe(mockOrgId2.toString());
+            expect(result[0].userId._id.toString()).toBe(mockUserId1.toString());
+            expect(result[0].orgId._id.toString()).toBe(mockOrgId2.toString());
             expect(result[0].orgRole).toBe(OrgRole.MANAGER);
         });
 
@@ -193,8 +239,8 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
             // Assert
             expect(result).toHaveLength(1);
-            expect(result[0].userId.toString()).toBe(mockUserId1.toString());
-            expect(result[0].orgId.toString()).toBe(mockOrgId1.toString());
+            expect(result[0].userId._id.toString()).toBe(mockUserId1.toString());
+            expect(result[0].orgId._id.toString()).toBe(mockOrgId1.toString());
             expect(result[0].orgRole).toBe(OrgRole.OWNER);
         });
 
@@ -278,7 +324,7 @@ describe('UserOrgRelationService - Service Tests (Unit-style)', () =>
 
             // Verify this is the expected relationship from our mock data
             const expectedRelation = mockRelationData.find(
-                r => r.userId.toString() === mockUserId1.toString() && r.orgId.toString() === mockOrgId2.toString()
+                r => r.userId._id.toString() === mockUserId1.toString() && r.orgId._id.toString() === mockOrgId2.toString()
             );
             expect(expectedRelation).toBeDefined();
             expect(result!.orgRole).toBe(expectedRelation!.orgRole);

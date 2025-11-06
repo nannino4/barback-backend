@@ -1,4 +1,5 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
+import { OutUserPublicDto } from '../../user/dto/out.user.public.dto';
 
 export class OutOrgPublicDto 
 {
@@ -8,4 +9,8 @@ export class OutOrgPublicDto
 
     @Expose()
     name!: string;
+
+    @Expose()
+    @Type(() => OutUserPublicDto)
+    owner!: OutUserPublicDto;
 }
