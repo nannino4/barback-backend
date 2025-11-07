@@ -126,7 +126,14 @@ export class InvitationService
             );
             
             // Populate before returning
-            await invitation.populate('orgId', 'id name');
+            await invitation.populate({
+                path: 'orgId',
+                select: 'id name ownerId',
+                populate: {
+                    path: 'ownerId',
+                    select: 'id email firstName lastName profilePictureUrl',
+                },
+            });
             await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
             
             return invitation;
@@ -165,7 +172,14 @@ export class InvitationService
                     status: InvitationStatus.PENDING,
                     expiresAt: { $gt: new Date() },
                 })
-                .populate('orgId', 'id name')
+                .populate({
+                    path: 'orgId',
+                    select: 'id name ownerId',
+                    populate: {
+                        path: 'ownerId',
+                        select: 'id email firstName lastName profilePictureUrl',
+                    },
+                })
                 .populate('invitedBy', 'id firstName lastName email profilePictureUrl')
                 .exec();
         }
@@ -192,7 +206,14 @@ export class InvitationService
                     orgId,
                     status: { $in: [InvitationStatus.PENDING] },
                 })
-                .populate('orgId', 'id name')
+                .populate({
+                    path: 'orgId',
+                    select: 'id name ownerId',
+                    populate: {
+                        path: 'ownerId',
+                        select: 'id email firstName lastName profilePictureUrl',
+                    },
+                })
                 .populate('invitedBy', 'id firstName lastName email profilePictureUrl')
                 .sort({ createdAt: -1 })
                 .exec();
@@ -250,7 +271,14 @@ export class InvitationService
             );
             
             // Populate before returning
-            await invitation.populate('orgId', 'id name');
+            await invitation.populate({
+                path: 'orgId',
+                select: 'id name ownerId',
+                populate: {
+                    path: 'ownerId',
+                    select: 'id email firstName lastName profilePictureUrl',
+                },
+            });
             await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
             
             return invitation;
@@ -303,7 +331,14 @@ export class InvitationService
             );
             
             // Populate before returning
-            await invitation.populate('orgId', 'id name');
+            await invitation.populate({
+                path: 'orgId',
+                select: 'id name ownerId',
+                populate: {
+                    path: 'ownerId',
+                    select: 'id email firstName lastName profilePictureUrl',
+                },
+            });
             await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
             
             return invitation;
@@ -356,7 +391,14 @@ export class InvitationService
             );
             
             // Populate before returning
-            await invitation.populate('orgId', 'id name');
+            await invitation.populate({
+                path: 'orgId',
+                select: 'id name ownerId',
+                populate: {
+                    path: 'ownerId',
+                    select: 'id email firstName lastName profilePictureUrl',
+                },
+            });
             await invitation.populate('invitedBy', 'id firstName lastName email profilePictureUrl');
             
             return invitation;

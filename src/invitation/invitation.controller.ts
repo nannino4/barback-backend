@@ -79,7 +79,7 @@ export class InvitationController
             `Invitation ${(invitation._id as Types.ObjectId).toString()} created (status=${invitation.status}) for email=${invitation.invitedEmail}`,
             'InvitationController#sendInvitation',
         );
-        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationDto, invitation.toObject(), { excludeExtraneousValues: true });
     }
 
     /**
@@ -103,7 +103,9 @@ export class InvitationController
             `Found ${invitations.length} pending invitations for orgId=${orgId.toString()}`,
             'InvitationController#getOrganizationInvitations',
         );
-        return plainToInstance(OutInvitationDto, invitations, { excludeExtraneousValues: true });
+        return invitations.map(invitation => 
+            plainToInstance(OutInvitationDto, invitation.toObject(), { excludeExtraneousValues: true })
+        );
     }
 
     /**
@@ -131,7 +133,7 @@ export class InvitationController
             `Invitation ${(invitation._id as Types.ObjectId).toString()} revoked (status=${invitation.status})`,
             'InvitationController#revokeInvitation',
         );
-        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationDto, invitation.toObject(), { excludeExtraneousValues: true });
     }
 
     /**
@@ -150,7 +152,9 @@ export class InvitationController
             `Found ${invitations.length} pending invitations for userId=${(user._id as Types.ObjectId).toString()}`,
             'InvitationController#getUserPendingInvitations',
         );
-        return plainToInstance(OutInvitationDto, invitations, { excludeExtraneousValues: true });
+        return invitations.map(invitation => 
+            plainToInstance(OutInvitationDto, invitation.toObject(), { excludeExtraneousValues: true })
+        );
     }
 
     /**
@@ -172,7 +176,7 @@ export class InvitationController
             `Invitation ${(invitation._id as Types.ObjectId).toString()} accepted (status=${invitation.status}) by user ${(user._id as Types.ObjectId).toString()}`,
             'InvitationController#acceptInvitation',
         );
-        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationDto, invitation.toObject(), { excludeExtraneousValues: true });
     }
 
     /**
@@ -190,6 +194,6 @@ export class InvitationController
             `Invitation ${(invitation._id as Types.ObjectId).toString()} declined (status=${invitation.status})`,
             'InvitationController#declineInvitation',
         );
-        return plainToInstance(OutInvitationDto, invitation, { excludeExtraneousValues: true });
+        return plainToInstance(OutInvitationDto, invitation.toObject(), { excludeExtraneousValues: true });
     }
 }

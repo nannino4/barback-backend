@@ -3,10 +3,10 @@ import { Document, Types } from 'mongoose';
 import { OrgRole } from '../../org/schemas/user-org-relation.schema';
 
 export enum InvitationStatus {
-    PENDING = 'pending',
-    DECLINED = 'declined',
-    REVOKED = 'revoked',
-    ACCEPTED = 'accepted',
+    PENDING = 'PENDING',
+    DECLINED = 'DECLINED',
+    REVOKED = 'REVOKED',
+    ACCEPTED = 'ACCEPTED',
 }
 
 @Schema({ timestamps: true, collection: 'org_invites' })

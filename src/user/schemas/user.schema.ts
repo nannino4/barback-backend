@@ -3,14 +3,14 @@ import { Document } from 'mongoose';
 
 export enum UserRole 
 {
-    ADMIN = 'admin',
-    USER = 'user',
+    ADMIN = 'ADMIN',
+    USER = 'USER',
 }
 
 export enum AuthProvider 
 {
-    EMAIL = 'email',
-    GOOGLE = 'google',
+    EMAIL = 'EMAIL',
+    GOOGLE = 'GOOGLE',
 }
 
 @Schema({ timestamps: true, collection: 'users' })

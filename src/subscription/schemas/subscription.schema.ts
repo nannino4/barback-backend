@@ -3,14 +3,14 @@ import { Document, Types } from 'mongoose';
 
 export enum SubscriptionStatus 
 {
-    TRIALING = 'trialing',
-    ACTIVE = 'active',
-    PAST_DUE = 'past_due',
-    CANCELED = 'canceled',
-    UNPAID = 'unpaid',
-    INCOMPLETE = 'incomplete',
-    INCOMPLETE_EXPIRED = 'incomplete_expired',
-    PAUSED = 'paused',
+    TRIALING = 'TRIALING',
+    ACTIVE = 'ACTIVE',
+    PAST_DUE = 'PAST_DUE',
+    CANCELED = 'CANCELED',
+    UNPAID = 'UNPAID',
+    INCOMPLETE = 'INCOMPLETE',
+    INCOMPLETE_EXPIRED = 'INCOMPLETE_EXPIRED',
+    PAUSED = 'PAUSED',
 }
 
 @Schema({ timestamps: true, collection: 'subscriptions' })

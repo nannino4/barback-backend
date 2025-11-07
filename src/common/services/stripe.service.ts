@@ -11,8 +11,8 @@ import {
 } from '../exceptions/stripe.exceptions';
 
 export enum BillingInterval {
-    MONTHLY = 'monthly',
-    YEARLY = 'yearly',
+    MONTHLY = 'MONTHLY',
+    YEARLY = 'YEARLY',
 }
 
 @Injectable()

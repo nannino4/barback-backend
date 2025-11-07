@@ -2,10 +2,10 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export enum InventoryLogType {
-    PURCHASE = 'purchase',
-    CONSUMPTION = 'consumption',
-    ADJUSTMENT = 'adjustment',
-    STOCKTAKE = 'stocktake',
+    PURCHASE = 'PURCHASE',
+    CONSUMPTION = 'CONSUMPTION',
+    ADJUSTMENT = 'ADJUSTMENT',
+    STOCKTAKE = 'STOCKTAKE',
 }
 
 @Schema({ timestamps: true, collection: 'inventory_logs' })

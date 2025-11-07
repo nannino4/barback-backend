@@ -3,6 +3,7 @@ import { OrgRole } from '../../org/schemas/user-org-relation.schema';
 import { InvitationStatus } from '../schemas/invitation.schema';
 import { OutUserPublicDto } from '../../user/dto/out.user.public.dto';
 import { OutOrgPublicDto } from '../../org/dto/out.org.public.dto';
+import { plainToInstance } from 'class-transformer';
 
 /**
  * Standard invitation DTO with populated organization and inviter information.
@@ -27,11 +28,18 @@ export class OutInvitationDto
 
     @Expose()
     @Type(() => OutUserPublicDto)
+    @Transform(({ obj }) => 
+    {
+        return plainToInstance(OutUserPublicDto, obj.invitedBy, { excludeExtraneousValues: true });
+    })
     invitedBy!: OutUserPublicDto;
 
     @Expose()
     @Type(() => OutOrgPublicDto)
-    @Transform(({ obj }) => obj.orgId)
+    @Transform(({ obj }) => 
+    {
+        return plainToInstance(OutOrgPublicDto, obj.orgId, { excludeExtraneousValues: true });
+    })
     organization!: OutOrgPublicDto;
 
     @Expose()
