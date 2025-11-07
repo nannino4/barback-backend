@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { AdminModule } from './admin/admin.module';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { OrgModule } from './org/org.module';
+import { InvitationModule } from './invitation/invitation.module';
 import { CategoryModule } from './category/category.module';
 import { ProductModule } from './product/product.module';
 import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
@@ -40,6 +41,7 @@ import { AppController } from './app.controller';
         AdminModule,
         SubscriptionModule,
         OrgModule,
+        InvitationModule,
         CategoryModule,
         ProductModule,
     ],
