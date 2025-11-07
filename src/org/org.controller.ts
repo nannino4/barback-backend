@@ -108,7 +108,7 @@ export class OrgController
                 this.logger.warn(`Corrupted relation found: ${relation.id}`, 'OrgController#getUserOrgs');
                 throw new CorruptedUserOrgRelationException(relation.id, !relation.orgId ? 'organization' : 'user');
             }
-            
+            this.logger.debug(`org: ${(relation.orgId as any)}`, 'OrgController#getUserOrgs');
             result.push(
                 plainToInstance(OutUserOrgRelationDto, {
                     user: plainToInstance(OutUserPublicDto, (relation.userId as any).toObject(), { excludeExtraneousValues: true }),

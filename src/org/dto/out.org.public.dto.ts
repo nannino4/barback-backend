@@ -1,4 +1,4 @@
-import { Expose, Transform, Type } from 'class-transformer';
+import { Expose, plainToInstance, Transform } from 'class-transformer';
 import { OutUserPublicDto } from '../../user/dto/out.user.public.dto';
 
 export class OutOrgPublicDto 
@@ -11,6 +11,6 @@ export class OutOrgPublicDto
     name!: string;
 
     @Expose()
-    @Type(() => OutUserPublicDto)
+    @Transform(({ obj }) => plainToInstance(OutUserPublicDto, obj.ownerId || obj.owner, { excludeExtraneousValues: true }))
     owner!: OutUserPublicDto;
 }

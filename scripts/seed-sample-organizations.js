@@ -137,7 +137,7 @@ const relationships = [
         _id: ObjectId("673b0000000000000000003a"),
         userId: giovanniId,
         orgId: ObjectId("673b0000000000000000002a"), // The Cocktail Lounge Roma
-        orgRole: "owner",
+        orgRole: "OWNER",
         createdAt: new Date("2025-11-01T10:00:00.000Z"),
         updatedAt: new Date("2025-11-01T10:00:00.000Z"),
     },
@@ -145,7 +145,7 @@ const relationships = [
         _id: ObjectId("673b0000000000000000003b"),
         userId: giovanniId,
         orgId: ObjectId("673b0000000000000000002b"), // Jerry Thomas Speakeasy
-        orgRole: "owner",
+        orgRole: "OWNER",
         createdAt: new Date("2025-10-15T14:30:00.000Z"),
         updatedAt: new Date("2025-10-15T14:30:00.000Z"),
     },
@@ -153,7 +153,7 @@ const relationships = [
         _id: ObjectId("673b0000000000000000003c"),
         userId: giovanniId,
         orgId: ObjectId("673b0000000000000000002c"), // Enoteca Provincia Romana
-        orgRole: "owner",
+        orgRole: "OWNER",
         createdAt: new Date("2025-09-20T09:15:00.000Z"),
         updatedAt: new Date("2025-09-20T09:15:00.000Z"),
     },
@@ -163,7 +163,7 @@ const relationships = [
         _id: ObjectId("673b0000000000000000003d"),
         userId: johnId,
         orgId: ObjectId("673b0000000000000000002d"), // Terrazza Panoramica
-        orgRole: "owner",
+        orgRole: "OWNER",
         createdAt: new Date("2025-08-10T16:45:00.000Z"),
         updatedAt: new Date("2025-08-10T16:45:00.000Z"),
     },
@@ -171,7 +171,7 @@ const relationships = [
         _id: ObjectId("673b0000000000000000003e"),
         userId: johnId,
         orgId: ObjectId("673b0000000000000000002e"), // The Drunken Ship
-        orgRole: "owner",
+        orgRole: "OWNER",
         createdAt: new Date("2025-07-05T11:20:00.000Z"),
         updatedAt: new Date("2025-07-05T11:20:00.000Z"),
     },
@@ -181,7 +181,7 @@ const relationships = [
         _id: ObjectId("673b0000000000000000003f"),
         userId: giovanniId,
         orgId: ObjectId("673b0000000000000000002d"), // Terrazza Panoramica
-        orgRole: "manager",
+        orgRole: "MANAGER",
         createdAt: new Date("2025-08-15T09:30:00.000Z"),
         updatedAt: new Date("2025-08-15T09:30:00.000Z"),
     },
@@ -191,7 +191,7 @@ const relationships = [
         _id: ObjectId("673b0000000000000000004a"),
         userId: johnId,
         orgId: ObjectId("673b0000000000000000002b"), // Jerry Thomas Speakeasy
-        orgRole: "staff",
+        orgRole: "STAFF",
         createdAt: new Date("2025-10-20T14:00:00.000Z"),
         updatedAt: new Date("2025-10-20T14:00:00.000Z"),
     },
@@ -206,7 +206,7 @@ const invitations = [
         _id: ObjectId("673b0000000000000000004b"),
         orgId: ObjectId("673b0000000000000000002e"), // The Drunken Ship
         invitedEmail: "giovanni.cefalo@gmail.com",
-        role: "manager",
+        role: "MANAGER",
         status: "pending",
         invitedBy: johnId,
         invitationExpires: new Date("2025-12-05T11:20:00.000Z"), // Expires in 1 month
@@ -219,7 +219,7 @@ const invitations = [
         _id: ObjectId("673b0000000000000000004c"),
         orgId: ObjectId("673b0000000000000000002c"), // Enoteca Provincia Romana
         invitedEmail: "johnd.fish4@gmail.com",
-        role: "staff",
+        role: "STAFF",
         status: "pending",
         invitedBy: giovanniId,
         invitationExpires: new Date("2025-12-01T09:15:00.000Z"), // Expires in ~1 month
@@ -232,7 +232,7 @@ const invitations = [
         _id: ObjectId("673b0000000000000000004d"),
         orgId: ObjectId("673b0000000000000000002a"), // The Cocktail Lounge Roma
         invitedEmail: "bartender@example.com",
-        role: "staff",
+        role: "STAFF",
         status: "pending",
         invitedBy: giovanniId,
         invitationExpires: new Date("2025-12-06T10:00:00.000Z"),

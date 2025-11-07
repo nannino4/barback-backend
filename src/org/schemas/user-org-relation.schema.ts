@@ -2,9 +2,9 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 export enum OrgRole {
-    OWNER = 'owner',
-    MANAGER = 'manager',
-    STAFF = 'staff',
+    OWNER = 'OWNER',
+    MANAGER = 'MANAGER',
+    STAFF = 'STAFF',
 }
 
 @Schema({ timestamps: true, collection: 'user_org_relations' })
