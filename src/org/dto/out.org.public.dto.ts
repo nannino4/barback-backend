@@ -1,5 +1,6 @@
-import { Expose, plainToInstance, Transform } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import { OutUserPublicDto } from '../../user/dto/out.user.public.dto';
+import { plainToInstance } from 'class-transformer';
 
 export class OutOrgPublicDto 
 {
@@ -11,6 +12,10 @@ export class OutOrgPublicDto
     name!: string;
 
     @Expose()
-    @Transform(({ obj }) => plainToInstance(OutUserPublicDto, obj.ownerId || obj.owner, { excludeExtraneousValues: true }))
+    @Type(() => OutUserPublicDto)
+    @Transform(({ obj }) => 
+    {
+        return plainToInstance(OutUserPublicDto, obj.ownerId, { excludeExtraneousValues: true });
+    })
     owner!: OutUserPublicDto;
 }

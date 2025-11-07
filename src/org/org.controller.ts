@@ -18,14 +18,12 @@ import { OrgService } from './org.service';
 import { OrgRole } from './schemas/user-org-relation.schema';
 import { UserOrgRelationService } from './user-org-relation.service';
 import { OutUserOrgRelationDto } from './dto/out.user-org-relation';
-import { OutOrgPublicDto } from './dto/out.org.public.dto';
 import { OutOrgDto } from './dto/out.org.dto';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { UpdateMemberRoleDto } from './dto/in.update-member-role.dto';
 import { CreateOrgDto } from './dto/in.create-org.dto';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
-import { OutUserPublicDto } from '../user/dto/out.user.public.dto';
 import { OrgRolesGuard } from './guards/org-roles.guard';
 import { OrgSubscriptionGuard } from './guards/org-subscription.guard';
 import { OrgRoles } from './decorators/org-roles.decorator';
@@ -108,14 +106,7 @@ export class OrgController
                 this.logger.warn(`Corrupted relation found: ${relation.id}`, 'OrgController#getUserOrgs');
                 throw new CorruptedUserOrgRelationException(relation.id, !relation.orgId ? 'organization' : 'user');
             }
-            this.logger.debug(`org: ${(relation.orgId as any)}`, 'OrgController#getUserOrgs');
-            result.push(
-                plainToInstance(OutUserOrgRelationDto, {
-                    user: plainToInstance(OutUserPublicDto, (relation.userId as any).toObject(), { excludeExtraneousValues: true }),
-                    org: plainToInstance(OutOrgPublicDto, (relation.orgId as any).toObject(), { excludeExtraneousValues: true }),
-                    role: relation.orgRole,
-                }, { excludeExtraneousValues: true })
-            );
+            result.push(plainToInstance(OutUserOrgRelationDto, relation.toObject(), { excludeExtraneousValues: true }));
         }
         this.logger.debug(`Returning ${result.length} organization relationships for user`, 'OrgController#getUserOrgs');
         return result;
@@ -172,14 +163,7 @@ export class OrgController
                 this.logger.warn(`Corrupted relation found: ${relation.id}`, 'OrgController#getOrgMembers');
                 throw new CorruptedUserOrgRelationException(relation.id, !relation.userId ? 'user' : 'organization');
             }
-            
-            result.push(
-                plainToInstance(OutUserOrgRelationDto, {
-                    user: plainToInstance(OutUserPublicDto, (relation.userId as any).toObject(), { excludeExtraneousValues: true }),
-                    org: plainToInstance(OutOrgPublicDto, (relation.orgId as any).toObject(), { excludeExtraneousValues: true }),
-                    role: relation.orgRole,
-                }, { excludeExtraneousValues: true })
-            );
+            result.push(plainToInstance(OutUserOrgRelationDto, relation.toObject(), { excludeExtraneousValues: true }));
         }
         
         this.logger.debug(`Returning ${result.length} members for organization: ${orgId}`, 'OrgController#getOrgMembers');
@@ -255,11 +239,7 @@ export class OrgController
         
         this.logger.debug(`Member role updated successfully for user: ${userId} in org: ${orgId} to role: ${updateData.role}`, 'OrgController#updateMemberRole');
         
-        return plainToInstance(OutUserOrgRelationDto, {
-            user: plainToInstance(OutUserPublicDto, (populatedRelation.userId as any).toObject(), { excludeExtraneousValues: true }),
-            org: plainToInstance(OutOrgPublicDto, (populatedRelation.orgId as any).toObject(), { excludeExtraneousValues: true }),
-            role: updatedRelation.orgRole,
-        }, { excludeExtraneousValues: true });
+        return plainToInstance(OutUserOrgRelationDto, populatedRelation.toObject(), { excludeExtraneousValues: true });
     }
 
 }
