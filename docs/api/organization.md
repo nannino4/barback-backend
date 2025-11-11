@@ -151,9 +151,7 @@ Get organizations user is a member of.
       "email": "user@example.com",
       "firstName": "John",
       "lastName": "Doe",
-      "phoneNumber": "+393331234567",
       "profilePictureUrl": null,
-      "isEmailVerified": true
     },
     "org": {
       "id": "64a1b2c3d4e5f6789def456",
@@ -335,9 +333,7 @@ Get organization members.
       "email": "john@example.com",
       "firstName": "John",
       "lastName": "Doe",
-      "phoneNumber": "+393331234567",
       "profilePictureUrl": null,
-      "isEmailVerified": true
     },
     "org": {
       "id": "64a1b2c3d4e5f6789def456",
@@ -358,9 +354,7 @@ Get organization members.
       "email": "jane@example.com",
       "firstName": "Jane",
       "lastName": "Smith",
-      "phoneNumber": null,
       "profilePictureUrl": "https://example.com/jane.jpg",
-      "isEmailVerified": true
     },
     "org": {
       "id": "64a1b2c3d4e5f6789def456",
@@ -614,9 +608,7 @@ Update member role in organization.
     "email": "jane@example.com",
     "firstName": "Jane",
     "lastName": "Smith",
-    "phoneNumber": null,
     "profilePictureUrl": "https://example.com/jane.jpg",
-    "isEmailVerified": true
   },
   "org": {
     "id": "64a1b2c3d4e5f6789def456",
