@@ -324,6 +324,35 @@ export class UserService
         return user;
     }
 
+    async findByStripeCustomerId(stripeCustomerId: string): Promise<User | null>
+    {
+        this.logger.debug(`Finding user by Stripe customer ID: ${stripeCustomerId}`, 'UserService#findByStripeCustomerId');
+        
+        try 
+        {
+            const user = await this.userModel.findOne({ stripeCustomerId }).exec();
+            
+            if (!user) 
+            {
+                this.logger.warn(`User not found with Stripe customer ID: ${stripeCustomerId}`, 'UserService#findByStripeCustomerId');
+                return null;
+            }
+            
+            this.logger.debug(`User found with Stripe customer ID: ${stripeCustomerId}`, 'UserService#findByStripeCustomerId');
+            return user;
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(
+                `Database error while finding user by Stripe customer ID: ${stripeCustomerId}`,
+                error instanceof Error ? error.stack : undefined,
+                'UserService#findByStripeCustomerId'
+            );
+            throw new DatabaseOperationException('user lookup by Stripe customer ID', errorMessage);
+        }
+    }
+
     async generateEmailVerificationToken(userId: Types.ObjectId): Promise<string>
     {
         this.logger.debug(`Generating email verification token for user ID: ${userId}`, 'UserService#generateEmailVerificationToken');

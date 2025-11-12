@@ -1,10 +1,12 @@
 import { Controller, Post, RawBodyRequest, Req, Headers, BadRequestException } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { StripeService } from '../common/services/stripe.service';
+import { UserService } from '../user/user.service';
 import { ConfigService } from '@nestjs/config';
 import { SubscriptionStatus } from './schemas/subscription.schema';
 import Stripe from 'stripe';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { Types } from 'mongoose';
 
 @Controller('webhooks')
 export class WebhookController 
@@ -14,6 +16,7 @@ export class WebhookController
     constructor(
         private readonly subscriptionService: SubscriptionService,
         private readonly stripeService: StripeService,
+        private readonly userService: UserService,
         private readonly configService: ConfigService,
         private readonly logger: CustomLogger,
     ) 
@@ -68,9 +71,72 @@ export class WebhookController
         case 'invoice.payment_succeeded':
         {
             const invoice = event.data.object as Stripe.Invoice;
-            if ((invoice as any).subscription) 
+            // Subscription ID can be a string or Subscription object
+            const subscriptionData = (invoice as any).subscription;
+            const subscriptionId = typeof subscriptionData === 'string' 
+                ? subscriptionData 
+                : subscriptionData?.id;
+            
+            if (subscriptionId) 
             {
-                this.logger.debug(`Payment succeeded for subscription: ${(invoice as any).subscription}`, 'WebhookController#handleStripeWebhook');
+                this.logger.debug(
+                    `Payment succeeded for subscription: ${subscriptionId}`,
+                    'WebhookController#handleStripeWebhook'
+                );
+                
+                try 
+                {
+                    // Fetch full subscription details from Stripe
+                    const stripeSubscription = await this.stripeService.retrieveSubscription(subscriptionId);
+                    
+                    // Get customer ID from subscription
+                    const customerData = stripeSubscription.customer;
+                    const customerId = typeof customerData === 'string'
+                        ? customerData
+                        : customerData?.id;
+                    
+                    if (!customerId) 
+                    {
+                        this.logger.error(
+                            `No customer ID found in subscription ${subscriptionId}`,
+                            undefined,
+                            'WebhookController#handleStripeWebhook'
+                        );
+                        break;
+                    }
+                    
+                    // Find user by Stripe customer ID
+                    const user = await this.userService.findByStripeCustomerId(customerId);
+                    
+                    if (!user) 
+                    {
+                        this.logger.error(
+                            `User not found for Stripe customer ${customerId}`,
+                            undefined,
+                            'WebhookController#handleStripeWebhook'
+                        );
+                        break;
+                    }
+                    
+                    // Create local subscription record
+                    await this.subscriptionService.createFromStripeSubscription(
+                        stripeSubscription,
+                        user._id as Types.ObjectId
+                    );
+                    
+                    this.logger.debug(
+                        `Local subscription created for Stripe subscription ${subscriptionId}`,
+                        'WebhookController#handleStripeWebhook'
+                    );
+                } 
+                catch (error) 
+                {
+                    this.logger.error(
+                        `Failed to create local subscription for ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                        error instanceof Error ? error.stack : undefined,
+                        'WebhookController#handleStripeWebhook'
+                    );
+                }
             }
             break;
         }
