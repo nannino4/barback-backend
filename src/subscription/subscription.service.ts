@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import Stripe from 'stripe';
@@ -12,6 +12,7 @@ import {
     SubscriptionNotFoundException,
     SubscriptionNotFoundByIdException,
     InvalidSubscriptionOperationException,
+    SubscriptionSetupFailedException,
 } from './exceptions/subscription.exceptions';
 
 @Injectable()
@@ -27,17 +28,44 @@ export class SubscriptionService
         this.logger.debug('SubscriptionService initialized', 'SubscriptionService#constructor');
     }
 
-    async createSubscription(userId: Types.ObjectId, billingInterval: BillingInterval = BillingInterval.MONTHLY, isTrial: boolean): Promise<Subscription>
+    /**
+     * Setup subscription for payment collection
+     * 
+     * Creates a Stripe subscription with payment_behavior='default_incomplete' and returns
+     * the clientSecret for Payment Element. Does NOT save to local database yet.
+     * 
+     * The subscription will be saved locally only after webhook confirms payment success.
+     * This prevents accumulation of incomplete subscriptions in our database.
+     * 
+     * For BOTH trial and paid subscriptions, we collect payment details upfront.
+     * This follows Stripe best practices for seamless trial-to-paid conversion.
+     * 
+     * @param userId User ID
+     * @param billingInterval Billing interval (MONTHLY or YEARLY)
+     * @param isTrial Whether this is a trial subscription
+     * @returns Object containing Stripe subscription ID and clientSecret
+     */
+    async setupSubscriptionPayment(
+        userId: Types.ObjectId,
+        billingInterval: BillingInterval = BillingInterval.MONTHLY,
+        isTrial: boolean
+    ): Promise<{ stripeSubscriptionId: string; clientSecret: string }>
     {
-        this.logger.debug(`Creating ${isTrial ? 'trial' : 'paid'} subscription for user: ${userId} with ${billingInterval} billing`, 'SubscriptionService#createSubscription');
+        this.logger.debug(
+            `Setting up ${isTrial ? 'trial' : 'paid'} subscription payment for user: ${userId}`,
+            'SubscriptionService#setupSubscriptionPayment'
+        );
 
-        // If trial requested ensure eligibility
+        // If trial requested, ensure eligibility
         if (isTrial)
         {
             const eligible = await this.isEligibleForTrial(userId);
             if (!eligible)
             {
-                this.logger.warn(`User ${userId} is not eligible for trial subscription`, 'SubscriptionService#createSubscription');
+                this.logger.warn(
+                    `User ${userId} is not eligible for trial subscription`,
+                    'SubscriptionService#setupSubscriptionPayment'
+                );
                 throw new NotEligibleForTrialException('User already has a subscription or is not eligible for trial');
             }
         }
@@ -56,16 +84,100 @@ export class SubscriptionService
             await this.userService.updateStripeCustomerId(userId, stripeCustomerId);
         }
 
-        // Create subscription in Stripe (trial vs paid)
+        // Create subscription in Stripe (both trial and paid collect payment upfront)
         const stripeSubscription = await this.stripeService.createSubscription(
             stripeCustomerId,
             billingInterval,
             { isTrial }
         );
 
-        // Persist subscription locally
+        // Extract clientSecret from latest invoice
+        // For incomplete subscriptions, we use confirmation_secret (includes both PaymentIntent and SetupIntent)
+        let clientSecret: string | null = null;
+        
+        if (stripeSubscription.latest_invoice)
+        {
+            const invoice = stripeSubscription.latest_invoice as Stripe.Invoice;
+            
+            // Use confirmation_secret which provides a unified client secret
+            // This works for both $0 trial invoices (SetupIntent) and paid invoices (PaymentIntent)
+            if (invoice.confirmation_secret)
+            {
+                clientSecret = invoice.confirmation_secret.client_secret || null;
+            }
+        }
+
+        if (!clientSecret)
+        {
+            // Cleanup Stripe subscription and throw 500 error (integration failure)
+            try
+            {
+                await this.stripeService.cancelSubscription(stripeSubscription.id);
+                this.logger.error(
+                    `Missing client secret from Stripe subscription ${stripeSubscription.id}, cancelled subscription`,
+                    undefined,
+                    'SubscriptionService#setupSubscriptionPayment'
+                );
+            }
+            catch (cleanupError)
+            {
+                this.logger.error(
+                    `Failed to cleanup Stripe subscription ${stripeSubscription.id} after missing client secret`,
+                    cleanupError instanceof Error ? cleanupError.stack : undefined,
+                    'SubscriptionService#setupSubscriptionPayment'
+                );
+            }
+
+            throw new SubscriptionSetupFailedException('Client secret not available from Stripe');
+        }
+
+        this.logger.debug(
+            `${isTrial ? 'Trial' : 'Paid'} subscription setup completed for user: ${userId}, Stripe subscription: ${stripeSubscription.id}`,
+            'SubscriptionService#setupSubscriptionPayment'
+        );
+
+        // Return Stripe subscription ID and client secret
+        // Local DB record will be created by webhook when payment is confirmed
+        return { 
+            stripeSubscriptionId: stripeSubscription.id,
+            clientSecret,
+        };
+    }
+
+    /**
+     * Create local subscription record from Stripe subscription
+     * Called by webhook handlers when subscription becomes active/trialing
+     * 
+     * @param stripeSubscription Stripe subscription object  
+     * @param userId User ID (from webhook context)
+     * @returns Created subscription
+     */
+    async createFromStripeSubscription(
+        stripeSubscription: Stripe.Subscription,
+        userId: Types.ObjectId
+    ): Promise<Subscription>
+    {
+        this.logger.debug(
+            `Creating local subscription from Stripe subscription: ${stripeSubscription.id} for user: ${userId}`,
+            'SubscriptionService#createFromStripeSubscription'
+        );
+        
         try
         {
+            // Check if subscription already exists
+            const existing = await this.subscriptionModel
+                .findOne({ stripeSubscriptionId: stripeSubscription.id })
+                .exec();
+
+            if (existing)
+            {
+                this.logger.debug(
+                    `Subscription already exists for Stripe subscription ${stripeSubscription.id}, updating status`,
+                    'SubscriptionService#createFromStripeSubscription'
+                );
+                return await this.updateStatus(stripeSubscription.id, this.mapStripeStatusToLocal(stripeSubscription.status));
+            }
+
             const subscription = new this.subscriptionModel({
                 userId: userId,
                 stripeSubscriptionId: stripeSubscription.id,
@@ -74,25 +186,23 @@ export class SubscriptionService
             });
 
             await subscription.save();
-            this.logger.debug(`${isTrial ? 'Trial' : 'Paid'} subscription created successfully for user: ${userId}`, 'SubscriptionService#createSubscription');
+            
+            this.logger.debug(
+                `Local subscription created successfully for Stripe subscription: ${stripeSubscription.id}`,
+                'SubscriptionService#createFromStripeSubscription'
+            );
+            
             return subscription;
         }
         catch (error)
         {
-            // Cleanup Stripe subscription if DB fails
-            try
-            {
-                await this.stripeService.cancelSubscription(stripeSubscription.id);
-                this.logger.debug(`Cleaned up Stripe subscription ${stripeSubscription.id} after database failure`, 'SubscriptionService#createSubscription');
-            }
-            catch (cleanupError)
-            {
-                this.logger.error(`Failed to cleanup Stripe subscription ${stripeSubscription.id} after database failure`, cleanupError instanceof Error ? cleanupError.stack : undefined, 'SubscriptionService#createSubscription');
-            }
-
             const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
-            this.logger.error(`Database error during subscription creation for user: ${userId}`, error instanceof Error ? error.stack : undefined, 'SubscriptionService#createSubscription');
-            throw new DatabaseOperationException('subscription creation', errorMessage);
+            this.logger.error(
+                `Database error during subscription creation from Stripe subscription: ${stripeSubscription.id}`,
+                error instanceof Error ? error.stack : undefined,
+                'SubscriptionService#createFromStripeSubscription'
+            );
+            throw new DatabaseOperationException('subscription creation from Stripe', errorMessage);
         }
     }
 
@@ -246,36 +356,17 @@ export class SubscriptionService
         case 'paused':
             return SubscriptionStatus.PAUSED;
         default:
-            throw new BadRequestException(`Unknown Stripe subscription status: ${stripeStatus}`);
+            // Log and throw 500 error since this indicates an integration issue
+            this.logger.error(
+                `Unknown Stripe subscription status: ${stripeStatus}`,
+                undefined,
+                'SubscriptionService#mapStripeStatusToLocal'
+            );
+            throw new SubscriptionSetupFailedException(`Unknown Stripe subscription status: ${stripeStatus}`);
         }
     }
 
-    async getSubscriptionPlans(): Promise<{
-        id: string;
-        name: string;
-        duration: string;
-        price: number;
-        features: string[];
-    }[]> 
-    {
-        // Return predefined plan configurations
-        return [
-            {
-                id: 'trial',
-                name: 'Trial',
-                duration: '3 months',
-                price: 0,
-                features: ['Full access to all features', 'Automatically converts to Basic Plan at trial end'],
-            },
-            {
-                id: 'basic',
-                name: 'Basic Plan',
-                duration: 'Monthly',
-                price: 29.99,
-                features: ['Full access to all features', 'Unlimited organizations', 'Email support'],
-            },
-        ];
-    }
+
 
     async isEligibleForTrial(userId: Types.ObjectId): Promise<boolean> 
     {

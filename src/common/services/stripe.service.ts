@@ -109,9 +109,19 @@ export class StripeService
         }
     }
 
-    // Subscription Management
     /**
-     * Unified subscription creation supporting trial and paid flows.
+     * Create a subscription with payment collection
+     * 
+     * For BOTH trial and paid subscriptions:
+     * - Creates subscription with payment_behavior='default_incomplete'
+     * - Expands latest_invoice.confirmation_secret to get clientSecret
+     * - Returns subscription with incomplete status (requires payment confirmation)
+     * 
+     * Trial subscriptions:
+     * - Have $0 first invoice but still collect payment method
+     * - Automatically convert to paid after trial_end
+     * - Follow Stripe best practice for seamless conversion
+     * 
      * @param customerId Stripe customer ID
      * @param billingInterval Billing interval (monthly/yearly)
      * @param options Additional creation options
@@ -123,17 +133,24 @@ export class StripeService
     ): Promise<Stripe.Subscription>
     {
         const isTrial = options?.isTrial === true;
-        this.logger.debug(`Creating ${isTrial ? 'trial' : 'paid'} subscription for customer: ${customerId} with ${billingInterval} billing`, 'StripeService#createSubscription');
+        this.logger.debug(
+            `Creating ${isTrial ? 'trial' : 'paid'} subscription for customer: ${customerId} with ${billingInterval} billing`,
+            'StripeService#createSubscription'
+        );
 
         try
         {
             const priceId = this.getPriceId(billingInterval);
+            
             const subscriptionParams: Stripe.SubscriptionCreateParams = {
                 customer: customerId,
                 items: [{ price: priceId }],
                 payment_behavior: 'default_incomplete',
-                payment_settings: { save_default_payment_method: 'on_subscription' },
-                expand: ['latest_invoice.payment_intent'],
+                payment_settings: { 
+                    save_default_payment_method: 'on_subscription',
+                },
+                // Expand confirmation_secret to get clientSecret for Payment Element
+                expand: ['latest_invoice.confirmation_secret'],
             };
 
             if (isTrial)
@@ -145,7 +162,11 @@ export class StripeService
                     const now = Math.floor(Date.now() / 1000);
                     if (trialEnd <= now)
                     {
-                        this.logger.error(`Provided trial end (${trialEnd}) is in the past`, undefined, 'StripeService#createSubscription');
+                        this.logger.error(
+                            `Provided trial end (${trialEnd}) is in the past`,
+                            undefined,
+                            'StripeService#createSubscription'
+                        );
                         throw new StripeSubscriptionException('trial configuration', 'Provided trial end timestamp is in the past');
                     }
                 }
@@ -158,12 +179,21 @@ export class StripeService
             }
 
             const subscription = await this.stripe.subscriptions.create(subscriptionParams);
-            this.logger.debug(`${isTrial ? 'Trial' : 'Paid'} subscription created: ${subscription.id}`, 'StripeService#createSubscription');
+            
+            this.logger.debug(
+                `${isTrial ? 'Trial' : 'Paid'} subscription created: ${subscription.id}`,
+                'StripeService#createSubscription'
+            );
+            
             return subscription;
         }
         catch (error)
         {
-            this.logger.error(`Failed to create ${options?.isTrial ? 'trial' : 'paid'} subscription for customer: ${customerId}`, error instanceof Error ? error.stack : undefined, 'StripeService#createSubscription');
+            this.logger.error(
+                `Failed to create ${options?.isTrial ? 'trial' : 'paid'} subscription for customer: ${customerId}`,
+                error instanceof Error ? error.stack : undefined,
+                'StripeService#createSubscription'
+            );
             this.handleStripeError(error, 'subscription creation');
         }
     }

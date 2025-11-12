@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConflictException, NotFoundException, BadRequestException, InternalServerErrorException } from '@nestjs/common';
 
 /**
  * Custom exception thrown when user is not eligible for trial subscription
@@ -71,6 +71,22 @@ export class SubscriptionAlreadyExistsException extends ConflictException
             message: `User ${userId} already has an active subscription`,
             error: 'SUBSCRIPTION_ALREADY_EXISTS',
             statusCode: 409,
+        });
+    }
+}
+
+/**
+ * Custom exception thrown when Stripe fails to create subscription with payment setup
+ * This is a 500 error because it's a Stripe integration failure, not a client error
+ */
+export class SubscriptionSetupFailedException extends InternalServerErrorException
+{
+    constructor(reason: string)
+    {
+        super({
+            message: `Failed to setup subscription for payment: ${reason}`,
+            error: 'SUBSCRIPTION_SETUP_FAILED',
+            statusCode: 500,
         });
     }
 }

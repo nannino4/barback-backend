@@ -6,7 +6,7 @@ import { User } from '../user/schemas/user.schema';
 import { SubscriptionService } from './subscription.service';
 import { InCreateSubscriptionDto } from './dto/in.create-subscription.dto';
 import { OutSubscriptionDto } from './dto/out.subscription.dto';
-import { OutSubscriptionPlanDto } from './dto/out.subscription-plan.dto';
+import { OutSubscriptionSetupDto } from './dto/out.subscription-setup.dto';
 import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
 
@@ -31,30 +31,36 @@ export class SubscriptionController
         return plainToInstance(OutSubscriptionDto, subscriptions.map(sub => sub.toObject()), { excludeExtraneousValues: true });
     }
 
+    /**
+     * Setup subscription for payment collection
+     * 
+     * Creates a Stripe subscription and returns clientSecret for Payment Element.
+     * Does NOT save subscription locally - that happens via webhook after payment confirmation.
+     * Both trial and paid subscriptions collect payment details upfront.
+     */
     @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
     @Post()
-    async startPaidSubscription(
+    async setupSubscriptionPayment(
         @CurrentUser() user: User,
         @Body() createSubscriptionDto: InCreateSubscriptionDto
-    ): Promise<OutSubscriptionDto> 
+    ): Promise<OutSubscriptionSetupDto> 
     {
-        this.logger.debug(`Starting paid subscription for user: ${user.id}`, 'SubscriptionController#startPaidSubscription');
+        this.logger.debug(
+            `Setting up ${createSubscriptionDto.isTrial ? 'trial' : 'paid'} subscription payment for user: ${user.id}`,
+            'SubscriptionController#setupSubscriptionPayment'
+        );
         
-        const subscription = await this.subscriptionService.createSubscription(
+        const result = await this.subscriptionService.setupSubscriptionPayment(
             user.id,
             createSubscriptionDto.billingInterval,
             createSubscriptionDto.isTrial
         );
-        return plainToInstance(OutSubscriptionDto, subscription.toObject(), { excludeExtraneousValues: true });
-    }
-
-    @Get('plans')
-    async getSubscriptionPlans(): Promise<OutSubscriptionPlanDto[]> 
-    {
-        this.logger.debug('Getting subscription plans', 'SubscriptionController#getSubscriptionPlans');
         
-        const plans = await this.subscriptionService.getSubscriptionPlans();
-        return plainToInstance(OutSubscriptionPlanDto, plans, { excludeExtraneousValues: true });
+        return plainToInstance(
+            OutSubscriptionSetupDto,
+            result,
+            { excludeExtraneousValues: true }
+        );
     }
 
     @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
