@@ -12,7 +12,7 @@ The Organization Management module handles organization CRUD operations, member 
 ## Endpoints
 
 ### POST /api/orgs
-Create a new organization.
+Create a new organization with a MongoDB subscription ID.
 
 **Authentication**: Required (JWT)
 
@@ -29,7 +29,7 @@ Create a new organization.
 
 **Validation Rules**:
 - `name`: Required, string, max 100 characters
-- `subscriptionId`: Required, must be valid ObjectId format
+- `subscriptionId`: Required, must be valid MongoDB ObjectId format
 - `settings.defaultCurrency`: Optional, string, defaults to "EUR"
 
 **Response** (201 Created):
@@ -60,6 +60,129 @@ Create a new organization.
 **Note**: Validation error messages are returned as translation keys. Organization validation keys:
 - `validation.org.name.*` - name validation (required, mustBeString)
 - `validation.org.subscriptionId.*` - subscriptionId validation (required, invalidObjectId)
+- `validation.org.settings.*` - settings validation (required, mustBeObject)
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Subscription Not Found:
+```json
+{
+  "message": "Subscription not found",
+  "error": "Not Found",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Organization Name Already Exists (for this user):
+```json
+{
+  "message": "Organization with name \"My Bar Organization\" already exists",
+  "error": "ORGANIZATION_NAME_EXISTS",
+  "statusCode": 409
+}
+```
+
+**409 Conflict** - Subscription Not Active:
+```json
+{
+  "message": "Subscription \"64a1b2c3d4e5f6789abc123\" is not active",
+  "error": "SUBSCRIPTION_NOT_ACTIVE",
+  "statusCode": 409
+}
+```
+
+**409 Conflict** - Subscription Ownership Mismatch:
+```json
+{
+  "message": "Subscription \"64a1b2c3d4e5f6789abc123\" does not belong to the current user",
+  "error": "SUBSCRIPTION_OWNERSHIP_MISMATCH",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: organization creation - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
+- User becomes the organization owner automatically
+- Subscription must be active or trialing status
+- Organization names must be unique per owner (different owners can have organizations with the same name)
+- Each organization requires its own subscription
+- All database operations are wrapped in error handling
+
+---
+
+### POST /api/orgs/with-stripe-subscription
+Create a new organization with a Stripe subscription ID (recommended for payment flow integration).
+
+**Authentication**: Required (JWT)
+
+**Request Body**:
+```json
+{
+  "name": "My Bar Organization",
+  "stripeSubscriptionId": "sub_1234567890abcdef",
+  "settings": {
+    "defaultCurrency": "EUR"
+  }
+}
+```
+
+**Validation Rules**:
+- `name`: Required, string, max 100 characters
+- `stripeSubscriptionId`: Required, string (Stripe subscription ID format, e.g., `sub_xxxxx`)
+- `settings.defaultCurrency`: Optional, string, defaults to "EUR"
+
+**Response** (201 Created):
+```json
+{
+  "id": "64a1b2c3d4e5f6789def456",
+  "name": "My Bar Organization",
+  "settings": {
+    "defaultCurrency": "EUR"
+  }
+}
+```
+
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "validation.org.name.required",
+    "validation.org.stripeSubscriptionId.mustBeString"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**Note**: Validation error messages are returned as translation keys. Organization validation keys:
+- `validation.org.name.*` - name validation (required, mustBeString)
+- `validation.org.stripeSubscriptionId.*` - stripeSubscriptionId validation (required, mustBeString)
 - `validation.org.settings.*` - settings validation (required, mustBeObject)
 
 **401 Unauthorized** - Invalid or Missing JWT:

@@ -22,6 +22,7 @@ import { OutOrgDto } from './dto/out.org.dto';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { UpdateMemberRoleDto } from './dto/in.update-member-role.dto';
 import { CreateOrgDto } from './dto/in.create-org.dto';
+import { CreateOrgWithStripeSubscriptionDto } from './dto/in.create-org-with-stripe-subscription.dto';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
 import { OrgRolesGuard } from './guards/org-roles.guard';
@@ -84,6 +85,55 @@ export class OrgController
         const org = await this.orgService.create(createData, user._id as Types.ObjectId, subscription._id as Types.ObjectId);
         
         this.logger.debug(`Organization created successfully: ${org.name} with ID: ${org._id}`, 'OrgController#createOrganization');
+        
+        return plainToInstance(OutOrgDto, org.toObject(), { excludeExtraneousValues: true });
+    }
+
+    @Post('with-stripe-subscription')
+    async createOrganizationWithStripeSubscription(
+        @CurrentUser() user: User,
+        @Body() createData: CreateOrgWithStripeSubscriptionDto,
+    ): Promise<OutOrgDto>
+    {
+        this.logger.debug(
+            `Creating organization: ${createData.name} for user: ${user.email} with Stripe subscription: ${createData.stripeSubscriptionId}`,
+            'OrgController#createOrganizationWithStripeSubscription'
+        );
+        
+        // Find subscription by Stripe subscription ID
+        const subscription = await this.subscriptionService.findByStripeSubscriptionId(createData.stripeSubscriptionId);
+        
+        if (subscription.userId.toString() !== user.id)
+        {
+            this.logger.error(
+                `Subscription ${createData.stripeSubscriptionId} does not belong to user: ${user.email}`,
+                'OrgController#createOrganizationWithStripeSubscription'
+            );
+            throw new SubscriptionOwnershipException(createData.stripeSubscriptionId);
+        }
+        
+        if (subscription.status !== SubscriptionStatus.ACTIVE && subscription.status !== SubscriptionStatus.TRIALING)
+        {
+            this.logger.error(
+                `Subscription is not active: ${createData.stripeSubscriptionId}`,
+                'OrgController#createOrganizationWithStripeSubscription'
+            );
+            throw new SubscriptionNotActiveException(createData.stripeSubscriptionId);
+        }
+        
+        // Create the organization with the DTO (convert to CreateOrgDto internally)
+        const createOrgDto: CreateOrgDto = {
+            name: createData.name,
+            subscriptionId: subscription._id as Types.ObjectId,
+            settings: createData.settings,
+        };
+        
+        const org = await this.orgService.create(createOrgDto, user._id as Types.ObjectId, subscription._id as Types.ObjectId);
+        
+        this.logger.debug(
+            `Organization created successfully: ${org.name} with ID: ${org._id}`,
+            'OrgController#createOrganizationWithStripeSubscription'
+        );
         
         return plainToInstance(OutOrgDto, org.toObject(), { excludeExtraneousValues: true });
     }

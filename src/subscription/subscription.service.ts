@@ -256,6 +256,37 @@ export class SubscriptionService
         }
     }
 
+    async findByStripeSubscriptionId(stripeSubscriptionId: string): Promise<Subscription> 
+    {
+        this.logger.debug(`Finding subscription by Stripe ID: ${stripeSubscriptionId}`, 'SubscriptionService#findByStripeSubscriptionId');
+        
+        try 
+        {
+            const subscription = await this.subscriptionModel
+                .findOne({ stripeSubscriptionId })
+                .exec();
+            
+            if (!subscription) 
+            {
+                this.logger.warn(`Subscription not found with Stripe ID: ${stripeSubscriptionId}`, 'SubscriptionService#findByStripeSubscriptionId');
+                throw new SubscriptionNotFoundException(stripeSubscriptionId);
+            }
+            
+            return subscription;
+        }
+        catch (error)
+        {
+            if (error instanceof SubscriptionNotFoundException) 
+            {
+                throw error;
+            }
+            
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            this.logger.error(`Database error while finding subscription by Stripe ID: ${stripeSubscriptionId} - ${errorMessage}`, error instanceof Error ? error.stack : undefined, 'SubscriptionService#findByStripeSubscriptionId');
+            throw new DatabaseOperationException('subscription lookup by Stripe ID', errorMessage);
+        }
+    }
+
     async updateStatus(stripeSubscriptionId: string, status: SubscriptionStatus): Promise<Subscription> 
     {
         this.logger.debug(`Updating subscription status: ${stripeSubscriptionId} to ${status}`, 'SubscriptionService#updateStatus');

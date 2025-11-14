@@ -70,9 +70,10 @@ export class WebhookController
         }
         case 'invoice.payment_succeeded':
         {
+            this.logger.debug(`Processing invoice.payment_succeeded event with id: ${event.id}`, 'WebhookController#handleStripeWebhook');
             const invoice = event.data.object as Stripe.Invoice;
+            const subscriptionData = invoice.parent?.subscription_details?.subscription;
             // Subscription ID can be a string or Subscription object
-            const subscriptionData = (invoice as any).subscription;
             const subscriptionId = typeof subscriptionData === 'string' 
                 ? subscriptionData 
                 : subscriptionData?.id;
