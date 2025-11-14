@@ -390,4 +390,98 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             expect(orgInDb!.subscriptionId.toString()).toBe(originalSubscriptionId.toString());
         });
     });
+
+    describe('isNameAvailable', () => 
+    {
+        it('should return true when name is available', async () => 
+        {
+            // Arrange
+            const ownerId = new Types.ObjectId();
+            const orgName = 'Available Organization';
+
+            // Act
+            const result = await service.isNameAvailable(orgName, ownerId);
+
+            // Assert
+            expect(result).toBe(true);
+            expect(mockLogger.debug).toHaveBeenCalledWith(
+                expect.stringContaining(`Checking if organization name is available: "${orgName}"`),
+                'OrgService#isNameAvailable'
+            );
+            expect(mockLogger.debug).toHaveBeenCalledWith(
+                expect.stringContaining(`Organization name "${orgName}" is available`),
+                'OrgService#isNameAvailable'
+            );
+        });
+
+        it('should return false when name already exists for the owner', async () => 
+        {
+            // Arrange
+            const orgModel = connection.model('Org');
+            const ownerId = new Types.ObjectId();
+            const subscriptionId = new Types.ObjectId();
+            const orgName = 'Existing Organization';
+            
+            await orgModel.create({
+                name: orgName,
+                ownerId: ownerId,
+                subscriptionId: subscriptionId,
+                settings: { defaultCurrency: 'EUR' },
+            });
+
+            // Act
+            const result = await service.isNameAvailable(orgName, ownerId);
+
+            // Assert
+            expect(result).toBe(false);
+            expect(mockLogger.debug).toHaveBeenCalledWith(
+                expect.stringContaining(`Organization name "${orgName}" is not available`),
+                'OrgService#isNameAvailable'
+            );
+        });
+
+        it('should return true when name exists but for different owner', async () => 
+        {
+            // Arrange
+            const orgModel = connection.model('Org');
+            const owner1Id = new Types.ObjectId();
+            const owner2Id = new Types.ObjectId();
+            const subscription1Id = new Types.ObjectId();
+            const orgName = 'Shared Name';
+            
+            await orgModel.create({
+                name: orgName,
+                ownerId: owner1Id,
+                subscriptionId: subscription1Id,
+                settings: { defaultCurrency: 'EUR' },
+            });
+
+            // Act - Check for different owner
+            const result = await service.isNameAvailable(orgName, owner2Id);
+
+            // Assert
+            expect(result).toBe(true);
+        });
+
+        it('should handle database errors gracefully', async () => 
+        {
+            // Arrange
+            const orgModel = connection.model('Org');
+            const ownerId = new Types.ObjectId();
+            const orgName = 'Test Org';
+            
+            jest.spyOn(orgModel, 'findOne').mockImplementationOnce(() => 
+            {
+                throw new Error('Database connection error');
+            });
+
+            // Act & Assert
+            await expect(service.isNameAvailable(orgName, ownerId)).rejects.toThrow();
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining(`Database error during name availability check: ${orgName}`),
+                expect.any(String),
+                'OrgService#isNameAvailable'
+            );
+        });
+    });
 });

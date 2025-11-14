@@ -257,6 +257,87 @@ Create a new organization with a Stripe subscription ID (recommended for payment
 
 ---
 
+### POST /api/orgs/validate-name
+Validate if an organization name is available for the current user.
+
+**Authentication**: Required (JWT)
+
+**Request Body**:
+```json
+{
+  "name": "My Bar Organization"
+}
+```
+
+**Validation Rules**:
+- `name`: Required, string
+
+**Response** (201 Created):
+```json
+{
+  "available": true
+}
+```
+
+or
+
+```json
+{
+  "available": false
+}
+```
+
+**Error Responses**:
+
+**400 Bad Request** - Validation Errors:
+```json
+{
+  "message": [
+    "validation.org.name.required"
+  ],
+  "error": "Bad Request",
+  "statusCode": 400
+}
+```
+
+**Note**: Validation error messages are returned as translation keys. Organization validation keys:
+- `validation.org.name.required` - name is required
+- `validation.org.name.mustBeString` - name must be a string
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: organization name availability check - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Implementation Notes**:
+- Organization names are unique per owner, so the same name can be used by different owners
+- This endpoint is designed to provide real-time validation feedback during organization creation
+- Returns `available: true` if the name can be used, `available: false` if it's already taken by the current user
+
+---
+
 ### GET /api/orgs
 Get organizations user is a member of.
 

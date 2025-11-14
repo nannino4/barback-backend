@@ -11,7 +11,7 @@ import { UserOrgRelationService } from './user-org-relation.service';
 import { Org, OrgSchema } from './schemas/org.schema';
 import { UserOrgRelation, UserOrgRelationSchema, OrgRole } from './schemas/user-org-relation.schema';
 import { User, UserSchema } from '../user/schemas/user.schema';
-import { Subscription, SubscriptionSchema } from '../subscription/schemas/subscription.schema';
+import { Subscription, SubscriptionSchema, SubscriptionStatus } from '../subscription/schemas/subscription.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { OrgRolesGuard } from './guards/org-roles.guard';
 import { OrgSubscriptionGuard } from './guards/org-subscription.guard';
@@ -173,7 +173,7 @@ describe('OrgController (Integration)', () =>
             const subscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_test123',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -219,7 +219,7 @@ describe('OrgController (Integration)', () =>
             const subscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_test456',
-                status: 'trialing',
+                status: SubscriptionStatus.TRIALING,
                 autoRenew: true,
             });
 
@@ -264,7 +264,7 @@ describe('OrgController (Integration)', () =>
             const subscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_cancelled123',
-                status: 'canceled',
+                status: SubscriptionStatus.CANCELED,
                 autoRenew: false,
             });
 
@@ -286,7 +286,7 @@ describe('OrgController (Integration)', () =>
             const subscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_test789',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -308,7 +308,7 @@ describe('OrgController (Integration)', () =>
             const subscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_test101112',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -348,14 +348,14 @@ describe('OrgController (Integration)', () =>
             const subscription1 = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_multiple123',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
             const subscription2 = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_multiple456',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -402,7 +402,7 @@ describe('OrgController (Integration)', () =>
             const subscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_dto123',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -446,7 +446,7 @@ describe('OrgController (Integration)', () =>
             const anotherSubscription = await subscriptionModel.create({
                 userId: anotherUser._id,
                 stripeSubscriptionId: 'sub_another123',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -484,7 +484,7 @@ describe('OrgController (Integration)', () =>
             const subscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_duplicate123',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -516,7 +516,7 @@ describe('OrgController (Integration)', () =>
             const cancelledSubscription = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_cancelled456',
-                status: 'canceled',
+                status: SubscriptionStatus.CANCELED,
                 autoRenew: false,
             });
 
@@ -538,14 +538,14 @@ describe('OrgController (Integration)', () =>
             const subscription1 = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_samename123',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
             const subscription2 = await subscriptionModel.create({
                 userId: testUser._id,
                 stripeSubscriptionId: 'sub_samename456',
-                status: 'active',
+                status: SubscriptionStatus.ACTIVE,
                 autoRenew: true,
             });
 
@@ -699,7 +699,7 @@ describe('OrgController (Integration)', () =>
         it('should filter organizations by OWNER role', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/api/orgs?orgRole=owner')
+                .get('/api/orgs?orgRole=OWNER')
                 .expect(200);
 
             expect(response.body).toHaveLength(1);
@@ -710,7 +710,7 @@ describe('OrgController (Integration)', () =>
         it('should filter organizations by MANAGER role', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/api/orgs?orgRole=manager')
+                .get('/api/orgs?orgRole=MANAGER')
                 .expect(200);
 
             expect(response.body).toHaveLength(1);
@@ -721,7 +721,7 @@ describe('OrgController (Integration)', () =>
         it('should filter organizations by STAFF role', async () => 
         {
             const response = await request(app.getHttpServer())
-                .get('/api/orgs?orgRole=staff')
+                .get('/api/orgs?orgRole=STAFF')
                 .expect(200);
 
             expect(response.body).toHaveLength(1);
@@ -806,6 +806,7 @@ describe('OrgController (Integration)', () =>
                     org: {
                         id: expect.any(String),
                         name: expect.any(String),
+                        owner: expect.any(Object),
                     },
                     role: expect.any(String),
                 });
@@ -849,8 +850,8 @@ describe('OrgController (Integration)', () =>
                 expect(actualUserKeys).toEqual(expect.arrayContaining(expectedUserKeys));
                 expect(actualUserKeys).toHaveLength(expectedUserKeys.length);
 
-                // Test org object only contains exposed fields  
-                const expectedOrgKeys = ['id', 'name'];
+                // Test org object only contains exposed fields (including owner)
+                const expectedOrgKeys = ['id', 'name', 'owner'];
                 expect(Object.keys(orgRelation.org)).toEqual(expect.arrayContaining(expectedOrgKeys));
                 expect(Object.keys(orgRelation.org)).toHaveLength(expectedOrgKeys.length);
 
@@ -1780,6 +1781,170 @@ describe('OrgController (Integration)', () =>
                 orgId: testOrgs[0]._id,
             });
             expect(finalRelation!.orgRole).toBe(OrgRole.MANAGER);
+        });
+    });
+
+    describe('POST /orgs/validate-name', () => 
+    {
+        beforeEach(async () => 
+        {
+            // Create test user
+            testUser = await userService.create({
+                email: 'test@example.com',
+                firstName: 'John',
+                lastName: 'Doe',
+                hashedPassword: 'hashedPassword123',
+                phoneNumber: '+1234567890',
+            });
+
+            // Override guard to use the created test user
+            const moduleRef = app.get(JwtAuthGuard);
+            jest.spyOn(moduleRef, 'canActivate').mockImplementation(async (context) => 
+            {
+                const request = context.switchToHttp().getRequest();
+                const freshUser = await userService.findById(testUser._id as Types.ObjectId);
+                request.user = freshUser;
+                return true;
+            });
+        });
+
+        afterEach(async () => 
+        {
+            // Clean up database after each test
+            await Promise.all([
+                userModel.deleteMany({}).exec(),
+                orgModel.deleteMany({}).exec(),
+                relationModel.deleteMany({}).exec(),
+                subscriptionModel.deleteMany({}).exec(),
+            ]);
+        });
+
+        it('should return available true when organization name is available', async () => 
+        {
+            // Arrange
+            const validateData = { name: 'Available Organization' };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/api/orgs/validate-name')
+                .send(validateData)
+                .expect(201);
+
+            // Assert
+            expect(response.body).toEqual({ available: true });
+        });
+
+        it('should return available false when organization name already exists for user', async () => 
+        {
+            // Arrange
+            const subscription = await subscriptionModel.create({
+                userId: testUser._id,
+                stripeSubscriptionId: 'sub_test123',
+                status: SubscriptionStatus.ACTIVE,
+                autoRenew: true,
+            });
+
+            const existingOrgName = 'Existing Organization';
+            await orgModel.create({
+                name: existingOrgName,
+                ownerId: testUser._id,
+                subscriptionId: subscription._id,
+                settings: { defaultCurrency: 'EUR' },
+            });
+
+            const validateData = { name: existingOrgName };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/api/orgs/validate-name')
+                .send(validateData)
+                .expect(201);
+
+            // Assert
+            expect(response.body).toEqual({ available: false });
+        });
+
+        it('should return available true when organization name exists but for different owner', async () => 
+        {
+            // Arrange - Create second user and their organization
+            const testUser2 = await userService.create({
+                email: 'test2@example.com',
+                firstName: 'Jane',
+                lastName: 'Smith',
+                hashedPassword: 'hashedPassword456',
+                phoneNumber: '+9876543210',
+            });
+
+            const subscription2 = await subscriptionModel.create({
+                userId: testUser2._id,
+                stripeSubscriptionId: 'sub_test456',
+                status: SubscriptionStatus.ACTIVE,
+                autoRenew: true,
+            });
+
+            const sharedName = 'Shared Organization Name';
+            await orgModel.create({
+                name: sharedName,
+                ownerId: testUser2._id,
+                subscriptionId: subscription2._id,
+                settings: { defaultCurrency: 'EUR' },
+            });
+
+            const validateData = { name: sharedName };
+
+            // Act - Check for testUser (not testUser2)
+            const response = await request(app.getHttpServer())
+                .post('/api/orgs/validate-name')
+                .send(validateData)
+                .expect(201);
+
+            // Assert
+            expect(response.body).toEqual({ available: true });
+        });
+
+        it('should return 400 when name is missing', async () => 
+        {
+            // Arrange
+            const validateData = {};
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/api/orgs/validate-name')
+                .send(validateData)
+                .expect(400);
+
+            // Assert
+            expect(response.body.message).toContain('validation.org.name.required');
+        });
+
+        it('should return 400 when name is not a string', async () => 
+        {
+            // Arrange
+            const validateData = { name: 123 };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/api/orgs/validate-name')
+                .send(validateData)
+                .expect(400);
+
+            // Assert
+            expect(response.body.message).toContain('validation.org.name.mustBeString');
+        });
+
+        it('should return 400 when name is empty string', async () => 
+        {
+            // Arrange
+            const validateData = { name: '' };
+
+            // Act
+            const response = await request(app.getHttpServer())
+                .post('/api/orgs/validate-name')
+                .send(validateData)
+                .expect(400);
+
+            // Assert
+            expect(response.body.message).toContain('validation.org.name.required');
         });
     });
 });

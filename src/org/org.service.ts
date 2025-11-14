@@ -194,4 +194,33 @@ export class OrgService
             throw new DatabaseOperationException('organization update', errorMessage);
         }
     }
+
+    async isNameAvailable(name: string, ownerId: Types.ObjectId): Promise<boolean>
+    {
+        this.logger.debug(`Checking if organization name is available: "${name}" for owner: ${ownerId}`, 'OrgService#isNameAvailable');
+        
+        try
+        {
+            const existingOrg = await this.orgModel.findOne({ 
+                ownerId: ownerId, 
+                name: name, 
+            }).exec();
+            
+            const available = !existingOrg;
+            
+            this.logger.debug(
+                `Organization name "${name}" is ${available ? 'available' : 'not available'} for owner: ${ownerId}`,
+                'OrgService#isNameAvailable'
+            );
+            
+            return available;
+        }
+        catch (error)
+        {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
+            const errorStack = error instanceof Error ? error.stack : undefined;
+            this.logger.error(`Database error during name availability check: ${name}`, errorStack, 'OrgService#isNameAvailable');
+            throw new DatabaseOperationException('organization name availability check', errorMessage);
+        }
+    }
 }

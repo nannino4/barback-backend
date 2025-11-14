@@ -23,6 +23,7 @@ import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { UpdateMemberRoleDto } from './dto/in.update-member-role.dto';
 import { CreateOrgDto } from './dto/in.create-org.dto';
 import { CreateOrgWithStripeSubscriptionDto } from './dto/in.create-org-with-stripe-subscription.dto';
+import { ValidateOrgNameDto } from './dto/in.validate-org-name.dto';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
 import { OrgRolesGuard } from './guards/org-roles.guard';
@@ -290,6 +291,21 @@ export class OrgController
         this.logger.debug(`Member role updated successfully for user: ${userId} in org: ${orgId} to role: ${updateData.role}`, 'OrgController#updateMemberRole');
         
         return plainToInstance(OutUserOrgRelationDto, populatedRelation.toObject(), { excludeExtraneousValues: true });
+    }
+
+    @Post('validate-name')
+    async validateOrgName(
+        @CurrentUser() user: User,
+        @Body() validateData: ValidateOrgNameDto,
+    ): Promise<{ available: boolean }>
+    {
+        this.logger.debug(`Validating organization name: "${validateData.name}" for user: ${user.email}`, 'OrgController#validateOrgName');
+        
+        const available = await this.orgService.isNameAvailable(validateData.name, user._id as Types.ObjectId);
+        
+        this.logger.debug(`Organization name "${validateData.name}" availability: ${available}`, 'OrgController#validateOrgName');
+        
+        return { available };
     }
 
 }
