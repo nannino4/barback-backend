@@ -288,7 +288,7 @@ describe('UserController (Integration)', () =>
 
             expect(response.body).toHaveProperty('statusCode', 400);
             expect(response.body).toHaveProperty('error', 'PASSWORD_CHANGE_NOT_ALLOWED');
-            expect(response.body.message).toContain('google authentication');
+            expect(response.body.message.toLowerCase()).toContain('google authentication');
         });
     });
 

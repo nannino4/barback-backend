@@ -1,6 +1,5 @@
 import { plainToInstance } from 'class-transformer';
 import { OutPaymentMethodDto } from './out.payment-method.dto';
-import { OutSubscriptionPlanDto } from './out.subscription-plan.dto';
 import { OutSubscriptionDto } from './out.subscription.dto';
 import { OutSuccessMessageDto } from './out.success-message.dto';
 
@@ -130,94 +129,6 @@ describe('Subscription DTOs', () =>
                 }) as OutPaymentMethodDto;
 
                 expect(transformed.card).toBeUndefined();
-            });
-        });
-    });
-
-    describe('OutSubscriptionPlanDto', () => 
-    {
-        describe('Field Exposure and Security', () => 
-        {
-            it('should only expose subscription plan fields', () => 
-            {
-                const plan = {
-                    id: 'basic',
-                    name: 'Basic Plan',
-                    duration: 'Monthly',
-                    price: 29.99,
-                    features: ['Full access', 'Email support'],
-                    stripeProductId: 'prod_123456', // This should be excluded
-                    stripePriceId: 'price_123456', // This should be excluded
-                    internalConfig: { // This should be excluded
-                        maxUsers: 100,
-                        storageLimit: '10GB',
-                    },
-                    metadata: { // This should be excluded
-                        createdBy: 'admin',
-                        environment: 'production',
-                    },
-                };
-
-                const transformed = plainToInstance(OutSubscriptionPlanDto, plan, {
-                    excludeExtraneousValues: true,
-                }) as OutSubscriptionPlanDto;
-
-                // Should include only exposed fields
-                expect(transformed.id).toBe(plan.id);
-                expect(transformed.name).toBe(plan.name);
-                expect(transformed.duration).toBe(plan.duration);
-                expect(transformed.price).toBe(plan.price);
-                expect(transformed.features).toEqual(plan.features);
-
-                // Should exclude internal fields
-                expect((transformed as any).stripeProductId).toBeUndefined();
-                expect((transformed as any).stripePriceId).toBeUndefined();
-                expect((transformed as any).internalConfig).toBeUndefined();
-                expect((transformed as any).metadata).toBeUndefined();
-            });
-
-            it('should handle different plan types', () => 
-            {
-                const enterprisePlan = {
-                    id: 'enterprise',
-                    name: 'Enterprise Plan',
-                    duration: 'Yearly',
-                    price: 299.99,
-                    features: [
-                        'Unlimited access',
-                        'Priority support',
-                        'Custom integrations',
-                        'Dedicated account manager',
-                    ],
-                };
-
-                const transformed = plainToInstance(OutSubscriptionPlanDto, enterprisePlan, {
-                    excludeExtraneousValues: true,
-                }) as OutSubscriptionPlanDto;
-
-                expect(transformed.id).toBe('enterprise');
-                expect(transformed.name).toBe('Enterprise Plan');
-                expect(transformed.duration).toBe('Yearly');
-                expect(transformed.price).toBe(299.99);
-                expect(transformed.features).toHaveLength(4);
-            });
-
-            it('should handle free plans', () => 
-            {
-                const freePlan = {
-                    id: 'free',
-                    name: 'Free Plan',
-                    duration: 'Forever',
-                    price: 0,
-                    features: ['Basic access', 'Community support'],
-                };
-
-                const transformed = plainToInstance(OutSubscriptionPlanDto, freePlan, {
-                    excludeExtraneousValues: true,
-                }) as OutSubscriptionPlanDto;
-
-                expect(transformed.price).toBe(0);
-                expect(transformed.duration).toBe('Forever');
             });
         });
     });

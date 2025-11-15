@@ -332,6 +332,90 @@ Get all subscriptions for the current user.
 
 ---
 
+### GET /api/subscriptions/stripe/:stripeSubscriptionId
+Get subscription status by Stripe subscription ID.
+
+**Authentication**: Required (JWT + Email Verified)
+
+**Parameters**:
+- `stripeSubscriptionId` (path): Stripe subscription ID (e.g., `sub_1234567890abcdef`)
+
+**Response** (200 OK):
+```json
+{
+  "stripeSubscriptionId": "sub_1234567890abcdef",
+  "status": "ACTIVE"
+}
+```
+
+**Possible Status Values**:
+- `TRIALING`: Currently in trial period
+- `ACTIVE`: Subscription is active and paid
+- `PAST_DUE`: Payment failed, subscription past due
+- `CANCELED`: Subscription has been canceled
+- `UNPAID`: Payment failed, subscription unpaid
+- `INCOMPLETE`: Subscription creation incomplete (awaiting payment)
+- `INCOMPLETE_EXPIRED`: Incomplete subscription expired
+- `PAUSED`: Subscription is paused
+
+**Error Responses**:
+
+**401 Unauthorized** - Invalid or Missing JWT:
+```json
+{
+  "message": "Invalid or expired token",
+  "error": "INVALID_AUTH_TOKEN",
+  "statusCode": 401
+}
+```
+
+**403 Forbidden** - Email Not Verified:
+```json
+{
+  "message": "Email must be verified to access this resource.",
+  "error": "EMAIL_NOT_VERIFIED",
+  "statusCode": 403
+}
+```
+
+**404 Not Found** - Subscription Not Found:
+```json
+{
+  "message": "Subscription with Stripe ID \"sub_nonexistent\" not found",
+  "error": "SUBSCRIPTION_NOT_FOUND",
+  "statusCode": 404
+}
+```
+
+**409 Conflict** - Subscription Ownership Mismatch:
+```json
+{
+  "message": "Subscription \"64a1b2c3d4e5f6789abc123\" does not belong to the current user",
+  "error": "SUBSCRIPTION_OWNERSHIP_MISMATCH",
+  "statusCode": 409
+}
+```
+
+**500 Internal Server Error** - Database Operation Failed:
+```json
+{
+  "message": "Database operation failed: subscription lookup by Stripe ID - [details]",
+  "error": "DATABASE_OPERATION_FAILED",
+  "statusCode": 500
+}
+```
+
+**Use Case**:
+This endpoint is used during the organization creation flow to poll for subscription status after payment confirmation. The frontend calls this endpoint repeatedly to check when the subscription has been confirmed by the webhook and saved to the local database.
+
+**Implementation Notes**:
+- Validates that the subscription belongs to the authenticated user
+- Returns only the Stripe subscription ID and current status
+- Used for polling during payment confirmation flow
+- Subscription must exist in local database (i.e., webhook must have processed it)
+
+---
+
 ## Payment Methods API
 
 ### GET /api/payment/methods

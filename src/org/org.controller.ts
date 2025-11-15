@@ -22,7 +22,6 @@ import { OutOrgDto } from './dto/out.org.dto';
 import { UpdateOrganizationDto } from './dto/in.update-org.dto';
 import { UpdateMemberRoleDto } from './dto/in.update-member-role.dto';
 import { CreateOrgDto } from './dto/in.create-org.dto';
-import { CreateOrgWithStripeSubscriptionDto } from './dto/in.create-org-with-stripe-subscription.dto';
 import { ValidateOrgNameDto } from './dto/in.validate-org-name.dto';
 import { ObjectIdValidationPipe } from '../pipes/object-id-validation.pipe';
 import { plainToInstance } from 'class-transformer';
@@ -60,45 +59,9 @@ export class OrgController
         @Body() createData: CreateOrgDto,
     ): Promise<OutOrgDto>
     {
-        this.logger.debug(`Creating organization: ${createData.name} for user: ${user.email} with subscription: ${createData.subscriptionId}`, 'OrgController#createOrganization');
-        
-        // Verify the subscription belongs to the user and is active
-        const subscription = await this.subscriptionService.findById(createData.subscriptionId);
-        if (!subscription)
-        {
-            this.logger.error(`Subscription not found: ${createData.subscriptionId}`, 'OrgController#createOrganization');
-            throw new NotFoundException('Subscription not found');
-        }
-        
-        if (subscription.userId.toString() !== user.id)
-        {
-            this.logger.error(`Subscription ${createData.subscriptionId} does not belong to user: ${user.email}`, 'OrgController#createOrganization');
-            throw new SubscriptionOwnershipException(createData.subscriptionId.toString());
-        }
-        
-        if (subscription.status !== SubscriptionStatus.ACTIVE && subscription.status !== SubscriptionStatus.TRIALING)
-        {
-            this.logger.error(`Subscription is not active: ${createData.subscriptionId}`, 'OrgController#createOrganization');
-            throw new SubscriptionNotActiveException(createData.subscriptionId.toString());
-        }
-        
-        // Create the organization (now also creates the owner relation atomically)
-        const org = await this.orgService.create(createData, user._id as Types.ObjectId, subscription._id as Types.ObjectId);
-        
-        this.logger.debug(`Organization created successfully: ${org.name} with ID: ${org._id}`, 'OrgController#createOrganization');
-        
-        return plainToInstance(OutOrgDto, org.toObject(), { excludeExtraneousValues: true });
-    }
-
-    @Post('with-stripe-subscription')
-    async createOrganizationWithStripeSubscription(
-        @CurrentUser() user: User,
-        @Body() createData: CreateOrgWithStripeSubscriptionDto,
-    ): Promise<OutOrgDto>
-    {
         this.logger.debug(
             `Creating organization: ${createData.name} for user: ${user.email} with Stripe subscription: ${createData.stripeSubscriptionId}`,
-            'OrgController#createOrganizationWithStripeSubscription'
+            'OrgController#createOrganization'
         );
         
         // Find subscription by Stripe subscription ID
@@ -108,7 +71,7 @@ export class OrgController
         {
             this.logger.error(
                 `Subscription ${createData.stripeSubscriptionId} does not belong to user: ${user.email}`,
-                'OrgController#createOrganizationWithStripeSubscription'
+                'OrgController#createOrganization'
             );
             throw new SubscriptionOwnershipException(createData.stripeSubscriptionId);
         }
@@ -117,23 +80,17 @@ export class OrgController
         {
             this.logger.error(
                 `Subscription is not active: ${createData.stripeSubscriptionId}`,
-                'OrgController#createOrganizationWithStripeSubscription'
+                'OrgController#createOrganization'
             );
             throw new SubscriptionNotActiveException(createData.stripeSubscriptionId);
         }
         
-        // Create the organization with the DTO (convert to CreateOrgDto internally)
-        const createOrgDto: CreateOrgDto = {
-            name: createData.name,
-            subscriptionId: subscription._id as Types.ObjectId,
-            settings: createData.settings,
-        };
-        
-        const org = await this.orgService.create(createOrgDto, user._id as Types.ObjectId, subscription._id as Types.ObjectId);
+        // Create the organization
+        const org = await this.orgService.create(createData, user._id as Types.ObjectId, subscription._id as Types.ObjectId);
         
         this.logger.debug(
             `Organization created successfully: ${org.name} with ID: ${org._id}`,
-            'OrgController#createOrganizationWithStripeSubscription'
+            'OrgController#createOrganization'
         );
         
         return plainToInstance(OutOrgDto, org.toObject(), { excludeExtraneousValues: true });

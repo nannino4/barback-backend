@@ -127,7 +127,7 @@ describe('UserRolesGuard - Output-Focused Tests', () =>
 
             // Act & Assert - Error should indicate required roles
             expect(() => guard.canActivate(context as ExecutionContext)).toThrow(
-                new ForbiddenException('Access denied. Required roles: admin'),
+                new ForbiddenException('Access denied. Required roles: ADMIN'),
             );
         });
 

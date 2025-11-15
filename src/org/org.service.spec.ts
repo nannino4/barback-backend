@@ -132,7 +132,7 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             // Arrange
             const createData: CreateOrgDto = {
                 name: 'New Test Organization',
-                subscriptionId: mockSubscriptionId,
+                stripeSubscriptionId: 'sub_test123',
                 settings: { defaultCurrency: 'USD' },
             };
             const ownerId = mockUserId;
@@ -161,9 +161,9 @@ describe('OrgService - Service Tests (Unit-style)', () =>
         it('should create organization with default settings when none provided', async () => 
         {
             // Arrange
-            const createData = {
+            const createData: CreateOrgDto = {
                 name: 'Org Without Settings',
-                subscriptionId: mockSubscriptionId,
+                stripeSubscriptionId: 'sub_test456',
                 // No settings provided, should use default from schema
             };
             const ownerId = mockUserId;
@@ -187,8 +187,16 @@ describe('OrgService - Service Tests (Unit-style)', () =>
             // Arrange
             const subscription1 = mockSubscriptionId;
             const subscription2 = new Types.ObjectId();
-            const createData1 = { name: 'Org 1', subscriptionId: subscription1, settings: { defaultCurrency: 'USD' } };
-            const createData2 = { name: 'Org 2', subscriptionId: subscription2, settings: { defaultCurrency: 'GBP' } };
+            const createData1: CreateOrgDto = { 
+                name: 'Org 1', 
+                stripeSubscriptionId: 'sub_org1_123',
+                settings: { defaultCurrency: 'USD' }, 
+            };
+            const createData2: CreateOrgDto = { 
+                name: 'Org 2', 
+                stripeSubscriptionId: 'sub_org2_456',
+                settings: { defaultCurrency: 'GBP' }, 
+            };
             const owner1 = mockUserId;
             const owner2 = new Types.ObjectId();
 
@@ -214,9 +222,9 @@ describe('OrgService - Service Tests (Unit-style)', () =>
         it('should create organization with custom settings', async () => 
         {
             // Arrange
-            const createData = {
+            const createData: CreateOrgDto = {
                 name: 'Custom Settings Org',
-                subscriptionId: mockSubscriptionId,
+                stripeSubscriptionId: 'sub_custom789',
                 settings: { defaultCurrency: 'JPY' },
             };
             const ownerId = mockUserId;
@@ -238,7 +246,10 @@ describe('OrgService - Service Tests (Unit-style)', () =>
         it('should return document with correct structure and types', async () => 
         {
             // Arrange
-            const createData = { name: 'Structure Test Org', subscriptionId: mockSubscriptionId };
+            const createData: CreateOrgDto = { 
+                name: 'Structure Test Org', 
+                stripeSubscriptionId: 'sub_structure101',
+            };
             const ownerId = mockUserId;
             const subscriptionId = mockSubscriptionId;
 
