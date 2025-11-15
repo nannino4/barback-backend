@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards, Body } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -7,8 +7,10 @@ import { SubscriptionService } from './subscription.service';
 import { InCreateSubscriptionDto } from './dto/in.create-subscription.dto';
 import { OutSubscriptionDto } from './dto/out.subscription.dto';
 import { OutSubscriptionSetupDto } from './dto/out.subscription-setup.dto';
+import { OutStripeSubscriptionStatusDto } from './dto/out.stripe-subscription-status.dto';
 import { plainToInstance } from 'class-transformer';
 import { CustomLogger } from '../common/logger/custom.logger';
+import { SubscriptionOwnershipException } from 'src/org/exceptions/org.exceptions';
 
 @Controller('subscriptions')
 export class SubscriptionController 
@@ -71,5 +73,30 @@ export class SubscriptionController
         
         const eligible = await this.subscriptionService.isEligibleForTrial(user.id);
         return { eligible };
+    }
+
+    @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
+    @Get('stripe/:stripeSubscriptionId')
+    async getStripeSubscriptionStatus(
+        @CurrentUser() user: User,
+        @Param('stripeSubscriptionId') stripeSubscriptionId: string,
+    ): Promise<OutStripeSubscriptionStatusDto>
+    {
+        this.logger.debug(
+            `Getting Stripe subscription status for user: ${user.id} and subscription: ${stripeSubscriptionId}`,
+            'SubscriptionController#getStripeSubscriptionStatus'
+        );
+
+        const subscription = await this.subscriptionService.findByStripeSubscriptionId(stripeSubscriptionId);
+        if (subscription.userId.toString() !== user.id)
+        {
+            this.logger.warn(
+                `User: ${user.id} attempted to access subscription: ${stripeSubscriptionId} which does not belong to them.`,
+                'SubscriptionController#getStripeSubscriptionStatus'
+            );
+            throw new SubscriptionOwnershipException(subscription.id);
+        }
+
+        return plainToInstance(OutStripeSubscriptionStatusDto, subscription.toObject(), { excludeExtraneousValues: true });
     }
 }
